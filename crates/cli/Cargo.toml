@@ -1,0 +1,18 @@
+[package]
+name = "os-cli"
+edition = "2024"
+version = "0.1.0"
+authors = ["nathanfaucett@gmail.com"]
+description = "Aicacia OS Database."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/aicacia/rs-cli"
+rust-version = "1.90"
+
+[dependencies]
+axum = { version = "0.8", default-features = false }
+log = { version = "0.4", default-features = false }
+tokio = { version = "1.47", default-features = false }
+tokio-util = { version = "0.7", default-features = false }
+
+[lib]
+name = "os_cli"

@@ -1,0 +1,14 @@
+/.cargo/config.toml
+/.github
+/.vscode
+/helm
+/target
+/.env
+/!.env.test
+/config.json
+/!config.test.json
+/!config.example.json
+/os-*.db*
+/Dockerfile*
+/docker-compose.yaml
+/values.yaml

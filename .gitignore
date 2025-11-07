@@ -1,0 +1,12 @@
+/.cargo/config.toml
+/.vscode
+/target
+/.cargo/config.toml
+/.env
+/!.env.test
+/config.json
+/!config.test.json
+/tests/.dbs/
+/os-admin-service-account.json
+/os*.db*
+/values.yaml
