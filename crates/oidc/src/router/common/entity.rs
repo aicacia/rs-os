@@ -39,6 +39,7 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
 
   fn encode(
     &self,
+    issuer: &str,
     jwk: &jsonwebtoken::jwk::Jwk,
     encoding_key: &jsonwebtoken::EncodingKey,
   ) -> Result<String, jsonwebtoken::errors::Error> {
@@ -62,7 +63,17 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
     };
     let mut header = jsonwebtoken::Header::new(algorithm);
     header.jwk = Some(to_public_jwk(jwk));
-    // TODO: header.jku = Some(get_public_url(jwk));
+    match &jwk.common.key_id {
+      Some(kid) => {
+        header.jku = Some(format!("{}/jwks/{}", issuer, kid));
+      }
+      None => {
+        log::error!("failed to get JWK ID");
+        return Err(jsonwebtoken::errors::Error::from(
+          jsonwebtoken::errors::ErrorKind::InvalidKeyFormat,
+        ));
+      }
+    }
     jsonwebtoken::encode(&header, self, encoding_key)
   }
 }

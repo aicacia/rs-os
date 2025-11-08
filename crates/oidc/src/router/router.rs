@@ -6,7 +6,7 @@ use utoipa_axum::router::OpenApiRouter;
 use crate::router::{
   client, current_user,
   entity::RouterState,
-  oidc,
+  jwk, oidc,
   openapi::{self, utoipa::SecurityAddon},
   register, util,
 };
@@ -18,6 +18,7 @@ use crate::router::{
     (name = client::constants::TAG, description = client::constants::DESCRIPTION),
     (name = util::constants::TAG, description = util::constants::DESCRIPTION),
     (name = register::constants::TAG, description = register::constants::DESCRIPTION),
+    (name = jwk::constants::TAG, description = jwk::constants::DESCRIPTION),
     (name = oidc::constants::TAG, description = oidc::constants::DESCRIPTION),
     (name = crate::router::openapi::constants::TAG, description = crate::router::openapi::constants::DESCRIPTION),
     (name = current_user::constants::TAG, description = current_user::constants::DESCRIPTION)
@@ -33,6 +34,7 @@ pub fn create_router(state: RouterState, prefix_optional: Option<&str>) -> Route
     .merge(client::router::create_router(state.clone()))
     .merge(util::router::create_router(state.clone()))
     .merge(register::router::create_router(state.clone()))
+    .merge(jwk::router::create_router(state.clone()))
     .merge(oidc::router::create_router(state.clone()))
     .merge(current_user::router::create_router(state.clone()));
 

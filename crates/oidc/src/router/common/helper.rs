@@ -33,13 +33,14 @@ pub(crate) async fn create_user_token(
   let now = chrono::Utc::now();
   let scopes = parse_scopes(scope.as_ref().map(String::as_str));
 
+  let issuer = public_url(app_config, dynamic_app_config);
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
     exp: now.timestamp() + dynamic_app_config.token.expires_in_seconds as i64,
-    iss: public_url(app_config, dynamic_app_config),
+    iss: issuer.clone(),
     aud: Some(public_url(app_config, dynamic_app_config)),
     scopes: scopes.clone(),
   };
@@ -63,7 +64,7 @@ pub(crate) async fn create_user_token(
     }
   };
 
-  let access_token = match claims.encode(&jwk, &encoding_key) {
+  let access_token = match claims.encode(&issuer, &jwk, &encoding_key) {
     Ok(token) => token,
     Err(e) => {
       log::error!("error encoding access token: {}", e);
@@ -78,7 +79,7 @@ pub(crate) async fn create_user_token(
     refresh_claims.r#type = TOKEN_TYPE_REFRESH.to_owned();
     refresh_claims.exp =
       refresh_claims.iat + dynamic_app_config.token.refresh_expires_in_seconds as i64;
-    let refresh_token = match refresh_claims.encode(&jwk, &encoding_key) {
+    let refresh_token = match refresh_claims.encode(&issuer, &jwk, &encoding_key) {
       Ok(token) => token,
       Err(e) => {
         log::error!("error encoding refresh token: {}", e);
@@ -158,7 +159,7 @@ pub(crate) async fn create_user_token(
       }
     }
 
-    id_token = match id_claims.encode(&jwk, &encoding_key) {
+    id_token = match id_claims.encode(&issuer, &jwk, &encoding_key) {
       Ok(token) => Some(token),
       Err(e) => {
         log::error!("error encoding id_token: {}", e);

@@ -4,6 +4,7 @@ pub mod current_user;
 pub mod entity;
 pub mod error;
 pub mod json;
+pub mod jwk;
 pub mod middleware;
 pub mod oidc;
 pub mod openapi;
