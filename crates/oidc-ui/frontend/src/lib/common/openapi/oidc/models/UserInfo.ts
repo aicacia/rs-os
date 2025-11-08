@@ -33,12 +33,6 @@ export interface UserInfo {
     birthdate?: number | null;
     /**
      * 
-     * @type {Date}
-     * @memberof UserInfo
-     */
-    createdAt: Date;
-    /**
-     * 
      * @type {string}
      * @memberof UserInfo
      */
@@ -109,7 +103,6 @@ export interface UserInfo {
  * Check if a given object implements the UserInfo interface.
  */
 export function instanceOfUserInfo(value: object): value is UserInfo {
-    if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
     if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
     return true;
 }
@@ -126,7 +119,6 @@ export function UserInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         
         'address': json['address'] == null ? undefined : json['address'],
         'birthdate': json['birthdate'] == null ? undefined : json['birthdate'],
-        'createdAt': (new Date(json['created_at'])),
         'familyName': json['family_name'] == null ? undefined : json['family_name'],
         'gender': json['gender'] == null ? undefined : json['gender'],
         'givenName': json['given_name'] == null ? undefined : json['given_name'],
@@ -154,7 +146,6 @@ export function UserInfoToJSONTyped(value?: UserInfo | null, ignoreDiscriminator
         
         'address': value['address'],
         'birthdate': value['birthdate'],
-        'created_at': value['createdAt'].toISOString(),
         'family_name': value['familyName'],
         'gender': value['gender'],
         'given_name': value['givenName'],

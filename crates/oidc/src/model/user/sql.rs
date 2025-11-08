@@ -1,6 +1,11 @@
+use std::collections::HashMap;
+
 use os_db::pool::run_transaction;
 
-use crate::core::{config::dynamic_app_config::DynamicAppConfig, encryption::encrypt_password};
+use crate::{
+  core::{config::dynamic_app_config::DynamicAppConfig, encryption::encrypt_password},
+  model::rbac::sql::{PermissionSQLRow, RolePermissionSQLRow, RoleSQLRow},
+};
 
 #[derive(sqlx::FromRow)]
 pub struct UserSQLRow {
@@ -230,7 +235,7 @@ pub async fn get_user_oauth2_providers(
   user_id: i64,
 ) -> sqlx::Result<Vec<UserOAuth2ProviderSQLRow>> {
   sqlx::query_as(
-    r#"SELECT p.uri, p.name, uop.*
+    r#"SELECT p.uri, p.description, uop.*
     FROM user_oauth2_providers uop
       JOIN oauth2_providers p ON uop.oauth2_provider_id = p.id
     WHERE uop.user_id = $1 AND p.active != 0;"#,
@@ -314,4 +319,47 @@ pub async fn get_user_primary_phone_number(
   .bind(user_id)
   .fetch_optional(pool)
   .await
+}
+
+pub async fn get_user_roles_by_user_id(
+  pool: &sqlx::AnyPool,
+  user_id: i64,
+) -> sqlx::Result<Vec<RoleSQLRow>> {
+  sqlx::query_as(
+    r#"SELECT r.*
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = $1;"#,
+  )
+  .bind(user_id)
+  .fetch_all(pool)
+  .await
+}
+
+// returns map of role_id -> Vec<PermissionSQLRow>
+pub async fn get_user_role_permissions_by_user_id(
+  pool: &sqlx::AnyPool,
+  user_id: i64,
+) -> sqlx::Result<HashMap<i64, Vec<PermissionSQLRow>>> {
+  let roles_permissions: Vec<RolePermissionSQLRow> = sqlx::query_as(
+    r#"SELECT p.*, rp.role_id
+    FROM user_roles ur
+    JOIN roles_permissions rp on rp.role_id = ur.role_id
+    JOIN permissions p ON p.id = rp.permission_id
+    WHERE ur.user_id = $1;"#,
+  )
+  .bind(user_id)
+  .fetch_all(pool)
+  .await?;
+
+  let mut permissions = HashMap::default();
+
+  for roles_permission in roles_permissions {
+    permissions
+      .entry(roles_permission.role_id)
+      .or_insert_with(Vec::new)
+      .push(roles_permission.into());
+  }
+
+  Ok(permissions)
 }

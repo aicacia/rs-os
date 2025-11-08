@@ -7,7 +7,11 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 use crate::{
   model::client::sql::get_client_by_client_id,
   router::{
-    client::{constants::TAG, entity::Client},
+    client::{
+      constants::{CLIENT_CREATE, TAG},
+      entity::Client,
+    },
+    common::entity::Claims,
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
     middleware::user_authorization::UserAuthorization,
@@ -25,7 +29,7 @@ use crate::{
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = [])
+    ("Authorization" = ["client:read"])
   )
 )]
 pub async fn client_by_client_id(
@@ -53,8 +57,36 @@ pub async fn client_by_client_id(
   axum::Json(client).into_response()
 }
 
+#[utoipa::path(
+  post,
+  path = "/clients",
+  tags = [TAG],
+  responses(
+    (status = 201, content_type = "application/json", body = Client),
+    (status = 400, content_type = "application/json", body = HttpError),
+    (status = 401, content_type = "application/json", body = HttpError),
+    (status = 500, content_type = "application/json", body = HttpError),
+  ),
+  security(
+    ("Authorization" = ["client:create"])
+  )
+)]
+pub async fn create_client(
+  State(state): State<RouterState>,
+  UserAuthorization { claims, .. }: UserAuthorization,
+) -> impl IntoResponse {
+  if !claims.has_scope(CLIENT_CREATE) {
+    return HttpError::forbidden()
+      .with_error("scopes", CLIENT_CREATE)
+      .into_response();
+  }
+
+  axum::Json(()).into_response()
+}
+
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(client_by_client_id))
+    .routes(routes!(create_client))
     .with_state(state)
 }

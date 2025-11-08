@@ -15,6 +15,7 @@ Name | Type
 `oauth2Providers` | [Array&lt;UserOAuth2Provider&gt;](UserOAuth2Provider.md)
 `phoneNumber` | [UserPhoneNumber](UserPhoneNumber.md)
 `phoneNumbers` | [Array&lt;UserPhoneNumber&gt;](UserPhoneNumber.md)
+`roles` | [Array&lt;UserRole&gt;](UserRole.md)
 `updatedAt` | Date
 `username` | string
 
@@ -34,6 +35,7 @@ const example = {
   "oauth2Providers": null,
   "phoneNumber": null,
   "phoneNumbers": null,
+  "roles": null,
   "updatedAt": null,
   "username": null,
 } satisfies User

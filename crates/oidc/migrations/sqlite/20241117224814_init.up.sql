@@ -79,7 +79,7 @@ CREATE UNIQUE INDEX "clients_client_id_unique_idx" ON "clients" ("client_id");
 CREATE TABLE "oauth2_providers" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "active" INTEGER NOT NULL DEFAULT 1,
-  "name" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
   "uri" TEXT NOT NULL,
   "client_id" TEXT NOT NULL,
   "client_secret" TEXT NOT NULL,
@@ -88,7 +88,6 @@ CREATE TABLE "oauth2_providers" (
 ) STRICT;
 CREATE UNIQUE INDEX "oauth2_providers_id_unique_idx" ON "oauth2_providers" ("id");
 CREATE UNIQUE INDEX "oauth2_providers_uri_unique_idx" ON "oauth2_providers" ("uri");
-CREATE UNIQUE INDEX "oauth2_providers_name_unique_idx" ON "oauth2_providers" ("name");
 CREATE INDEX "oauth2_providers_client_id_idx" ON "oauth2_providers" ("client_id");
 
 
@@ -96,14 +95,13 @@ CREATE TABLE "applications" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "active" INTEGER NOT NULL DEFAULT 1,
   "uri" TEXT NOT NULL,
-  "name" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
   "redirect_origins" TEXT NOT NULL,
   "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
   "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 ) STRICT;
 CREATE UNIQUE INDEX "applications_id_unique_idx" ON "applications" ("id");
 CREATE UNIQUE INDEX "applications_uri_unique_idx" ON "applications" ("uri");
-CREATE UNIQUE INDEX "applications_name_unique_idx" ON "applications" ("name");
 
 
 CREATE TABLE "users" (
@@ -193,6 +191,54 @@ CREATE TABLE "user_oauth2_providers" (
 ) STRICT;
 CREATE INDEX "user_oauth2_providers_user_id_idx" ON "user_oauth2_providers" ("user_id");
 CREATE INDEX "user_oauth2_providers_oauth2_provider_id_idx" ON "user_oauth2_providers" ("oauth2_provider_id");
+
+
+CREATE TABLE "roles" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "uri" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
+  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+) STRICT;
+CREATE UNIQUE INDEX "roles_id_unique_idx" ON "roles" ("id");
+CREATE UNIQUE INDEX "roles_uri_unique_idx" ON "roles" ("uri");
+
+
+CREATE TABLE "permissions" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "uri" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
+  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+) STRICT;
+CREATE UNIQUE INDEX "permissions_id_unique_idx" ON "permissions" ("id");
+CREATE UNIQUE INDEX "permissions_uri_unique_idx" ON "permissions" ("uri");
+
+
+CREATE TABLE "roles_permissions" (
+  "role_id" INTEGER NOT NULL,
+  "permission_id" INTEGER NOT NULL,
+  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY ("role_id") REFERENCES "roles" ("id") ON DELETE CASCADE,
+  FOREIGN KEY ("permission_id") REFERENCES "permissions" ("id") ON DELETE CASCADE
+) STRICT;
+CREATE UNIQUE INDEX "roles_permissions_role_id_permission_id_unique_idx" ON "roles_permissions" ("role_id", "permission_id");
+CREATE INDEX "roles_permissions_role_id_idx" ON "roles_permissions" ("role_id");
+CREATE INDEX "roles_permissions_permission_id_idx" ON "roles_permissions" ("permission_id");
+
+
+CREATE TABLE "user_roles" (
+  "user_id" INTEGER NOT NULL,
+  "role_id" INTEGER NOT NULL,
+  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE,
+  FOREIGN KEY ("role_id") REFERENCES "roles" ("id") ON DELETE CASCADE
+) STRICT;
+CREATE UNIQUE INDEX "user_roles_user_id_role_id_unique_idx" ON "user_roles" ("user_id", "role_id");
+CREATE INDEX "user_roles_user_id_idx" ON "user_roles" ("user_id");
+CREATE INDEX "user_roles_role_id_idx" ON "user_roles" ("role_id");
 
 
 CREATE TABLE "key_values" (

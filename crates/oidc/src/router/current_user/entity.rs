@@ -3,8 +3,11 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator::Validate;
 
-use crate::model::user::sql::{
-  UserEmailSQLRow, UserInfoSQLRow, UserOAuth2ProviderSQLRow, UserPhoneNumberSQLRow, UserSQLRow,
+use crate::model::{
+  rbac::sql::RoleSQLRow,
+  user::sql::{
+    UserEmailSQLRow, UserInfoSQLRow, UserOAuth2ProviderSQLRow, UserPhoneNumberSQLRow, UserSQLRow,
+  },
 };
 
 #[derive(Serialize, ToSchema, Default)]
@@ -12,7 +15,8 @@ pub struct User {
   pub id: i64,
   pub username: String,
   pub active: bool,
-  pub info: UserInfo,
+  pub roles: Vec<UserRole>,
+  pub info: Option<UserInfo>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub email: Option<UserEmail>,
   pub emails: Vec<UserEmail>,
@@ -38,21 +42,47 @@ impl From<UserSQLRow> for User {
 }
 
 #[derive(Serialize, ToSchema, Default)]
+pub struct UserRole {
+  pub uri: String,
+  pub permissions: Vec<String>,
+}
+
+impl From<RoleSQLRow> for UserRole {
+  fn from(role_sql_row: RoleSQLRow) -> Self {
+    Self {
+      uri: role_sql_row.uri,
+      ..Self::default()
+    }
+  }
+}
+
+#[derive(Serialize, ToSchema, Default)]
 pub struct UserInfo {
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub given_name: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub family_name: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub middle_name: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub nickname: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub profile_picture: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub website: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub gender: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub birthdate: Option<i64>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub zone_info: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub locale: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub address: Option<String>,
   pub updated_at: DateTime<Utc>,
-  pub created_at: DateTime<Utc>,
 }
 
 impl From<UserInfoSQLRow> for UserInfo {
@@ -71,8 +101,6 @@ impl From<UserInfoSQLRow> for UserInfo {
       locale: user_info_sql_row.locale,
       address: user_info_sql_row.address,
       updated_at: DateTime::<Utc>::from_timestamp(user_info_sql_row.updated_at, 0)
-        .unwrap_or_default(),
-      created_at: DateTime::<Utc>::from_timestamp(user_info_sql_row.created_at, 0)
         .unwrap_or_default(),
     }
   }

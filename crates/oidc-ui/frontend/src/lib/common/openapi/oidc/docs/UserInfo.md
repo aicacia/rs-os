@@ -8,7 +8,6 @@ Name | Type
 ------------ | -------------
 `address` | string
 `birthdate` | number
-`createdAt` | Date
 `familyName` | string
 `gender` | string
 `givenName` | string
@@ -30,7 +29,6 @@ import type { UserInfo } from ''
 const example = {
   "address": null,
   "birthdate": null,
-  "createdAt": null,
   "familyName": null,
   "gender": null,
   "givenName": null,

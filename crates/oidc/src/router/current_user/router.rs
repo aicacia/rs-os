@@ -4,7 +4,8 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 use crate::{
   model::user::sql::{
     get_user_emails_by_user_id, get_user_info_by_user_id, get_user_oauth2_providers,
-    get_user_phone_numbers_by_user_id,
+    get_user_phone_numbers_by_user_id, get_user_role_permissions_by_user_id,
+    get_user_roles_by_user_id,
   },
   router::{
     common::helper::{
@@ -12,7 +13,7 @@ use crate::{
     },
     current_user::{
       constants::TAG,
-      entity::{User, UserOAuth2Provider},
+      entity::{User, UserOAuth2Provider, UserRole},
     },
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR},
@@ -49,19 +50,53 @@ pub async fn current_user(
   let has_address = has_address_scope(&claims.scopes);
 
   if has_profile {
-    user.info = match get_user_info_by_user_id(&state.pool, user.id).await {
-      Ok(Some(user_info)) => user_info.into(),
-      Ok(None) => Default::default(),
+    let role_sql_rows = match get_user_roles_by_user_id(&state.pool, user.id).await {
+      Ok(roles) => roles,
       Err(e) => {
-        log::error!("error fetching user oauth2 providers: {}", e);
+        log::error!("error fetching user roles: {}", e);
         return HttpError::internal_error()
           .with_application_error(INTERNAL_ERROR)
           .into_response();
       }
     };
-    if !has_address {
-      user.info.address = None;
+    let mut roles_permissions_sql_rows =
+      match get_user_role_permissions_by_user_id(&state.pool, user.id).await {
+        Ok(roles_permissions) => roles_permissions,
+        Err(e) => {
+          log::error!("error fetching user roles: {}", e);
+          return HttpError::internal_error()
+            .with_application_error(INTERNAL_ERROR)
+            .into_response();
+        }
+      };
+
+    for role_sql_row in role_sql_rows {
+      let permissions =
+        if let Some(permissions) = roles_permissions_sql_rows.remove(&role_sql_row.id) {
+          permissions.into_iter().map(|p| p.uri).collect::<Vec<_>>()
+        } else {
+          Vec::default()
+        };
+      let mut role: UserRole = role_sql_row.into();
+      role.permissions = permissions;
+      user.roles.push(role);
     }
+
+    user.info = match get_user_info_by_user_id(&state.pool, user.id).await {
+      Ok(Some(mut user_info)) => {
+        if !has_address {
+          user_info.address = None;
+        }
+        Some(user_info.into())
+      }
+      Ok(None) => None,
+      Err(e) => {
+        log::error!("error fetching user info: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
     user.oauth2_providers = match get_user_oauth2_providers(&state.pool, user.id).await {
       Ok(oauth2_providers) => oauth2_providers
         .into_iter()

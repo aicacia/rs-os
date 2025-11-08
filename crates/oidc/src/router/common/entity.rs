@@ -33,8 +33,8 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
   fn sub(&self) -> i64;
   fn scopes(&self) -> &[String];
 
-  fn has_scope(&self, scope: &String) -> bool {
-    self.scopes().contains(scope)
+  fn has_scope(&self, scope: &str) -> bool {
+    self.scopes().iter().any(|s| s == scope)
   }
 
   fn encode(
@@ -62,6 +62,7 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
     };
     let mut header = jsonwebtoken::Header::new(algorithm);
     header.jwk = Some(to_public_jwk(jwk));
+    // TODO: header.jku = Some(get_public_url(jwk));
     jsonwebtoken::encode(&header, self, encoding_key)
   }
 }
