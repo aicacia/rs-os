@@ -5,6 +5,9 @@ use std::{
 
 use serde::Deserialize;
 
+pub const OIDC_UI_URL_PREFIX: &str = "/oidc";
+pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
+
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct ServerConfig {
@@ -29,6 +32,7 @@ pub struct AppConfig {
   pub server: ServerConfig,
   pub oidc: os_oidc::core::config::app_config::AppConfig,
   pub log_level: String,
+  pub public_url: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -37,6 +41,7 @@ impl Default for AppConfig {
       server: Default::default(),
       oidc: Default::default(),
       log_level: "DEBUG".to_owned(),
+      public_url: None,
     }
   }
 }
@@ -56,6 +61,10 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.oidc.server.host = app_config.server.host.clone();
     app_config.oidc.server.port = app_config.server.port;
     app_config.oidc.server.gzip = app_config.server.gzip;
+
+    if let Some(public_url) = &app_config.public_url {
+      app_config.oidc.public_url = Some(format!("{}/{}", public_url, OIDC_API_URL_PREFIX))
+    }
 
     Ok(app_config)
   }

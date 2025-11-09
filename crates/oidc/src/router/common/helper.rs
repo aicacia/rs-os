@@ -3,7 +3,7 @@ use http::StatusCode;
 
 use crate::{
   core::{
-    config::{app_config::AppConfig, dynamic_app_config::DynamicAppConfig, helper::public_url},
+    config::app_config::AppConfig,
     jwk::{helper::to_encoding_key, sql::JwkSQLRow},
   },
   model::user::sql::{
@@ -24,7 +24,6 @@ use crate::{
 pub(crate) async fn create_user_token(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
-  dynamic_app_config: &DynamicAppConfig,
   jwk_sql_row: JwkSQLRow,
   user: UserSQLRow,
   scope: Option<String>,
@@ -33,15 +32,15 @@ pub(crate) async fn create_user_token(
   let now = chrono::Utc::now();
   let scopes = parse_scopes(scope.as_ref().map(String::as_str));
 
-  let issuer = public_url(app_config, dynamic_app_config);
+  let issuer = app_config.public_url();
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
-    exp: now.timestamp() + dynamic_app_config.token.expires_in_seconds as i64,
+    exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
-    aud: Some(public_url(app_config, dynamic_app_config)),
+    aud: Some(app_config.public_url()),
     scopes: scopes.clone(),
   };
 
@@ -77,8 +76,7 @@ pub(crate) async fn create_user_token(
   let (refresh_token, refresh_token_expires_in) = if has_offline_scope(&scopes) {
     let mut refresh_claims = claims.clone();
     refresh_claims.r#type = TOKEN_TYPE_REFRESH.to_owned();
-    refresh_claims.exp =
-      refresh_claims.iat + dynamic_app_config.token.refresh_expires_in_seconds as i64;
+    refresh_claims.exp = refresh_claims.iat + app_config.token.refresh_expires_in_seconds as i64;
     let refresh_token = match refresh_claims.encode(&issuer, &jwk, &encoding_key) {
       Ok(token) => token,
       Err(e) => {
@@ -90,7 +88,7 @@ pub(crate) async fn create_user_token(
     };
     (
       Some(refresh_token),
-      Some(dynamic_app_config.token.refresh_expires_in_seconds as i64),
+      Some(app_config.token.refresh_expires_in_seconds as i64),
     )
   } else {
     (None, None)
@@ -175,7 +173,7 @@ pub(crate) async fn create_user_token(
     token_type: claims.r#type,
     issued_token_type,
     issued_at: DateTime::<Utc>::from_timestamp(claims.iat, 0).unwrap_or_default(),
-    expires_in: dynamic_app_config.token.expires_in_seconds as i64,
+    expires_in: app_config.token.expires_in_seconds as i64,
     scope,
     refresh_token: refresh_token,
     refresh_token_expires_in: refresh_token_expires_in,
@@ -217,7 +215,6 @@ pub fn has_offline_scope(scopes: &[String]) -> bool {
 pub fn parse_jwt<T>(
   jwt: &str,
   app_config: &AppConfig,
-  dynamic_app_config: &DynamicAppConfig,
   decoding_key: jsonwebtoken::DecodingKey,
   algorithm: jsonwebtoken::Algorithm,
 ) -> Result<jsonwebtoken::TokenData<T>, jsonwebtoken::errors::Error>
@@ -226,8 +223,8 @@ where
 {
   let mut validation = jsonwebtoken::Validation::new(algorithm);
   validation.validate_nbf = true;
-  validation.set_issuer(&[public_url(app_config, dynamic_app_config)]);
-  validation.set_audience(&[public_url(app_config, dynamic_app_config)]);
+  validation.set_issuer(&[app_config.public_url()]);
+  validation.set_audience(&[app_config.public_url()]);
 
   jsonwebtoken::decode(jwt, &decoding_key, &validation)
 }

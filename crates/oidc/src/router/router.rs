@@ -51,6 +51,6 @@ pub fn create_router(state: RouterState, prefix_optional: Option<&str>) -> Route
     ))
     .layer(CorsLayer::very_permissive())
     .layer(TraceLayer::new_for_http())
-    .layer(CompressionLayer::new().gzip(state.app_config.server.gzip))
+    .layer(CompressionLayer::new().gzip(state.config.server.gzip))
     .into()
 }

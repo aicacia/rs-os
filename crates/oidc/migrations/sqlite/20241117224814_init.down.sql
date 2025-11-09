@@ -79,7 +79,3 @@ DROP TABLE IF EXISTS "clients";
 DROP INDEX IF EXISTS "jwks_kid_alg_kty_unique_idx";
 DROP INDEX IF EXISTS "jwks_kid_unique_idx";
 DROP TABLE IF EXISTS "jwks";
-
--- configs
-DROP INDEX IF EXISTS "configs_key_unique_idx";
-DROP TABLE IF EXISTS "configs";

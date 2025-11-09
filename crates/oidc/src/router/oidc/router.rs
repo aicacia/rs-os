@@ -8,7 +8,6 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
   core::{
-    config::helper::public_url,
     encryption::verify_password,
     jwk::sql::{get_jwk_for_sign_and_verify, list_jwks},
   },
@@ -88,7 +87,7 @@ pub async fn jwks(State(state): State<RouterState>) -> impl IntoResponse {
   )
 )]
 pub async fn openid_configuration(State(state): State<RouterState>) -> impl IntoResponse {
-  let issuer = public_url(&state.app_config, state.dynamic_app_config());
+  let issuer = state.config.public_url();
 
   let jwks = match list_jwks(&state.pool).await {
     Ok(jwks) => jwks,
@@ -265,8 +264,7 @@ async fn password_grant(
 
   create_user_token(
     &state.pool,
-    &state.app_config,
-    &state.dynamic_app_config(),
+    &state.config,
     jwk,
     user,
     common.scope.or_else(|| Some("openid".to_owned())),
@@ -280,13 +278,8 @@ async fn refresh_token_grant(
   _common: TokenRequestCommon,
   refresh_token: String,
 ) -> Result<Token, HttpError> {
-  let (token_data, jwk_sql_row) = parse_authorization::<BasicClaims>(
-    &state.pool,
-    &state.app_config,
-    &state.dynamic_app_config(),
-    &refresh_token,
-  )
-  .await?;
+  let (token_data, jwk_sql_row) =
+    parse_authorization::<BasicClaims>(&state.pool, &state.config, &refresh_token).await?;
 
   if token_data.claims.r#type != TOKEN_TYPE_REFRESH {
     return Err(HttpError::unauthorized());
@@ -303,8 +296,7 @@ async fn refresh_token_grant(
 
   create_user_token(
     &state.pool,
-    state.app_config.as_ref(),
-    state.dynamic_app_config(),
+    &state.config,
     jwk_sql_row,
     user,
     Some(token_data.claims.scopes.join(" ").to_owned()),

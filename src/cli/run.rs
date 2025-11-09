@@ -16,7 +16,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 #[cfg(feature = "completions")]
 use crate::cli::completions;
 use crate::{
-  app_config::AppConfig,
+  app_config::{AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX},
   cli::args::{CliArgs, CliCommand},
 };
 
@@ -51,9 +51,8 @@ pub async fn run() -> io::Result<()> {
 
   let cancellation_token = CancellationToken::new();
 
-  let (oidc_cleanup, oidc_router) =
-    init_oidc(app_config.oidc.clone(), cancellation_token.clone()).await?;
-  let oidc_ui_router = os_oidc_ui_embed::router::create_router(Some("/oidc"));
+  let (oidc_cleanup, oidc_router) = init_oidc(app_config.oidc.clone()).await?;
+  let oidc_ui_router = os_oidc_ui_embed::router::create_router(Some(OIDC_UI_URL_PREFIX));
   let router = Router::new().merge(oidc_router).merge(oidc_ui_router);
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {
@@ -90,7 +89,6 @@ pub async fn run() -> io::Result<()> {
 
 async fn init_oidc(
   app_config: os_oidc::core::config::app_config::AppConfig,
-  cancellation_token: CancellationToken,
 ) -> io::Result<(impl FnOnce(), Router)> {
   let oidc_pool = match os_db::pool::create(
     &app_config.database,
@@ -108,22 +106,12 @@ async fn init_oidc(
     Err(e) => return Err(io::Error::other(e.to_string())),
   }
 
-  let oidc_dynamic_app_config =
-    match os_oidc::core::config::dynamic_app_config::DynamicAppConfig::with_background_updater(
-      oidc_pool.clone(),
-      cancellation_token.clone(),
-    ) {
-      Ok(dynamic_app_config) => dynamic_app_config,
-      Err(e) => return Err(io::Error::other(e)),
-    };
-
   let oidc_router = os_oidc::router::create_router(
     os_oidc::router::entity::RouterState {
       pool: oidc_pool.clone(),
-      app_config: Arc::new(app_config),
-      dynamic_app_config: oidc_dynamic_app_config,
+      config: Arc::new(app_config),
     },
-    Some("/oidc/api"),
+    Some(OIDC_API_URL_PREFIX),
   );
 
   let close_pool = move || {

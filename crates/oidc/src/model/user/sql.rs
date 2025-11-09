@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use os_db::pool::run_transaction;
 
 use crate::{
-  core::{config::dynamic_app_config::DynamicAppConfig, encryption::encrypt_password},
+  core::{config::app_config::AppConfig, encryption::encrypt_password},
   model::rbac::sql::{PermissionSQLRow, RolePermissionSQLRow, RoleSQLRow},
 };
 
@@ -199,11 +199,11 @@ async fn create_user_internal(
 
 pub async fn create_user_with_password(
   pool: &sqlx::AnyPool,
-  dynamic_app_config: &DynamicAppConfig,
+  app_config: &AppConfig,
   username: String,
   password: String,
 ) -> sqlx::Result<UserSQLRow> {
-  let encrypted_password = match encrypt_password(dynamic_app_config, &password) {
+  let encrypted_password = match encrypt_password(app_config, &password) {
     Ok(encrypted_password) => encrypted_password,
     Err(e) => {
       return Err(sqlx::Error::Encode(

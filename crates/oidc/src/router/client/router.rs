@@ -7,11 +7,7 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 use crate::{
   model::client::sql::get_client_by_client_id,
   router::{
-    client::{
-      constants::{CLIENT_CREATE, TAG},
-      entity::Client,
-    },
-    common::entity::Claims,
+    client::{constants::TAG, entity::Client},
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
     middleware::user_authorization::UserAuthorization,
@@ -72,15 +68,9 @@ pub async fn client_by_client_id(
   )
 )]
 pub async fn create_client(
-  State(state): State<RouterState>,
-  UserAuthorization { claims, .. }: UserAuthorization,
+  State(_state): State<RouterState>,
+  UserAuthorization { .. }: UserAuthorization,
 ) -> impl IntoResponse {
-  if !claims.has_scope(CLIENT_CREATE) {
-    return HttpError::forbidden()
-      .with_error("scopes", CLIENT_CREATE)
-      .into_response();
-  }
-
   axum::Json(()).into_response()
 }
 

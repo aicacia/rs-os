@@ -4,7 +4,7 @@ use jsonwebtoken::DecodingKey;
 
 use crate::{
   core::{
-    config::{app_config::AppConfig, dynamic_app_config::DynamicAppConfig},
+    config::app_config::AppConfig,
     jwk::sql::{JwkSQLRow, get_jwk_by_kid},
   },
   router::{
@@ -52,8 +52,7 @@ where
       };
       let (token_data, _jwk_sql_row) = parse_authorization(
         &router_state.pool,
-        &router_state.app_config,
-        &router_state.dynamic_app_config(),
+        &router_state.config,
         authorization_string,
       )
       .await?;
@@ -69,7 +68,6 @@ where
 pub async fn parse_authorization<T>(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
-  dynamic_app_config: &DynamicAppConfig,
   authorization_string: &str,
 ) -> Result<(jsonwebtoken::TokenData<T>, JwkSQLRow), HttpError>
 where
@@ -122,13 +120,7 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
   };
-  let token_data = match parse_jwt::<T>(
-    authorization_string,
-    app_config,
-    dynamic_app_config,
-    decoding_key,
-    alg,
-  ) {
+  let token_data = match parse_jwt::<T>(authorization_string, app_config, decoding_key, alg) {
     Ok(token_data) => (token_data, jwk_sql_row),
     Err(e) => {
       log::error!("invalid authorization failed to parse claims: {}", e);

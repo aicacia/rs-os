@@ -3,7 +3,7 @@ use std::{error::Error, path::Path, str::FromStr, sync::Arc};
 use axum::Router;
 use os_oidc::{
   core::{
-    config::{app_config::AppConfig, dynamic_app_config::DynamicAppConfig},
+    config::app_config::AppConfig,
     jwk::helper::init_jwk,
     migrations::{POSTGRESQL_MIGRATOR, SQLITE_MIGRATOR},
   },
@@ -42,13 +42,10 @@ pub async fn setup()
   let _ = init_jwk(&pool).await?;
 
   let cancellation_token = CancellationToken::new();
-  let dynamic_app_config =
-    DynamicAppConfig::with_background_updater(pool.clone(), cancellation_token.clone())?;
   let router = create_router(
     RouterState {
       pool: pool.clone(),
-      app_config: config.clone(),
-      dynamic_app_config: dynamic_app_config,
+      config: config.clone(),
     },
     None,
   );

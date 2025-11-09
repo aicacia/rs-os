@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::core::config::dynamic_app_config::DynamicAppConfig;
+use crate::core::config::app_config::AppConfig;
 
 pub fn random_bytes(size: usize) -> Vec<u8> {
   let mut bytes = vec![0; size];
@@ -8,7 +8,7 @@ pub fn random_bytes(size: usize) -> Vec<u8> {
   bytes
 }
 
-pub fn encrypt_password(config: &DynamicAppConfig, input: &str) -> argon2::Result<String> {
+pub fn encrypt_password(config: &AppConfig, input: &str) -> argon2::Result<String> {
   argon2::hash_encoded(
     input.as_bytes(),
     random_bytes(config.password.salt_length.into()).as_slice(),
@@ -20,7 +20,7 @@ pub fn verify_password(input: &str, encrypted_password: &str) -> argon2::Result<
   argon2::verify_encoded(encrypted_password, input.as_bytes())
 }
 
-fn argon2_config<'a>(config: &DynamicAppConfig) -> argon2::Config<'a> {
+fn argon2_config<'a>(config: &AppConfig) -> argon2::Config<'a> {
   return argon2::Config {
     variant: argon2::Variant::Argon2id,
     hash_length: config.password.hash_length,

@@ -21,7 +21,7 @@ use crate::router::{
 pub async fn get_openapi(
   State((state, mut openapi)): State<(RouterState, OpenApiSpec)>,
 ) -> axum::Json<OpenApiSpec> {
-  ServersAddon::new(&state.app_config, state.dynamic_app_config()).modify(&mut openapi);
+  ServersAddon::new(&state.config).modify(&mut openapi);
   axum::Json(openapi)
 }
 

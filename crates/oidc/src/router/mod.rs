@@ -11,6 +11,7 @@ pub mod openapi;
 pub mod register;
 mod router;
 pub mod util;
+pub mod validated_form;
 pub mod validated_json;
 
 pub use router::{ApiDoc, create_router};

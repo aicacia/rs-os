@@ -1,12 +1,3 @@
-CREATE TABLE "configs" (
-  "key" TEXT NOT NULL PRIMARY KEY,
-  "value" TEXT NOT NULL,
-  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-  "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-);
-CREATE UNIQUE INDEX "configs_key_unique_idx" ON "configs" ("key");
-
-
 CREATE TABLE jwks (
   "kid" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "active" INTEGER NOT NULL DEFAULT 1,

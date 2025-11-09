@@ -32,7 +32,7 @@ pub async fn register(
 ) -> impl IntoResponse {
   let user = match create_user_with_password(
     &state.pool,
-    state.dynamic_app_config(),
+    &state.config,
     register_request.username,
     register_request.password,
   )
@@ -65,8 +65,7 @@ pub async fn register(
 
   match create_user_token(
     &state.pool,
-    &state.app_config,
-    &state.dynamic_app_config(),
+    &state.config,
     jwk,
     user,
     register_request.scope.or_else(|| Some("openid".to_owned())),
