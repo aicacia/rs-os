@@ -33,8 +33,8 @@ pub async fn register(
   let user = match create_user_with_password(
     &state.pool,
     &state.config,
-    register_request.username,
-    register_request.password,
+    &register_request.username,
+    &register_request.password,
   )
   .await
   {

@@ -241,3 +241,14 @@ CREATE TABLE "key_values" (
   "created_at" BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::BIGINT
 );
 CREATE UNIQUE INDEX "key_values_key_unique_idx" ON "key_values" ("key");
+
+
+INSERT INTO "roles" ("uri", "description") VALUES ('admin', 'Administrator role');
+INSERT INTO "permissions" ("uri", "description") VALUES ('admin:*', 'Administer all resources');
+INSERT INTO "roles_permissions" ("role_id", "permission_id") VALUES (1, 1);
+
+INSERT INTO "users" ("username") VALUES ('admin');
+INSERT INTO "user_infos" ("user_id", "nickname") VALUES (1, "admin");
+INSERT INTO "user_roles" ("role_id", "user_id") VALUES (1, 1);
+-- initial password 'admin'
+INSERT INTO "user_passwords" ("user_id", "encrypted_password") VALUES (1, "$argon2id$v=19$m=19,t=2,p=1$cmc5ZXVXT1N0RmxjZFR1NQ$/0nLLEJDUFjP/lO6UhUHlzvL6Zlz1NO8BW+XdMNTG3c")

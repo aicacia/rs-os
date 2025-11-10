@@ -130,6 +130,21 @@ pub async fn get_user_by_username_or_primary_email(
   .await
 }
 
+pub async fn get_user_by_username(
+  pool: &sqlx::AnyPool,
+  username: &str,
+) -> sqlx::Result<Option<UserSQLRow>> {
+  sqlx::query_as(
+    r#"SELECT u.*
+    FROM users u
+    WHERE u.username = $1
+    LIMIT 1;"#,
+  )
+  .bind(username)
+  .fetch_optional(pool)
+  .await
+}
+
 pub async fn get_user_active_password_by_user_id(
   pool: &sqlx::AnyPool,
   user_id: i64,
@@ -163,7 +178,7 @@ pub struct UserInfoUpdate {
 
 async fn create_user_internal(
   transaction: &mut sqlx::Transaction<'_, sqlx::Any>,
-  username: String,
+  username: &str,
   user_info: UserInfoUpdate,
 ) -> sqlx::Result<(UserSQLRow, UserInfoSQLRow)> {
   let user: UserSQLRow =
@@ -183,7 +198,7 @@ async fn create_user_internal(
     .bind(user_info.given_name)
     .bind(user_info.family_name)
     .bind(user_info.middle_name)
-    .bind(user_info.nickname.unwrap_or(username))
+    .bind(user_info.nickname.unwrap_or(username.to_owned()))
     .bind(user_info.profile_picture)
     .bind(user_info.website)
     .bind(user_info.gender)
@@ -200,8 +215,8 @@ async fn create_user_internal(
 pub async fn create_user_with_password(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
-  username: String,
-  password: String,
+  username: &str,
+  password: &str,
 ) -> sqlx::Result<UserSQLRow> {
   let encrypted_password = match encrypt_password(app_config, &password) {
     Ok(encrypted_password) => encrypted_password,
@@ -211,10 +226,11 @@ pub async fn create_user_with_password(
       ));
     }
   };
+  let username_owned = username.to_owned();
   run_transaction(pool, |transaction| {
     Box::pin(async move {
       let (user, _user_info) =
-        create_user_internal(transaction, username, UserInfoUpdate::default()).await?;
+        create_user_internal(transaction, &username_owned, UserInfoUpdate::default()).await?;
 
       sqlx::query(
         r#"INSERT INTO user_passwords ("user_id", "encrypted_password") VALUES ($1, $2);"#,

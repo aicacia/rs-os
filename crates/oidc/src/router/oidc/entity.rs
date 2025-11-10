@@ -45,7 +45,7 @@ pub struct JWKs {
 pub struct TokenRequestCommon {
   #[schema(example = "fda33145-9596-4294-904d-bb554202ce81")]
   pub client_id: Option<String>,
-  #[schema(example = "openid")]
+  #[schema(example = "openid profile offline")]
   pub scope: Option<String>,
 }
 
@@ -57,7 +57,9 @@ pub enum TokenRequest {
   Password {
     #[serde(flatten)]
     common: TokenRequestCommon,
+    #[schema(example = "admin")]
     username: String,
+    #[schema(example = "admin")]
     password: String,
   },
   #[serde(rename = "refresh_token")]

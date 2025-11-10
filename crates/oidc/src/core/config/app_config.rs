@@ -154,6 +154,13 @@ impl AppConfig {
       .to_owned()
       .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
   }
+
+  pub fn base_public_url(&self) -> String {
+    match url::Url::parse(&self.public_url()) {
+      Ok(url) => url.origin().unicode_serialization(),
+      Err(e) => panic!("invalid public url: {}", e),
+    }
+  }
 }
 
 impl<'a> TryFrom<&'a Path> for AppConfig {

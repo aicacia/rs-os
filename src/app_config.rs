@@ -63,7 +63,7 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.oidc.server.gzip = app_config.server.gzip;
 
     if let Some(public_url) = &app_config.public_url {
-      app_config.oidc.public_url = Some(format!("{}/{}", public_url, OIDC_API_URL_PREFIX))
+      app_config.oidc.public_url = Some(format!("{}{}", public_url, OIDC_API_URL_PREFIX))
     }
 
     Ok(app_config)
