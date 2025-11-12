@@ -16,17 +16,24 @@
 import * as runtime from '../runtime';
 import type {
   Client,
+  ClientUpsertRequest,
   HttpError,
 } from '../models/index';
 import {
     ClientFromJSON,
     ClientToJSON,
+    ClientUpsertRequestFromJSON,
+    ClientUpsertRequestToJSON,
     HttpErrorFromJSON,
     HttpErrorToJSON,
 } from '../models/index';
 
 export interface ClientByClientIdRequest {
     clientId: string;
+}
+
+export interface ClientUpsertOperationRequest {
+    clientUpsertRequest: ClientUpsertRequest;
 }
 
 /**
@@ -48,6 +55,19 @@ export interface ClientApiInterface {
     /**
      */
     clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
+
+    /**
+     * 
+     * @param {ClientUpsertRequest} clientUpsertRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientUpsertRaw(requestParameters: ClientUpsertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>>;
+
+    /**
+     */
+    clientUpsert(requestParameters: ClientUpsertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
 
     /**
      * 
@@ -108,6 +128,51 @@ export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
      */
     async clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
         const response = await this.clientByClientIdRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async clientUpsertRaw(requestParameters: ClientUpsertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+        if (requestParameters['clientUpsertRequest'] == null) {
+            throw new runtime.RequiredError(
+                'clientUpsertRequest',
+                'Required parameter "clientUpsertRequest" was null or undefined when calling clientUpsert().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", ["client:create"]);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients:authorize`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ClientUpsertRequestToJSON(requestParameters['clientUpsertRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async clientUpsert(requestParameters: ClientUpsertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
+        const response = await this.clientUpsertRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

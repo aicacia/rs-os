@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 use os_db::pool::run_transaction;
 
@@ -7,7 +7,7 @@ use crate::{
   model::rbac::sql::{PermissionSQLRow, RolePermissionSQLRow, RoleSQLRow},
 };
 
-#[derive(sqlx::FromRow)]
+#[derive(Clone, sqlx::FromRow)]
 pub struct UserSQLRow {
   pub id: i64,
   pub username: String,

@@ -2,6 +2,7 @@ import {
 	Configuration,
 	type ConfigurationParameters,
 	CurrentUserApi,
+	ClientApi,
 	OidcApi,
 	PasswordApi
 } from './oidc';
@@ -31,6 +32,7 @@ export const defaultConfigurationParameters: ConfigurationParameters = {
 export const oidcConfiguration = new Configuration(defaultConfigurationParameters);
 
 export const currentUserApi = new CurrentUserApi(oidcConfiguration);
+export const clientApi = new ClientApi(oidcConfiguration);
 export const oidcApi = new OidcApi(oidcConfiguration);
 export const passwordApi = new PasswordApi(oidcConfiguration);
 

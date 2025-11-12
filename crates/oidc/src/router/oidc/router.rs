@@ -87,7 +87,7 @@ pub async fn jwks(State(state): State<RouterState>) -> impl IntoResponse {
   )
 )]
 pub async fn openid_configuration(State(state): State<RouterState>) -> impl IntoResponse {
-  let issuer = state.config.public_url();
+  let api_url = state.config.api_url();
 
   let jwks = match list_jwks(&state.pool).await {
     Ok(jwks) => jwks,
@@ -116,12 +116,20 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
   }
 
   axum::Json(OpenIdConfiguration {
-    authorization_endpoint: format!("{}/authorize", issuer),
-    device_authorization_endpoint: None, // Some(format!("{}/device-authorize", issuer)),
-    token_endpoint: format!("{}/token", issuer),
-    userinfo_endpoint: Some(format!("{}/current-user", issuer)),
-    revocation_endpoint: Some(format!("{}/revoke", issuer)),
-    jwks_uri: format!("{}/.well-known/jwks.json", issuer),
+    authorization_endpoint: if let Some(ui_url) = &state.config.ui_url {
+      Some(format!("{}/authorize", ui_url))
+    } else {
+      None
+    },
+    device_authorization_endpoint: if let Some(ui_url) = &state.config.ui_url {
+      Some(format!("{}/device-authorize", ui_url))
+    } else {
+      None
+    },
+    token_endpoint: format!("{}/token", api_url),
+    userinfo_endpoint: Some(format!("{}/current-user", api_url)),
+    revocation_endpoint: Some(format!("{}/revoke", api_url)),
+    jwks_uri: format!("{}/.well-known/jwks.json", api_url),
     response_types_supported: vec![
       "code".to_owned(),
       "token".to_owned(),
@@ -172,7 +180,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
       "authorization_code".to_owned(),
       "refresh_token".to_owned(),
     ],
-    issuer,
+    issuer: api_url,
   })
   .into_response()
 }

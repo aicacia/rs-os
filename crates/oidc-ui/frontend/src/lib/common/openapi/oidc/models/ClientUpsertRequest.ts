@@ -16,185 +16,147 @@ import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface Client
+ * @interface ClientUpsertRequest
  */
-export interface Client {
+export interface ClientUpsertRequest {
     /**
      * 
      * @type {number}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     accessTokenExpiresInSeconds: number;
     /**
      * 
-     * @type {boolean}
-     * @memberof Client
-     */
-    active: boolean;
-    /**
-     * 
      * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     applicationType: string;
     /**
      * 
      * @type {Array<string>}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     audience?: Array<string> | null;
     /**
      * 
      * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     authMethod: string;
     /**
      * 
      * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     clientId: string;
     /**
      * 
      * @type {string}
-     * @memberof Client
-     */
-    clientSecret?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     clientUri?: string | null;
     /**
      * 
-     * @type {Date}
-     * @memberof Client
-     */
-    createdAt: Date;
-    /**
-     * 
      * @type {Array<string>}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     grantTypes: Array<string>;
     /**
      * 
      * @type {number}
-     * @memberof Client
-     */
-    id: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     idTokenExpiresInSeconds: number;
     /**
      * 
      * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     logoUri?: string | null;
     /**
      * 
      * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     name: string;
     /**
      * 
      * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     policyUri?: string | null;
     /**
      * 
      * @type {Array<string>}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     postLogoutRedirectUris?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     redirectUris?: Array<string> | null;
     /**
      * 
      * @type {number}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     refreshExpiresInSeconds: number;
     /**
      * 
      * @type {Array<string>}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     responseTypes: Array<string>;
     /**
      * 
      * @type {Array<string>}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     scopes: Array<string>;
     /**
      * 
      * @type {string}
-     * @memberof Client
+     * @memberof ClientUpsertRequest
      */
     termsOfServiceUri?: string | null;
-    /**
-     * 
-     * @type {Date}
-     * @memberof Client
-     */
-    updatedAt: Date;
 }
 
 /**
- * Check if a given object implements the Client interface.
+ * Check if a given object implements the ClientUpsertRequest interface.
  */
-export function instanceOfClient(value: object): value is Client {
+export function instanceOfClientUpsertRequest(value: object): value is ClientUpsertRequest {
     if (!('accessTokenExpiresInSeconds' in value) || value['accessTokenExpiresInSeconds'] === undefined) return false;
-    if (!('active' in value) || value['active'] === undefined) return false;
     if (!('applicationType' in value) || value['applicationType'] === undefined) return false;
     if (!('authMethod' in value) || value['authMethod'] === undefined) return false;
     if (!('clientId' in value) || value['clientId'] === undefined) return false;
-    if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
     if (!('grantTypes' in value) || value['grantTypes'] === undefined) return false;
-    if (!('id' in value) || value['id'] === undefined) return false;
     if (!('idTokenExpiresInSeconds' in value) || value['idTokenExpiresInSeconds'] === undefined) return false;
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('refreshExpiresInSeconds' in value) || value['refreshExpiresInSeconds'] === undefined) return false;
     if (!('responseTypes' in value) || value['responseTypes'] === undefined) return false;
     if (!('scopes' in value) || value['scopes'] === undefined) return false;
-    if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
     return true;
 }
 
-export function ClientFromJSON(json: any): Client {
-    return ClientFromJSONTyped(json, false);
+export function ClientUpsertRequestFromJSON(json: any): ClientUpsertRequest {
+    return ClientUpsertRequestFromJSONTyped(json, false);
 }
 
-export function ClientFromJSONTyped(json: any, ignoreDiscriminator: boolean): Client {
+export function ClientUpsertRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): ClientUpsertRequest {
     if (json == null) {
         return json;
     }
     return {
         
         'accessTokenExpiresInSeconds': json['access_token_expires_in_seconds'],
-        'active': json['active'],
         'applicationType': json['application_type'],
         'audience': json['audience'] == null ? undefined : json['audience'],
         'authMethod': json['auth_method'],
         'clientId': json['client_id'],
-        'clientSecret': json['client_secret'] == null ? undefined : json['client_secret'],
         'clientUri': json['client_uri'] == null ? undefined : json['client_uri'],
-        'createdAt': (new Date(json['created_at'])),
         'grantTypes': json['grant_types'],
-        'id': json['id'],
         'idTokenExpiresInSeconds': json['id_token_expires_in_seconds'],
         'logoUri': json['logo_uri'] == null ? undefined : json['logo_uri'],
         'name': json['name'],
@@ -205,15 +167,14 @@ export function ClientFromJSONTyped(json: any, ignoreDiscriminator: boolean): Cl
         'responseTypes': json['response_types'],
         'scopes': json['scopes'],
         'termsOfServiceUri': json['terms_of_service_uri'] == null ? undefined : json['terms_of_service_uri'],
-        'updatedAt': (new Date(json['updated_at'])),
     };
 }
 
-export function ClientToJSON(json: any): Client {
-    return ClientToJSONTyped(json, false);
+export function ClientUpsertRequestToJSON(json: any): ClientUpsertRequest {
+    return ClientUpsertRequestToJSONTyped(json, false);
 }
 
-export function ClientToJSONTyped(value?: Client | null, ignoreDiscriminator: boolean = false): any {
+export function ClientUpsertRequestToJSONTyped(value?: ClientUpsertRequest | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
@@ -221,16 +182,12 @@ export function ClientToJSONTyped(value?: Client | null, ignoreDiscriminator: bo
     return {
         
         'access_token_expires_in_seconds': value['accessTokenExpiresInSeconds'],
-        'active': value['active'],
         'application_type': value['applicationType'],
         'audience': value['audience'],
         'auth_method': value['authMethod'],
         'client_id': value['clientId'],
-        'client_secret': value['clientSecret'],
         'client_uri': value['clientUri'],
-        'created_at': value['createdAt'].toISOString(),
         'grant_types': value['grantTypes'],
-        'id': value['id'],
         'id_token_expires_in_seconds': value['idTokenExpiresInSeconds'],
         'logo_uri': value['logoUri'],
         'name': value['name'],
@@ -241,7 +198,6 @@ export function ClientToJSONTyped(value?: Client | null, ignoreDiscriminator: bo
         'response_types': value['responseTypes'],
         'scopes': value['scopes'],
         'terms_of_service_uri': value['termsOfServiceUri'],
-        'updated_at': value['updatedAt'].toISOString(),
     };
 }
 

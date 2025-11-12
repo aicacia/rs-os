@@ -128,7 +128,8 @@ pub struct AppConfig {
   pub user: UserConfig,
   pub oauth2: OAuth2,
   pub token: TokenConfig,
-  pub public_url: Option<String>,
+  pub api_url: Option<String>,
+  pub ui_url: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -142,21 +143,22 @@ impl Default for AppConfig {
       user: UserConfig::default(),
       oauth2: OAuth2::default(),
       token: TokenConfig::default(),
-      public_url: None,
+      api_url: None,
+      ui_url: None,
     }
   }
 }
 
 impl AppConfig {
-  pub fn public_url(&self) -> String {
+  pub fn api_url(&self) -> String {
     self
-      .public_url
+      .api_url
       .to_owned()
       .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
   }
 
-  pub fn base_public_url(&self) -> String {
-    match url::Url::parse(&self.public_url()) {
+  pub fn base_api_url(&self) -> String {
+    match url::Url::parse(&self.api_url()) {
       Ok(url) => url.origin().unicode_serialization(),
       Err(e) => panic!("invalid public url: {}", e),
     }

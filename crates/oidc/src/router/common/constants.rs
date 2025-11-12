@@ -13,3 +13,5 @@ pub const SCOPE_EMAIL: &str = "email";
 pub const SCOPE_PHONE_NUMBER: &str = "phone_number";
 pub const SCOPE_ADDRESS: &str = "address";
 pub const SCOPE_OFFLINE: &str = "offline";
+
+pub const ADMIN_ALL: &str = "admin:*";

@@ -40,6 +40,6 @@ impl<'a> Modify for ServersAddon<'a> {
     openapi
       .servers
       .get_or_insert(Vec::default())
-      .push(Server::new(self.app_config.base_public_url()));
+      .push(Server::new(self.app_config.base_api_url()));
   }
 }

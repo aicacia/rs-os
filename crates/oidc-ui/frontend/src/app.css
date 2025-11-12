@@ -144,6 +144,9 @@
 	a:visited {
 		@apply text-blue-500 no-underline;
 	}
+	a:hover {
+		@apply underline;
+	}
 	a.default {
 		@apply text-gray-950 no-underline dark:text-white;
 	}

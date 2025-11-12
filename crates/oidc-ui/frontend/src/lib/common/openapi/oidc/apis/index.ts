@@ -2,6 +2,7 @@
 /* eslint-disable */
 export * from './ClientApi';
 export * from './CurrentUserApi';
+export * from './JwkApi';
 export * from './OidcApi';
 export * from './OpenapiApi';
 export * from './PasswordApi';

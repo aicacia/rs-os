@@ -1,9 +1,10 @@
-use std::{collections::HashMap, error::Error, fmt};
+use std::{error::Error, fmt};
 
 use axum::{
   http::{StatusCode, header},
   response::{IntoResponse, Response},
 };
+use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;

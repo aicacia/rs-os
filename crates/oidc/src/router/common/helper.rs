@@ -32,7 +32,7 @@ pub(crate) async fn create_user_token(
   let now = chrono::Utc::now();
   let scopes = parse_scopes(scope.as_ref().map(String::as_str));
 
-  let issuer = app_config.public_url();
+  let issuer = app_config.api_url();
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id,
@@ -40,7 +40,7 @@ pub(crate) async fn create_user_token(
     nbf: now.timestamp(),
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
-    aud: Some(app_config.public_url()),
+    aud: Some(app_config.api_url()),
     scopes: scopes.clone(),
   };
 
@@ -223,8 +223,8 @@ where
 {
   let mut validation = jsonwebtoken::Validation::new(algorithm);
   validation.validate_nbf = true;
-  validation.set_issuer(&[app_config.public_url()]);
-  validation.set_audience(&[app_config.public_url()]);
+  validation.set_issuer(&[app_config.api_url()]);
+  validation.set_audience(&[app_config.api_url()]);
 
   jsonwebtoken::decode(jwt, &decoding_key, &validation)
 }

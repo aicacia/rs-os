@@ -1,4 +1,4 @@
-FROM rust:1.90-trixie AS chef
+FROM rust:1.91-trixie AS chef
 
 RUN apt update && apt -yq upgrade
 RUN apt -yq install musl-tools libpq-dev

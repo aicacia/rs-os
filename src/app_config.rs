@@ -32,7 +32,7 @@ pub struct AppConfig {
   pub server: ServerConfig,
   pub oidc: os_oidc::core::config::app_config::AppConfig,
   pub log_level: String,
-  pub public_url: Option<String>,
+  pub url: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -41,7 +41,7 @@ impl Default for AppConfig {
       server: Default::default(),
       oidc: Default::default(),
       log_level: "DEBUG".to_owned(),
-      public_url: None,
+      url: None,
     }
   }
 }
@@ -62,8 +62,13 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.oidc.server.port = app_config.server.port;
     app_config.oidc.server.gzip = app_config.server.gzip;
 
-    if let Some(public_url) = &app_config.public_url {
-      app_config.oidc.public_url = Some(format!("{}{}", public_url, OIDC_API_URL_PREFIX))
+    if let Some(url) = &app_config.url {
+      if app_config.oidc.api_url.is_none() {
+        app_config.oidc.api_url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
+      }
+      if app_config.oidc.ui_url.is_none() {
+        app_config.oidc.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
+      }
     }
 
     Ok(app_config)

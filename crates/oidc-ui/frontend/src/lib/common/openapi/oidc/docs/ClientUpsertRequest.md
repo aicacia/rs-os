@@ -1,5 +1,5 @@
 
-# Client
+# ClientUpsertRequest
 
 
 ## Properties
@@ -7,16 +7,12 @@
 Name | Type
 ------------ | -------------
 `accessTokenExpiresInSeconds` | number
-`active` | boolean
 `applicationType` | string
 `audience` | Array&lt;string&gt;
 `authMethod` | string
 `clientId` | string
-`clientSecret` | string
 `clientUri` | string
-`createdAt` | Date
 `grantTypes` | Array&lt;string&gt;
-`id` | number
 `idTokenExpiresInSeconds` | number
 `logoUri` | string
 `name` | string
@@ -27,26 +23,21 @@ Name | Type
 `responseTypes` | Array&lt;string&gt;
 `scopes` | Array&lt;string&gt;
 `termsOfServiceUri` | string
-`updatedAt` | Date
 
 ## Example
 
 ```typescript
-import type { Client } from ''
+import type { ClientUpsertRequest } from ''
 
 // TODO: Update the object below with actual values
 const example = {
   "accessTokenExpiresInSeconds": null,
-  "active": null,
   "applicationType": null,
   "audience": null,
   "authMethod": null,
   "clientId": null,
-  "clientSecret": null,
   "clientUri": null,
-  "createdAt": null,
   "grantTypes": null,
-  "id": null,
   "idTokenExpiresInSeconds": null,
   "logoUri": null,
   "name": null,
@@ -57,8 +48,7 @@ const example = {
   "responseTypes": null,
   "scopes": null,
   "termsOfServiceUri": null,
-  "updatedAt": null,
-} satisfies Client
+} satisfies ClientUpsertRequest
 
 console.log(example)
 
@@ -67,7 +57,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as Client
+const exampleParsed = JSON.parse(exampleJSON) as ClientUpsertRequest
 console.log(exampleParsed)
 ```
 

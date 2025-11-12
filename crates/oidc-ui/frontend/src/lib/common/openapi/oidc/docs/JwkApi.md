@@ -1,16 +1,16 @@
-# CurrentUserApi
+# JwkApi
 
 All URIs are relative to *http://localhost:3000*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**currentUser**](CurrentUserApi.md#currentuser) | **GET** /oidc/api/current-user |  |
+| [**jwkById**](JwkApi.md#jwkbyid) | **GET** /oidc/api/jwks/{kid} |  |
 
 
 
-## currentUser
+## jwkById
 
-> User currentUser()
+> JWK jwkById(kid)
 
 
 
@@ -19,20 +19,21 @@ All URIs are relative to *http://localhost:3000*
 ```ts
 import {
   Configuration,
-  CurrentUserApi,
+  JwkApi,
 } from '';
-import type { CurrentUserRequest } from '';
+import type { JwkByIdRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: Authorization
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new CurrentUserApi(config);
+  const api = new JwkApi();
+
+  const body = {
+    // number
+    kid: 789,
+  } satisfies JwkByIdRequest;
 
   try {
-    const data = await api.currentUser();
+    const data = await api.jwkById(body);
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -45,15 +46,18 @@ example().catch(console.error);
 
 ### Parameters
 
-This endpoint does not need any parameter.
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **kid** | `number` |  | [Defaults to `undefined`] |
 
 ### Return type
 
-[**User**](User.md)
+[**JWK**](JWK.md)
 
 ### Authorization
 
-[Authorization](../README.md#Authorization)
+No authorization required
 
 ### HTTP request headers
 

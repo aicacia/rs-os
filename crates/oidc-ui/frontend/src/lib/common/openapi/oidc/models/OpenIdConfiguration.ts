@@ -24,7 +24,7 @@ export interface OpenIdConfiguration {
      * @type {string}
      * @memberof OpenIdConfiguration
      */
-    authorizationEndpoint: string;
+    authorizationEndpoint?: string | null;
     /**
      * 
      * @type {Array<string>}
@@ -121,7 +121,6 @@ export interface OpenIdConfiguration {
  * Check if a given object implements the OpenIdConfiguration interface.
  */
 export function instanceOfOpenIdConfiguration(value: object): value is OpenIdConfiguration {
-    if (!('authorizationEndpoint' in value) || value['authorizationEndpoint'] === undefined) return false;
     if (!('claimsSupported' in value) || value['claimsSupported'] === undefined) return false;
     if (!('codeChallengeMethodsSupported' in value) || value['codeChallengeMethodsSupported'] === undefined) return false;
     if (!('grantTypesSupported' in value) || value['grantTypesSupported'] === undefined) return false;
@@ -147,7 +146,7 @@ export function OpenIdConfigurationFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'authorizationEndpoint': json['authorization_endpoint'],
+        'authorizationEndpoint': json['authorization_endpoint'] == null ? undefined : json['authorization_endpoint'],
         'claimsSupported': json['claims_supported'],
         'codeChallengeMethodsSupported': json['code_challenge_methods_supported'],
         'deviceAuthorizationEndpoint': json['device_authorization_endpoint'] == null ? undefined : json['device_authorization_endpoint'],
