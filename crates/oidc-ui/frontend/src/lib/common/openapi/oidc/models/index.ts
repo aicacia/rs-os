@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from './Client';
+export * from './ClientAllowed';
 export * from './ClientUpsertRequest';
 export * from './Health';
 export * from './HttpError';

@@ -1,19 +1,20 @@
-import { resolve } from '$app/paths';
+import { base } from '$app/paths';
 import { PUBLIC_URL } from '$env/static/public';
 import { json } from '@sveltejs/kit';
+import icon256x256Png from '$lib/assets/icon256x256.png';
 
 export const prerender = true;
 
 export async function GET() {
 	return json({
-		name: 'Example',
-		client_id: `${PUBLIC_URL}${resolve('/client.json')}`,
-		redirect_uris: [`${PUBLIC_URL}${resolve('/callback')}`],
-		post_logout_redirect_uris: [`${PUBLIC_URL}${resolve('/')}`],
-		logo_uri: `${PUBLIC_URL}${resolve('/')}`,
-		client_uri: `${PUBLIC_URL}${resolve('/')}`,
-		policy_uri: `${PUBLIC_URL}${resolve('/policy')}`,
-		terms_of_service_uri: `${PUBLIC_URL}${resolve('/terms')}`,
+		name: 'Simple',
+		client_id: `${PUBLIC_URL}${base}/client.json`,
+		redirect_uris: [`${PUBLIC_URL}${base}/callback`],
+		post_logout_redirect_uris: [`${PUBLIC_URL}${base}`],
+		logo_uri: `${PUBLIC_URL}${icon256x256Png}`,
+		client_uri: `${PUBLIC_URL}${base}`,
+		policy_uri: `${PUBLIC_URL}${base}/policy`,
+		terms_of_service_uri: `${PUBLIC_URL}${base}${'/terms'}`,
 		application_type: 'web',
 		auth_method: 'none',
 		grant_types: ['authorization_code', 'refresh_token', 'password'],

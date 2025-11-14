@@ -26,6 +26,11 @@ DROP INDEX IF EXISTS "roles_uri_unique_idx";
 DROP INDEX IF EXISTS "roles_id_unique_idx";
 DROP TABLE IF EXISTS "roles";
 
+-- user_clients
+DROP INDEX IF EXISTS "user_clients_client_id_idx";
+DROP INDEX IF EXISTS "user_clients_user_id_idx";
+DROP TABLE IF EXISTS "user_clients";
+
 -- user_oauth2_providers
 DROP INDEX IF EXISTS "user_oauth2_providers_oauth2_provider_id_idx";
 DROP INDEX IF EXISTS "user_oauth2_providers_user_id_idx";

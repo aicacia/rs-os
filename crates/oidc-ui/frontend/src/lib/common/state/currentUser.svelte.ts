@@ -1,3 +1,4 @@
+import { ADMIN_ALL } from '../permissions';
 import { currentUserApi, oidcApi, setAuthToken } from '../openapi';
 import {
 	TokenFromJSON,
@@ -61,8 +62,30 @@ const currentUser = $derived.by(async () => {
 	}
 });
 
-export function getCurrentUser() {
-	return currentUser;
+export async function getCurrentUser() {
+	return await currentUser;
+}
+
+export function hasPermission(user: User, permission: string): boolean {
+	if (hasAdminAll(user)) {
+		return true;
+	}
+	return hasPermissionInternal(user, permission);
+}
+
+export function hasPermissions(user: User, permissions: string[]): boolean {
+	if (hasAdminAll(user)) {
+		return true;
+	}
+	return permissions.every((p) => hasPermissionInternal(user, p));
+}
+
+function hasAdminAll(user: User): boolean {
+	return hasPermissionInternal(user, ADMIN_ALL);
+}
+
+function hasPermissionInternal(user: User, permission: string): boolean {
+	return user.roles.some((r) => r.permissions.includes(permission));
 }
 
 export async function signInUsernamePassword(username: string, password: string) {

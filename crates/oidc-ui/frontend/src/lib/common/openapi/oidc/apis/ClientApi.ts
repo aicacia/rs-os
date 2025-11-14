@@ -16,12 +16,15 @@
 import * as runtime from '../runtime';
 import type {
   Client,
+  ClientAllowed,
   ClientUpsertRequest,
   HttpError,
 } from '../models/index';
 import {
     ClientFromJSON,
     ClientToJSON,
+    ClientAllowedFromJSON,
+    ClientAllowedToJSON,
     ClientUpsertRequestFromJSON,
     ClientUpsertRequestToJSON,
     HttpErrorFromJSON,
@@ -34,6 +37,14 @@ export interface ClientByClientIdRequest {
 
 export interface ClientUpsertOperationRequest {
     clientUpsertRequest: ClientUpsertRequest;
+}
+
+export interface ClientUserAllowedRequest {
+    clientId: string;
+}
+
+export interface ClientUserApproveRequest {
+    clientId: string;
 }
 
 /**
@@ -68,6 +79,32 @@ export interface ClientApiInterface {
     /**
      */
     clientUpsert(requestParameters: ClientUpsertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
+
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientUserAllowedRaw(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ClientAllowed>>;
+
+    /**
+     */
+    clientUserAllowed(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ClientAllowed>;
+
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientUserApproveRaw(requestParameters: ClientUserApproveRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+
+    /**
+     */
+    clientUserApprove(requestParameters: ClientUserApproveRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
     /**
      * 
@@ -149,14 +186,14 @@ export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["client:create"]);
+            const tokenString = await token("Authorization", ["client:read", "client:create"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
 
-        let urlPath = `/oidc/api/clients:authorize`;
+        let urlPath = `/oidc/api/clients:upsert`;
 
         const response = await this.request({
             path: urlPath,
@@ -174,6 +211,91 @@ export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
     async clientUpsert(requestParameters: ClientUpsertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
         const response = await this.clientUpsertRaw(requestParameters, initOverrides);
         return await response.value();
+    }
+
+    /**
+     */
+    async clientUserAllowedRaw(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ClientAllowed>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling clientUserAllowed().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients/{client_id}/allowed`;
+        urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientAllowedFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async clientUserAllowed(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ClientAllowed> {
+        const response = await this.clientUserAllowedRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async clientUserApproveRaw(requestParameters: ClientUserApproveRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling clientUserApprove().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients/{client_id}/approve`;
+        urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     */
+    async clientUserApprove(requestParameters: ClientUserApproveRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.clientUserApproveRaw(requestParameters, initOverrides);
     }
 
     /**

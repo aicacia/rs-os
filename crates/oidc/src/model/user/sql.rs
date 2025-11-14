@@ -3,7 +3,11 @@ use hashbrown::HashMap;
 use os_db::pool::run_transaction;
 
 use crate::{
-  core::{config::app_config::AppConfig, encryption::encrypt_password},
+  core::{
+    config::app_config::AppConfig,
+    encryption::encrypt_password,
+    helper::{json_to_string_vec, unordered_vec_equals},
+  },
   model::rbac::sql::{PermissionSQLRow, RolePermissionSQLRow, RoleSQLRow},
 };
 
@@ -98,6 +102,15 @@ pub struct UserOAuth2ProviderSQLRow {
   pub uri: String,
   pub name: String,
   pub email: String,
+  pub updated_at: i64,
+  pub created_at: i64,
+}
+
+#[derive(sqlx::FromRow)]
+pub struct UserClientSQLRow {
+  pub client_id: String,
+  pub user_id: i64,
+  pub allowed_scopes: String,
   pub updated_at: i64,
   pub created_at: i64,
 }
@@ -378,4 +391,119 @@ pub async fn get_user_role_permissions_by_user_id(
   }
 
   Ok(permissions)
+}
+
+pub async fn get_user_client_by_client_id(
+  pool: &sqlx::AnyPool,
+  user_id: i64,
+  client_id: &str,
+) -> sqlx::Result<Option<UserClientSQLRow>> {
+  get_user_client_by_client_id_internal(pool, user_id, client_id).await
+}
+
+async fn get_user_client_by_client_id_internal<'e, E>(
+  executor: E,
+  user_id: i64,
+  client_id: &str,
+) -> sqlx::Result<Option<UserClientSQLRow>>
+where
+  E: 'e + sqlx::Executor<'e, Database = sqlx::Any>,
+{
+  sqlx::query_as(
+    r#"SELECT uc.* 
+      FROM "user_clients" uc
+      WHERE uc.user_id = $1 AND uc.client_id = $2;"#,
+  )
+  .bind(user_id)
+  .bind(client_id)
+  .fetch_optional(executor)
+  .await
+}
+
+async fn update_user_client_internal<'e, E>(
+  executor: E,
+  user_id: i64,
+  client_id: &str,
+  allowed_scopes: &str,
+) -> sqlx::Result<UserClientSQLRow>
+where
+  E: 'e + sqlx::Executor<'e, Database = sqlx::Any>,
+{
+  sqlx::query_as(
+    r#"UPDATE user_clients 
+            SET 
+              allowed_scopes = $1,
+              updated_at = $2
+            WHERE user_id = $3 AND client_id = $4
+            RETURNING *;"#,
+  )
+  .bind(allowed_scopes)
+  .bind(chrono::Utc::now().timestamp())
+  .bind(user_id)
+  .bind(client_id)
+  .fetch_one(executor)
+  .await
+}
+
+async fn create_user_client_internal<'e, E>(
+  executor: E,
+  user_id: i64,
+  client_id: &str,
+  allowed_scopes: &str,
+) -> sqlx::Result<UserClientSQLRow>
+where
+  E: 'e + sqlx::Executor<'e, Database = sqlx::Any>,
+{
+  sqlx::query_as(
+    r#"INSERT INTO "user_clients" 
+      ("user_id", "client_id", "allowed_scopes") 
+      VALUES ($1, $2, $3) 
+      RETURNING *;"#,
+  )
+  .bind(user_id)
+  .bind(client_id)
+  .bind(allowed_scopes)
+  .fetch_one(executor)
+  .await
+}
+
+pub async fn upsert_user_client(
+  pool: &sqlx::AnyPool,
+  user_id: i64,
+  client_id: String,
+  allowed_scopes_json: String,
+) -> sqlx::Result<UserClientSQLRow> {
+  let allowed_scopes = json_to_string_vec(&allowed_scopes_json);
+  run_transaction(pool, |transaction| {
+    Box::pin(async move {
+      match get_user_client_by_client_id_internal(&mut **transaction, user_id, &client_id).await? {
+        Some(user_client_sql_row) => {
+          if unordered_vec_equals(
+            &json_to_string_vec(&user_client_sql_row.allowed_scopes),
+            &allowed_scopes,
+          ) {
+            Ok(user_client_sql_row)
+          } else {
+            update_user_client_internal(
+              &mut **transaction,
+              user_id,
+              &client_id,
+              &allowed_scopes_json,
+            )
+            .await
+          }
+        }
+        None => {
+          create_user_client_internal(
+            &mut **transaction,
+            user_id,
+            &client_id,
+            &allowed_scopes_json,
+          )
+          .await
+        }
+      }
+    })
+  })
+  .await
 }

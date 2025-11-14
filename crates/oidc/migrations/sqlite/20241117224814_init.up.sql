@@ -184,6 +184,20 @@ CREATE INDEX "user_oauth2_providers_user_id_idx" ON "user_oauth2_providers" ("us
 CREATE INDEX "user_oauth2_providers_oauth2_provider_id_idx" ON "user_oauth2_providers" ("oauth2_provider_id");
 
 
+CREATE TABLE "user_clients" (
+  "user_id" INTEGER NOT NULL,
+  "client_id" TEXT NOT NULL,
+  "allowed_scopes" TEXT NOT NULL,
+  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  PRIMARY KEY ("user_id", "client_id"),
+  FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE,
+  FOREIGN KEY ("client_id") REFERENCES "clients" ("client_id") ON DELETE CASCADE
+) STRICT;
+CREATE INDEX "user_clients_user_id_idx" ON "user_clients" ("user_id");
+CREATE INDEX "user_clients_client_id_idx" ON "user_clients" ("client_id");
+
+
 CREATE TABLE "roles" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "uri" TEXT NOT NULL,

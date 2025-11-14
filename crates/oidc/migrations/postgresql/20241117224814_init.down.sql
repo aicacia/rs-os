@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS "roles_permissions" CASCADE;
 DROP TABLE IF EXISTS "permissions" CASCADE;
 DROP TABLE IF EXISTS "roles" CASCADE;
 
+DROP TABLE IF EXISTS "user_clients" CASCADE;
 DROP TABLE IF EXISTS "user_oauth2_providers" CASCADE;
 DROP TABLE IF EXISTS "user_passwords" CASCADE;
 DROP TABLE IF EXISTS "user_phone_numbers" CASCADE;

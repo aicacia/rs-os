@@ -75,7 +75,7 @@ impl From<sqlx::Error> for HttpErrorMessage {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
-pub struct HttpErrorMessages(Vec<HttpErrorMessage>);
+pub struct HttpErrorMessages(pub Vec<HttpErrorMessage>);
 
 impl HttpErrorMessages {
   pub fn error(&mut self, msg: impl Into<HttpErrorMessage>) -> &mut Self {

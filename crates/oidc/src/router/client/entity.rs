@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{
-  core::helper::json_to_string_array,
-  model::client::sql::{ClientSQLRow, ClientSQLUpsert},
+  core::helper::json_to_string_vec,
+  model::client::sql::{ClientSQLCommon, ClientSQLRow},
 };
 
 #[derive(Serialize, ToSchema, Default)]
@@ -42,20 +42,20 @@ impl From<ClientSQLRow> for Client {
       name: client_sql_row.name,
       client_id: client_sql_row.client_id,
       client_secret: Some(client_sql_row.client_secret),
-      redirect_uris: client_sql_row.redirect_uris.map(json_to_string_array),
+      redirect_uris: client_sql_row.redirect_uris.map(json_to_string_vec),
       post_logout_redirect_uris: client_sql_row
         .post_logout_redirect_uris
-        .map(json_to_string_array),
+        .map(json_to_string_vec),
       logo_uri: client_sql_row.logo_uri,
       client_uri: client_sql_row.client_uri,
       policy_uri: client_sql_row.policy_uri,
       terms_of_service_uri: client_sql_row.terms_of_service_uri,
       application_type: client_sql_row.application_type,
       auth_method: client_sql_row.auth_method,
-      grant_types: json_to_string_array(client_sql_row.grant_types),
-      response_types: json_to_string_array(client_sql_row.response_types),
-      scopes: json_to_string_array(client_sql_row.scopes),
-      audience: client_sql_row.audience.map(json_to_string_array),
+      grant_types: json_to_string_vec(client_sql_row.grant_types),
+      response_types: json_to_string_vec(client_sql_row.response_types),
+      scopes: json_to_string_vec(client_sql_row.scopes),
+      audience: client_sql_row.audience.map(json_to_string_vec),
       access_token_expires_in_seconds: client_sql_row.access_token_expires_in_seconds,
       id_token_expires_in_seconds: client_sql_row.id_token_expires_in_seconds,
       refresh_expires_in_seconds: client_sql_row.refresh_expires_in_seconds,
@@ -86,9 +86,9 @@ pub struct ClientUpsertRequest {
   pub refresh_expires_in_seconds: i64,
 }
 
-impl Into<ClientSQLUpsert> for ClientUpsertRequest {
-  fn into(self) -> ClientSQLUpsert {
-    ClientSQLUpsert {
+impl Into<ClientSQLCommon> for ClientUpsertRequest {
+  fn into(self) -> ClientSQLCommon {
+    ClientSQLCommon {
       name: self.name,
       client_id: self.client_id,
       redirect_uris: self
@@ -112,4 +112,9 @@ impl Into<ClientSQLUpsert> for ClientUpsertRequest {
       refresh_expires_in_seconds: self.refresh_expires_in_seconds,
     }
   }
+}
+
+#[derive(Serialize, ToSchema, Default)]
+pub struct ClientAllowed {
+  pub allowed_scopes: Vec<String>,
 }
