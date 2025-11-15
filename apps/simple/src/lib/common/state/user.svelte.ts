@@ -9,7 +9,7 @@ const userSettings = browser
 			post_logout_redirect_uri: `${window.location.origin}/logout`,
 			response_type: 'code',
 			scope: 'openid profile',
-			response_mode: 'fragment',
+			response_mode: 'query',
 			popup_redirect_uri: `${window.location.origin}/popup-callback`,
 			popup_post_logout_redirect_uri: `${window.location.origin}/popup-callback`,
 			silent_redirect_uri: `${window.location.origin}/silent-callback`,

@@ -52,7 +52,7 @@ pub async fn client_by_client_id(
     Ok(Some(client)) => client,
     Ok(None) => {
       return HttpError::not_found()
-        .with_error("client_id", NOT_FOUND_ERROR)
+        .with_error("client", NOT_FOUND_ERROR)
         .into_response();
     }
     Err(e) => {
@@ -170,7 +170,7 @@ pub async fn client_user_allowed(
     })
     .into_response(),
     Ok(None) => HttpError::not_found()
-      .with_error("client_id", NOT_FOUND_ERROR)
+      .with_error("client", NOT_FOUND_ERROR)
       .into_response(),
     Err(e) => {
       log::error!("error fetching user client: {}", e);
@@ -206,7 +206,7 @@ pub async fn client_user_approve(
     Ok(Some(client)) => client,
     Ok(None) => {
       return HttpError::not_found()
-        .with_error("client_id", NOT_FOUND_ERROR)
+        .with_error("client", NOT_FOUND_ERROR)
         .into_response();
     }
     Err(e) => {

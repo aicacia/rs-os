@@ -1,17 +1,19 @@
 <script lang="ts" module>
 	export interface ClientProps {
 		user: User;
-		client: Client;
+		client: ClientInfo;
+		onAcceptClient: () => Promise<void>;
+		onRejectClient: () => Promise<void>;
 	}
 </script>
 
 <script lang="ts">
-	import { clientApi } from '$lib/common/openapi';
-
-	import type { Client, User } from '$lib/common/openapi/oidc';
+	import type { User } from '$lib/common/openapi/oidc';
 	import { getAverageLuminance } from '$lib/common/util/canvas';
+	import type { ClientInfo } from './+page.svelte';
+	import ClientInfoLogo from './_ClientInfoLogo.svelte';
 
-	let { user, client }: ClientProps = $props();
+	let { user, client, onAcceptClient, onRejectClient }: ClientProps = $props();
 
 	let clientLogoUriElement = $state<HTMLImageElement | null>();
 	let isClientLogoDark = $state(true);
@@ -24,37 +26,29 @@
 		}
 	});
 
-	let allowedScopes = $state<Record<string, boolean>>(
-		Object.fromEntries(client.scopes.map((scope) => [scope, true]))
-	);
+	let loading = $state(false);
 
-	function onDeny() {}
-	async function onApprove() {
+	async function onAcceptClientInternal() {
+		loading = true;
 		try {
-			await clientApi.clientUserApprove({
-				clientId: client.clientId
-			});
-		} catch (e) {
-			console.error(e);
+			await onAcceptClient();
+		} finally {
+			loading = false;
+		}
+	}
+	async function onRejectClientInternal() {
+		loading = true;
+		try {
+			await onRejectClient();
+		} finally {
+			loading = false;
 		}
 	}
 </script>
 
 <div class="flex flex-col justify-center">
 	<div class="flex flex-col items-center justify-center">
-		{#if client.logoUri}
-			<img
-				bind:this={clientLogoUriElement}
-				src={client.logoUri}
-				alt={`${client.name} logo`}
-				crossorigin="anonymous"
-				class={{
-					'h-24 w-24 rounded-full p-4': true,
-					'bg-black': !isClientLogoDark,
-					'bg-white': isClientLogoDark
-				}}
-			/>
-		{/if}
+		<ClientInfoLogo {client} />
 
 		<h1 class="m-0 mt-2 text-xl font-semibold">
 			{client.name}
@@ -95,6 +89,6 @@
 {/if}
 
 <div class="mt-4 flex flex-row justify-center gap-4">
-	<button class="btn secondary" onclick={onDeny}>Deny</button>
-	<button class="btn primary" onclick={onApprove}>Allow</button>
+	<button class="btn secondary" disabled={loading} onclick={onRejectClientInternal}>Deny</button>
+	<button class="btn primary" disabled={loading} onclick={onAcceptClientInternal}>Allow</button>
 </div>

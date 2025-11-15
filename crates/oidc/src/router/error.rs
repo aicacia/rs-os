@@ -11,16 +11,16 @@ use utoipa::ToSchema;
 use validator::{ValidationError, ValidationErrors, ValidationErrorsKind};
 
 pub const APPLICATION: &str = "application";
-pub const REQUEST_BODY: &str = "request-body";
+pub const REQUEST_BODY: &str = "request_body";
 pub const CREDENTIALS: &str = "credentials";
 
 pub const REQUIRED_ERROR: &str = "required";
-pub const NOT_FOUND_ERROR: &str = "not-found";
+pub const NOT_FOUND_ERROR: &str = "not_found";
 pub const INVALID_ERROR: &str = "invalid";
 pub const INTERNAL_ERROR: &str = "internal";
-pub const NOT_ALLOWED_ERROR: &str = "not-allowed";
-pub const ALREADY_USED_ERROR: &str = "already-used";
-pub const ALREADY_EXISTS_ERROR: &str = "already-exists";
+pub const NOT_ALLOWED_ERROR: &str = "not_allowed";
+pub const ALREADY_USED_ERROR: &str = "already_used";
+pub const ALREADY_EXISTS_ERROR: &str = "already_exists";
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct HttpErrorMessage {

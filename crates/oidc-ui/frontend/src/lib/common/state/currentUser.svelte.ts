@@ -11,6 +11,7 @@ import {
 import { localStorageState } from '../util/localStorageState.svelte';
 import { afterSigninRedirect } from './afterSignInRedirectPath';
 import { isOnline } from './online.svelte';
+import { handleError } from '../errors';
 
 const user = localStorageState<User | null>('user', null, {
 	serializer: {
@@ -55,7 +56,7 @@ const currentUser = $derived.by(async () => {
 		return user.value;
 	} catch (e) {
 		if (!(e instanceof Error && e.message === 'not authorized')) {
-			console.error(e);
+			handleError(e);
 		}
 		resetAuth();
 		return null;

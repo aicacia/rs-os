@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import { getTheme } from '$lib/common/state/theme.svelte';
+	import Notifications from '$lib/common/components/Notifications.svelte';
 
 	let { children }: LayoutProps = $props();
 
@@ -26,3 +27,4 @@
 </svelte:head>
 
 {@render children()}
+<Notifications />

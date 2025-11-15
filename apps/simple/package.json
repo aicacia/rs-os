@@ -37,6 +37,7 @@
 		"vite-plugin-devtools-json": "^1.0.0"
 	},
 	"dependencies": {
+		"@lucide/svelte": "0.553.0",
 		"oidc-client-ts": "^3.4.0"
 	}
 }

@@ -9,8 +9,12 @@ export async function GET() {
 	return json({
 		name: 'Simple',
 		client_id: `${PUBLIC_URL}${base}/client.json`,
-		redirect_uris: [`${PUBLIC_URL}${base}/callback`],
-		post_logout_redirect_uris: [`${PUBLIC_URL}${base}`],
+		redirect_uris: [
+			`${PUBLIC_URL}${base}/callback`,
+			`${PUBLIC_URL}${base}/popup-callback`,
+			`${PUBLIC_URL}${base}/silent-callback`
+		],
+		post_logout_redirect_uris: [`${PUBLIC_URL}${base}/logout`],
 		logo_uri: `${PUBLIC_URL}${icon256x256Png}`,
 		client_uri: `${PUBLIC_URL}${base}`,
 		policy_uri: `${PUBLIC_URL}${base}/policy`,
@@ -29,7 +33,7 @@ export async function GET() {
 			'none'
 		],
 		scopes: ['openid', 'profile', 'address', 'offline', 'email', 'phone_number'],
-		audience: [PUBLIC_URL],
+		audience: [`${PUBLIC_URL}${base}`],
 		access_token_expires_in_seconds: 3600,
 		id_token_expires_in_seconds: 3600,
 		refresh_expires_in_seconds: 604800
