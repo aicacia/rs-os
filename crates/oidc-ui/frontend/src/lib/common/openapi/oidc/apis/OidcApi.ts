@@ -18,6 +18,7 @@ import type {
   HttpError,
   JWKs,
   OpenIdConfiguration,
+  ResponseMode,
   Token,
 } from '../models/index';
 import {
@@ -27,9 +28,21 @@ import {
     JWKsToJSON,
     OpenIdConfigurationFromJSON,
     OpenIdConfigurationToJSON,
+    ResponseModeFromJSON,
+    ResponseModeToJSON,
     TokenFromJSON,
     TokenToJSON,
 } from '../models/index';
+
+export interface AuthorizeRequest {
+    clientId: string;
+    redirectUri: string;
+    responseMode: ResponseMode;
+    responseType: string;
+    scope: string;
+    nonce?: string | null;
+    state?: string | null;
+}
 
 export interface TokenRequest {
     clientId?: string | null;
@@ -48,6 +61,25 @@ export interface TokenRequest {
  * @interface OidcApiInterface
  */
 export interface OidcApiInterface {
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {string} redirectUri 
+     * @param {ResponseMode} responseMode 
+     * @param {string} responseType 
+     * @param {string} scope 
+     * @param {string} [nonce] 
+     * @param {string} [state] 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+
+    /**
+     */
+    authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
     /**
      * 
      * @param {*} [options] Override http request option.
@@ -97,6 +129,118 @@ export interface OidcApiInterface {
  * 
  */
 export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
+
+    /**
+     */
+    async authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['redirectUri'] == null) {
+            throw new runtime.RequiredError(
+                'redirectUri',
+                'Required parameter "redirectUri" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['responseMode'] == null) {
+            throw new runtime.RequiredError(
+                'responseMode',
+                'Required parameter "responseMode" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['responseType'] == null) {
+            throw new runtime.RequiredError(
+                'responseType',
+                'Required parameter "responseType" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['scope'] == null) {
+            throw new runtime.RequiredError(
+                'scope',
+                'Required parameter "scope" was null or undefined when calling authorize().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const consumes: runtime.Consume[] = [
+            { contentType: 'application/x-www-form-urlencoded' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['clientId'] != null) {
+            formParams.append('client_id', requestParameters['clientId'] as any);
+        }
+
+        if (requestParameters['nonce'] != null) {
+            formParams.append('nonce', requestParameters['nonce'] as any);
+        }
+
+        if (requestParameters['redirectUri'] != null) {
+            formParams.append('redirect_uri', requestParameters['redirectUri'] as any);
+        }
+
+        if (requestParameters['responseMode'] != null) {
+            formParams.append('response_mode', requestParameters['responseMode'] as any);
+        }
+
+        if (requestParameters['responseType'] != null) {
+            formParams.append('response_type', requestParameters['responseType'] as any);
+        }
+
+        if (requestParameters['scope'] != null) {
+            formParams.append('scope', requestParameters['scope'] as any);
+        }
+
+        if (requestParameters['state'] != null) {
+            formParams.append('state', requestParameters['state'] as any);
+        }
+
+
+        let urlPath = `/oidc/api/authorize`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: formParams,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     */
+    async authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.authorizeRaw(requestParameters, initOverrides);
+    }
 
     /**
      */

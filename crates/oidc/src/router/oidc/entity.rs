@@ -101,3 +101,25 @@ pub struct OpenIdConfiguration {
   pub code_challenge_methods_supported: Vec<String>,
   pub grant_types_supported: Vec<String>,
 }
+
+#[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ResponseMode {
+  Query,      // Authorization Code (default)
+  Fragment,   // Implicit
+  FormPost,   // POST back with hidden form fields
+  WebMessage, // Silent authentication
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct AuthorizationRequest {
+  pub client_id: String,
+  pub response_type: String,
+  pub response_mode: ResponseMode,
+  pub scope: String,
+  pub redirect_uri: String,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub state: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub nonce: Option<String>,
+}

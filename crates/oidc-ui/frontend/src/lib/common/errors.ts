@@ -4,30 +4,35 @@ import { ResponseError, type HttpError } from './openapi/oidc';
 
 export type Errors = HttpError['messages'];
 
-export async function handleError(error: unknown) {
+export async function getErrors(error: unknown) {
 	if (error instanceof ResponseError) {
 		const httpError = (await error.response.json()) as Errors;
 		if (httpError) {
-			notifyErrors(httpError);
 			return httpError;
 		}
 	} else if (error != null && typeof error === 'object' && 'messages' in error) {
-		const errors = error as Errors;
-		notifyErrors(errors);
-		return errors as Errors;
+		return error as Errors;
 	}
-	console.error(error);
-	createNotification(`${m.errors_message_application()}: ${m.errors_message_application()}`);
 	throw error;
 }
 
+export async function handleError(error: unknown) {
+	try {
+		notifyErrors(await getErrors(error));
+	} catch (e) {
+		console.error(e);
+		createNotification(`${m.errors_message_application()}: ${m.errors_message_application()}`);
+		throw e;
+	}
+}
+
 export function notifyErrors(errors: Errors) {
-	for (const [name, message] of getErrors(errors)) {
+	for (const [name, message] of translateErrors(errors)) {
 		createNotification(`${name}: ${message}`);
 	}
 }
 
-export function getErrors(errors: Errors) {
+export function translateErrors(errors: Errors) {
 	const translatedErrors: [name: string, message: string][] = [];
 	for (const [nameKey, messages] of Object.entries(errors)) {
 		for (const message of messages) {

@@ -186,7 +186,7 @@ export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["client:read", "client:create"]);
+            const tokenString = await token("Authorization", ["client:create"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

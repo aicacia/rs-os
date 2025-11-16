@@ -25,7 +25,7 @@ export const defaultConfigurationParameters: ConfigurationParameters = {
 	accessToken() {
 		return authToken as string;
 	},
-	basePath: PUBLIC_OS_OIDC_API_URL,
+	basePath: new URL(PUBLIC_OS_OIDC_API_URL).origin,
 	credentials: 'same-origin'
 };
 

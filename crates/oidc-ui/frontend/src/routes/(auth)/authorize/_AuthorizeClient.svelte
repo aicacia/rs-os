@@ -1,45 +1,35 @@
 <script lang="ts" module>
+	import type { ClientInfo } from './_utils';
+	import type { User } from '$lib/common/openapi/oidc';
+
 	export interface ClientProps {
 		user: User;
 		client: ClientInfo;
-		onAcceptClient: () => Promise<void>;
-		onRejectClient: () => Promise<void>;
+		disabled?: boolean;
+		onAllow: () => Promise<void>;
+		onDeny: () => Promise<void>;
 	}
 </script>
 
 <script lang="ts">
-	import type { User } from '$lib/common/openapi/oidc';
-	import { getAverageLuminance } from '$lib/common/util/canvas';
-	import type { ClientInfo } from './+page.svelte';
-	import ClientInfoLogo from './_ClientInfoLogo.svelte';
+	import Avatar from '../../../lib/common/components/Avatar.svelte';
 
-	let { user, client, onAcceptClient, onRejectClient }: ClientProps = $props();
-
-	let clientLogoUriElement = $state<HTMLImageElement | null>();
-	let isClientLogoDark = $state(true);
-
-	$effect(() => {
-		if (clientLogoUriElement) {
-			getAverageLuminance(clientLogoUriElement).then((luminance) => {
-				isClientLogoDark = luminance < 200;
-			});
-		}
-	});
+	let { user, client, disabled, onAllow, onDeny }: ClientProps = $props();
 
 	let loading = $state(false);
 
-	async function onAcceptClientInternal() {
-		loading = true;
+	async function onAllowInternal() {
 		try {
-			await onAcceptClient();
+			loading = true;
+			await onAllow();
 		} finally {
 			loading = false;
 		}
 	}
-	async function onRejectClientInternal() {
-		loading = true;
+	async function onDenyInternal() {
 		try {
-			await onRejectClient();
+			loading = true;
+			await onDeny();
 		} finally {
 			loading = false;
 		}
@@ -48,7 +38,9 @@
 
 <div class="flex flex-col justify-center">
 	<div class="flex flex-col items-center justify-center">
-		<ClientInfoLogo {client} />
+		{#if client.logoUri}
+			<Avatar src={client.logoUri} alt={`${client.name}`} />
+		{/if}
 
 		<h1 class="m-0 mt-2 text-xl font-semibold">
 			{client.name}
@@ -89,6 +81,8 @@
 {/if}
 
 <div class="mt-4 flex flex-row justify-center gap-4">
-	<button class="btn secondary" disabled={loading} onclick={onRejectClientInternal}>Deny</button>
-	<button class="btn primary" disabled={loading} onclick={onAcceptClientInternal}>Allow</button>
+	<button class="btn secondary" disabled={disabled || loading} onclick={onDenyInternal}>Deny</button
+	>
+	<button class="btn primary" disabled={disabled || loading} onclick={onAllowInternal}>Allow</button
+	>
 </div>

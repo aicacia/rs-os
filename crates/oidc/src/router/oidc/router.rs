@@ -1,18 +1,25 @@
 use std::collections::HashSet;
 
 use axum::{
+  body::Body,
   extract::{Form, State},
-  response::IntoResponse,
+  response::{IntoResponse, Redirect, Response},
 };
+use http::{StatusCode, header};
+use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
   core::{
     encryption::verify_password,
+    helper::json_to_string_vec,
     jwk::sql::{get_jwk_for_sign_and_verify, list_jwks},
   },
-  model::user::sql::{
-    get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
+  model::{
+    client::sql::get_client_by_client_id,
+    user::sql::{
+      get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
+    },
   },
   router::{
     common::{
@@ -21,11 +28,16 @@ use crate::{
       helper::create_user_token,
     },
     entity::RouterState,
-    error::{CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR},
-    middleware::authorization::parse_authorization,
+    error::{
+      CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
+    },
+    middleware::{authorization::parse_authorization, user_authorization::UserAuthorization},
     oidc::{
       constants::TAG,
-      entity::{JWK, JWKs, OpenIdConfiguration, TokenRequest, TokenRequestCommon},
+      entity::{
+        AuthorizationRequest, JWK, JWKs, OpenIdConfiguration, ResponseMode, TokenRequest,
+        TokenRequestCommon,
+      },
     },
   },
 };
@@ -313,10 +325,80 @@ async fn refresh_token_grant(
   .await
 }
 
+#[utoipa::path(
+  post,
+  path = "/authorize",
+  tags = [TAG],
+  request_body(content = AuthorizationRequest, content_type = "application/x-www-form-urlencoded"),
+  responses(
+    (status = 302, description = "Redirect"),
+    (status = 401, description = "Application Error", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
+  )
+)]
+pub async fn authorize(
+  State(state): State<RouterState>,
+  _user_authorization: UserAuthorization,
+  Form(authorization_request): Form<AuthorizationRequest>,
+) -> impl IntoResponse {
+  let client_sql_row =
+    match get_client_by_client_id(&state.pool, &authorization_request.client_id).await {
+      Ok(Some(client_sql_row)) => client_sql_row,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("client", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("failed to fetch client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
+
+  let mut redirect_uri = match Url::parse(&authorization_request.redirect_uri) {
+    Ok(redirect_uri) => redirect_uri,
+    Err(e) => {
+      log::error!("invalid redirect_uri: {}", e);
+      return HttpError::bad_request()
+        .with_error("redirect_uri", INVALID_ERROR)
+        .into_response();
+    }
+  };
+
+  let redirect_uris = client_sql_row
+    .redirect_uris
+    .map(json_to_string_vec)
+    .unwrap_or_default();
+
+  if !redirect_uris.contains(&redirect_uri.origin().ascii_serialization()) {
+    return HttpError::bad_request()
+      .with_error("redirect_uri", NOT_ALLOWED_ERROR)
+      .into_response();
+  }
+
+  match authorization_request.response_mode {
+    ResponseMode::Query => Response::builder()
+      .header(header::LOCATION, redirect_uri.to_string())
+      .status(StatusCode::FOUND)
+      .body(Body::empty())
+      .unwrap_or_default()
+      .into_response(),
+    ResponseMode::Fragment => unimplemented!(),
+    ResponseMode::FormPost => unimplemented!(),
+    ResponseMode::WebMessage => unimplemented!(),
+  }
+}
+
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(jwks))
     .routes(routes!(openid_configuration))
     .routes(routes!(token))
+    .routes(routes!(authorize))
     .with_state(state)
 }

@@ -17,7 +17,7 @@ use crate::{
       entity::{Client, ClientAllowed, ClientUpsertRequest},
     },
     entity::RouterState,
-    error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
+    error::{HttpError, INTERNAL_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR},
     middleware::user_authorization::UserAuthorization,
   },
 };
@@ -110,7 +110,7 @@ pub async fn create_client(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["client:read", "client:create"])
+    ("Authorization" = ["client:create"])
   )
 )]
 pub async fn client_upsert(
@@ -118,18 +118,20 @@ pub async fn client_upsert(
   user_authorization: UserAuthorization,
   Json(client_upsert_request): Json<ClientUpsertRequest>,
 ) -> impl IntoResponse {
-  let client_sql_row = match user_authorization.has_permission(CLIENT_CREATE) {
-    Ok(_) => match upsert_client(&state.pool, client_upsert_request.into()).await {
-      Ok(client_sql_row) => client_sql_row,
-      Err(e) => {
-        log::error!("error upserting client: {}", e);
-        return HttpError::internal_error()
-          .with_application_error(INTERNAL_ERROR)
-          .into_response();
-      }
-    },
+  match user_authorization.has_permission(CLIENT_CREATE) {
+    Ok(_) => {}
     Err(e) => {
       log::error!("error fetching client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
+
+  let client_sql_row = match upsert_client(&state.pool, client_upsert_request.into()).await {
+    Ok(client_sql_row) => client_sql_row,
+    Err(e) => {
+      log::error!("error upserting client: {}", e);
       return HttpError::internal_error()
         .with_application_error(INTERNAL_ERROR)
         .into_response();
@@ -169,8 +171,8 @@ pub async fn client_user_allowed(
       allowed_scopes: json_to_string_vec(user_client_sql_row.allowed_scopes),
     })
     .into_response(),
-    Ok(None) => HttpError::not_found()
-      .with_error("client", NOT_FOUND_ERROR)
+    Ok(None) => HttpError::forbidden()
+      .with_error("client", NOT_ALLOWED_ERROR)
       .into_response(),
     Err(e) => {
       log::error!("error fetching user client: {}", e);

@@ -9,6 +9,7 @@ export * from './HttpErrorMessage';
 export * from './JWK';
 export * from './JWKs';
 export * from './OpenIdConfiguration';
+export * from './ResponseMode';
 export * from './SignupRequest';
 export * from './Token';
 export * from './User';

@@ -1,5 +1,5 @@
 use axum::extract::{FromRef, FromRequestParts};
-use http::request::Parts;
+use http::{HeaderValue, request::Parts};
 use jsonwebtoken::DecodingKey;
 
 use crate::{
@@ -37,19 +37,7 @@ where
     let router_state = RouterState::from_ref(state);
 
     if let Some(authorization_header_value) = parts.headers.get(AUTHORIZATION_HEADER) {
-      let authorization_string = match authorization_header_value.to_str() {
-        Ok(authorization_string) => {
-          if authorization_string.len() < TOKEN_TYPE_BEARER.len() + 1 {
-            log::error!("invalid authorization header is invalid");
-            return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-          }
-          &authorization_string[(TOKEN_TYPE_BEARER.len() + 1)..]
-        }
-        Err(e) => {
-          log::error!("invalid authorization header is invalid: {}", e);
-          return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-        }
-      };
+      let authorization_string = authorization_from_header(authorization_header_value)?;
       let (token_data, _jwk_sql_row) = parse_authorization(
         &router_state.pool,
         &router_state.config,
@@ -62,6 +50,24 @@ where
       });
     }
     Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, REQUIRED_ERROR))
+  }
+}
+
+pub fn authorization_from_header(
+  authorization_header_value: &HeaderValue,
+) -> Result<&str, HttpError> {
+  match authorization_header_value.to_str() {
+    Ok(authorization_string) => {
+      if authorization_string.len() < TOKEN_TYPE_BEARER.len() + 1 {
+        log::error!("invalid authorization header is invalid");
+        return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+      }
+      Ok(&authorization_string[(TOKEN_TYPE_BEARER.len() + 1)..])
+    }
+    Err(e) => {
+      log::error!("invalid authorization header is invalid: {}", e);
+      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+    }
   }
 }
 
