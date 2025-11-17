@@ -9,9 +9,14 @@
 </script>
 
 <script lang="ts">
-	import { clientApi } from '$lib/common/openapi';
+	import { oidcApi, clientApi } from '$lib/common/openapi';
 	import type { Client } from '$lib/common/openapi/oidc/models/Client';
-	import { getClientDiff, rejectAuthorizeRequest, type ClientInfo } from './_utils';
+	import {
+		getClientDiff,
+		rejectAuthorizeRequest,
+		resolveAuthorizeRequest,
+		type ClientInfo
+	} from './_utils';
 	import { LoaderCircle } from '@lucide/svelte';
 	import AddClient from './_ClientUpdates.svelte';
 	import AuthorizeClient from './_AuthorizeClient.svelte';
@@ -23,10 +28,7 @@
 	let client = $state<Client | null>(null);
 
 	let loadingClient = $state(true);
-	let disabled = $state(true);
-
 	$effect(() => {
-		disabled = true;
 		loadingClient = true;
 		clientApi
 			.clientByClientId({ clientId: authorizeRequest.clientId })
@@ -38,19 +40,51 @@
 			})
 			.finally(() => {
 				loadingClient = false;
-				disabled = false;
 			});
 	});
 
 	$effect(() => {
-		if (client && clientIdInfo) {
-			clientDiff = getClientDiff(client, clientIdInfo);
+		if (clientIdInfo) {
+			if (client) {
+				clientDiff = getClientDiff(client, clientIdInfo);
+			}
 		} else {
 			clientDiff = false;
 		}
 	});
 
-	async function onAllow() {}
+	let loadingUserAllowed = $state(true);
+	$effect(() => {
+		if (clientDiff) {
+			return;
+		}
+		loadingUserAllowed = true;
+		clientApi
+			.clientUserAllowed({ clientId: authorizeRequest.clientId })
+			.then(onAuthorize)
+			.catch((_e) => {
+				return null;
+			})
+			.finally(() => {
+				loadingUserAllowed = false;
+			});
+	});
+
+	async function onAuthorize() {
+		try {
+			await resolveAuthorizeRequest(authorizeRequest);
+		} catch (e) {
+			handleError(e);
+		}
+	}
+	async function onAllow() {
+		try {
+			await clientApi.clientUserApprove({ clientId: authorizeRequest.clientId });
+			await onAuthorize();
+		} catch (e) {
+			handleError(e);
+		}
+	}
 	async function onDeny() {
 		rejectAuthorizeRequest(
 			authorizeRequest,
@@ -58,10 +92,10 @@
 			'Access to the requested resource was denied.'
 		);
 	}
-	async function onAcceptClientUpdates(clientUpsertRequest: ClientInfo) {
+	async function onAcceptClientUpdates(clientRegisterRequest: ClientInfo) {
 		try {
 			loadingClient = true;
-			client = await clientApi.clientUpsert({ clientUpsertRequest });
+			client = await oidcApi.registerClient({ clientRegisterRequest });
 		} catch (e) {
 			handleError(e);
 		} finally {
@@ -75,6 +109,8 @@
 			'The client is not authorized to request an authorization code using this method.'
 		);
 	}
+
+	let disabled = $derived(loadingClient || loadingUserAllowed);
 </script>
 
 {#if loadingClient}
@@ -87,6 +123,7 @@
 			{user}
 			client={{
 				name: client.name,
+				logoUri: client.logoUri,
 				...clientDiff
 			}}
 			isNew={false}

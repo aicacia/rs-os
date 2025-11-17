@@ -7,13 +7,14 @@ All URIs are relative to *http://localhost:3000*
 | [**authorize**](OidcApi.md#authorize) | **POST** /oidc/api/authorize |  |
 | [**jwks**](OidcApi.md#jwks) | **GET** /oidc/api/.well-known/jwks.json |  |
 | [**openidConfiguration**](OidcApi.md#openidconfiguration) | **GET** /oidc/api/.well-known/openid-configuration |  |
+| [**registerClient**](OidcApi.md#registerclient) | **POST** /oidc/api/register-client |  |
 | [**token**](OidcApi.md#token) | **POST** /oidc/api/token |  |
 
 
 
 ## authorize
 
-> authorize(clientId, redirectUri, responseMode, responseType, scope, nonce, state)
+> Authorization authorize(clientId, redirectUri, responseMode, responseType, scope, nonce, state)
 
 
 
@@ -41,8 +42,8 @@ async function example() {
     redirectUri: redirectUri_example,
     // ResponseMode
     responseMode: ...,
-    // string
-    responseType: responseType_example,
+    // ResponseType
+    responseType: ...,
     // string
     scope: scope_example,
     // string (optional)
@@ -71,14 +72,14 @@ example().catch(console.error);
 | **clientId** | `string` |  | [Defaults to `undefined`] |
 | **redirectUri** | `string` |  | [Defaults to `undefined`] |
 | **responseMode** | `ResponseMode` |  | [Defaults to `undefined`] [Enum: query, fragment, form_post, web_message] |
-| **responseType** | `string` |  | [Defaults to `undefined`] |
+| **responseType** | `ResponseType` |  | [Defaults to `undefined`] [Enum: code, id_token, id_token token, code id_token token, code token, none] |
 | **scope** | `string` |  | [Defaults to `undefined`] |
 | **nonce** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **state** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 
-`void` (Empty response body)
+[**Authorization**](Authorization.md)
 
 ### Authorization
 
@@ -93,8 +94,10 @@ example().catch(console.error);
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **302** | Redirect |  -  |
+| **200** | Authorized |  -  |
+| **400** | Application Error |  -  |
 | **401** | Application Error |  -  |
+| **403** | Application Error |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -211,6 +214,79 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | OpenId Configuration |  -  |
+| **500** | Application Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## registerClient
+
+> Client registerClient(clientRegisterRequest)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  OidcApi,
+} from '';
+import type { RegisterClientRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new OidcApi(config);
+
+  const body = {
+    // ClientRegisterRequest
+    clientRegisterRequest: ...,
+  } satisfies RegisterClientRequest;
+
+  try {
+    const data = await api.registerClient(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **clientRegisterRequest** | [ClientRegisterRequest](ClientRegisterRequest.md) |  | |
+
+### Return type
+
+[**Client**](Client.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json; charset=utf-8`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Client registation updated |  -  |
+| **201** | Client registered |  -  |
+| **401** | Application Error |  -  |
+| **403** | Application Error |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)

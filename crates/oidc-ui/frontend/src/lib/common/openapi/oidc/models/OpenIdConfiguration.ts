@@ -69,6 +69,12 @@ export interface OpenIdConfiguration {
     jwksUri: string;
     /**
      * 
+     * @type {string}
+     * @memberof OpenIdConfiguration
+     */
+    registrationEndpoint?: string | null;
+    /**
+     * 
      * @type {Array<string>}
      * @memberof OpenIdConfiguration
      */
@@ -154,6 +160,7 @@ export function OpenIdConfigurationFromJSONTyped(json: any, ignoreDiscriminator:
         'idTokenSigningAlgValuesSupported': json['id_token_signing_alg_values_supported'],
         'issuer': json['issuer'],
         'jwksUri': json['jwks_uri'],
+        'registrationEndpoint': json['registration_endpoint'] == null ? undefined : json['registration_endpoint'],
         'responseModesSupported': json['response_modes_supported'],
         'responseTypesSupported': json['response_types_supported'],
         'revocationEndpoint': json['revocation_endpoint'] == null ? undefined : json['revocation_endpoint'],
@@ -184,6 +191,7 @@ export function OpenIdConfigurationToJSONTyped(value?: OpenIdConfiguration | nul
         'id_token_signing_alg_values_supported': value['idTokenSigningAlgValuesSupported'],
         'issuer': value['issuer'],
         'jwks_uri': value['jwksUri'],
+        'registration_endpoint': value['registrationEndpoint'],
         'response_modes_supported': value['responseModesSupported'],
         'response_types_supported': value['responseTypesSupported'],
         'revocation_endpoint': value['revocationEndpoint'],

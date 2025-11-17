@@ -16,117 +16,117 @@ import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface ClientUpsertRequest
+ * @interface ClientRegisterRequest
  */
-export interface ClientUpsertRequest {
+export interface ClientRegisterRequest {
     /**
      * 
      * @type {number}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     accessTokenExpiresInSeconds: number;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     applicationType: string;
     /**
      * 
      * @type {Array<string>}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     audience?: Array<string> | null;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     authMethod: string;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     clientId: string;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     clientUri?: string | null;
     /**
      * 
      * @type {Array<string>}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     grantTypes: Array<string>;
     /**
      * 
      * @type {number}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     idTokenExpiresInSeconds: number;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     logoUri?: string | null;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     name: string;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     policyUri?: string | null;
     /**
      * 
      * @type {Array<string>}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     postLogoutRedirectUris?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     redirectUris?: Array<string> | null;
     /**
      * 
      * @type {number}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     refreshExpiresInSeconds: number;
     /**
      * 
      * @type {Array<string>}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     responseTypes: Array<string>;
     /**
      * 
      * @type {Array<string>}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     scopes: Array<string>;
     /**
      * 
      * @type {string}
-     * @memberof ClientUpsertRequest
+     * @memberof ClientRegisterRequest
      */
     termsOfServiceUri?: string | null;
 }
 
 /**
- * Check if a given object implements the ClientUpsertRequest interface.
+ * Check if a given object implements the ClientRegisterRequest interface.
  */
-export function instanceOfClientUpsertRequest(value: object): value is ClientUpsertRequest {
+export function instanceOfClientRegisterRequest(value: object): value is ClientRegisterRequest {
     if (!('accessTokenExpiresInSeconds' in value) || value['accessTokenExpiresInSeconds'] === undefined) return false;
     if (!('applicationType' in value) || value['applicationType'] === undefined) return false;
     if (!('authMethod' in value) || value['authMethod'] === undefined) return false;
@@ -140,11 +140,11 @@ export function instanceOfClientUpsertRequest(value: object): value is ClientUps
     return true;
 }
 
-export function ClientUpsertRequestFromJSON(json: any): ClientUpsertRequest {
-    return ClientUpsertRequestFromJSONTyped(json, false);
+export function ClientRegisterRequestFromJSON(json: any): ClientRegisterRequest {
+    return ClientRegisterRequestFromJSONTyped(json, false);
 }
 
-export function ClientUpsertRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): ClientUpsertRequest {
+export function ClientRegisterRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean): ClientRegisterRequest {
     if (json == null) {
         return json;
     }
@@ -170,11 +170,11 @@ export function ClientUpsertRequestFromJSONTyped(json: any, ignoreDiscriminator:
     };
 }
 
-export function ClientUpsertRequestToJSON(json: any): ClientUpsertRequest {
-    return ClientUpsertRequestToJSONTyped(json, false);
+export function ClientRegisterRequestToJSON(json: any): ClientRegisterRequest {
+    return ClientRegisterRequestToJSONTyped(json, false);
 }
 
-export function ClientUpsertRequestToJSONTyped(value?: ClientUpsertRequest | null, ignoreDiscriminator: boolean = false): any {
+export function ClientRegisterRequestToJSONTyped(value?: ClientRegisterRequest | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

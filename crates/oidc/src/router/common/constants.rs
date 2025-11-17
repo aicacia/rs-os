@@ -1,9 +1,11 @@
 pub const TOKEN_TYPE_ID: &str = "id";
 pub const TOKEN_TYPE_BEARER: &str = "bearer";
 pub const TOKEN_TYPE_REFRESH: &str = "refresh_token";
+pub const TOKEN_TYPE_AUTHORIZATION_CODE: &str = "authorization_code";
 
 pub const TOKEN_ISSUE_TYPE_PASSWORD: &str = "password";
 pub const TOKEN_ISSUE_TYPE_REFRESH_TOKEN: &str = "refresh_token";
+pub const TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE: &str = "authorization_code";
 
 pub const AUTHORIZATION_HEADER: &str = "Authorization";
 

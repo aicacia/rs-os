@@ -100,10 +100,11 @@ impl PartialEq<ClientSQLRow> for ClientSQLCommon {
   }
 }
 
+// returns client and bool to indicate if its new or updated
 pub async fn upsert_client(
   pool: &sqlx::AnyPool,
   client_upsert: ClientSQLCommon,
-) -> sqlx::Result<ClientSQLRow> {
+) -> sqlx::Result<(ClientSQLRow, bool)> {
   run_transaction(pool, |transaction| {
     Box::pin(async move {
       let client_option =
@@ -111,12 +112,15 @@ pub async fn upsert_client(
 
       if let Some(client) = client_option {
         if client_upsert != client {
-          update_client_internal(&mut **transaction, &client.client_id, client_upsert).await
+          let updated_client =
+            update_client_internal(&mut **transaction, &client.client_id, client_upsert).await?;
+          Ok((updated_client, false))
         } else {
-          Ok(client)
+          Ok((client, false))
         }
       } else {
-        create_client_internal(&mut **transaction, client_upsert).await
+        let new_client = create_client_internal(&mut **transaction, client_upsert).await?;
+        Ok((new_client, true))
       }
     })
   })
@@ -212,7 +216,7 @@ where
   )
   .bind(&client.name)
   .bind(&client.client_id)
-  .bind(hex::encode(random_bytes(32)))
+  .bind(hex::encode(random_bytes(64)))
   .bind(&client.redirect_uris)
   .bind(&client.post_logout_redirect_uris)
   .bind(&client.logo_uri)

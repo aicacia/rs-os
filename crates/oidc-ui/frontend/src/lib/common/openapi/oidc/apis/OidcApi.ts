@@ -15,13 +15,23 @@
 
 import * as runtime from '../runtime';
 import type {
+  Authorization,
+  Client,
+  ClientRegisterRequest,
   HttpError,
   JWKs,
   OpenIdConfiguration,
   ResponseMode,
+  ResponseType,
   Token,
 } from '../models/index';
 import {
+    AuthorizationFromJSON,
+    AuthorizationToJSON,
+    ClientFromJSON,
+    ClientToJSON,
+    ClientRegisterRequestFromJSON,
+    ClientRegisterRequestToJSON,
     HttpErrorFromJSON,
     HttpErrorToJSON,
     JWKsFromJSON,
@@ -30,6 +40,8 @@ import {
     OpenIdConfigurationToJSON,
     ResponseModeFromJSON,
     ResponseModeToJSON,
+    ResponseTypeFromJSON,
+    ResponseTypeToJSON,
     TokenFromJSON,
     TokenToJSON,
 } from '../models/index';
@@ -38,10 +50,14 @@ export interface AuthorizeRequest {
     clientId: string;
     redirectUri: string;
     responseMode: ResponseMode;
-    responseType: string;
+    responseType: ResponseType;
     scope: string;
     nonce?: string | null;
     state?: string | null;
+}
+
+export interface RegisterClientRequest {
+    clientRegisterRequest: ClientRegisterRequest;
 }
 
 export interface TokenRequest {
@@ -66,7 +82,7 @@ export interface OidcApiInterface {
      * @param {string} clientId 
      * @param {string} redirectUri 
      * @param {ResponseMode} responseMode 
-     * @param {string} responseType 
+     * @param {ResponseType} responseType 
      * @param {string} scope 
      * @param {string} [nonce] 
      * @param {string} [state] 
@@ -74,11 +90,11 @@ export interface OidcApiInterface {
      * @throws {RequiredError}
      * @memberof OidcApiInterface
      */
-    authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+    authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Authorization>>;
 
     /**
      */
-    authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+    authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Authorization>;
 
     /**
      * 
@@ -103,6 +119,19 @@ export interface OidcApiInterface {
     /**
      */
     openidConfiguration(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdConfiguration>;
+
+    /**
+     * 
+     * @param {ClientRegisterRequest} clientRegisterRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    registerClientRaw(requestParameters: RegisterClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>>;
+
+    /**
+     */
+    registerClient(requestParameters: RegisterClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
 
     /**
      * 
@@ -132,7 +161,7 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Authorization>> {
         if (requestParameters['clientId'] == null) {
             throw new runtime.RequiredError(
                 'clientId',
@@ -233,13 +262,14 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             body: formParams,
         }, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => AuthorizationFromJSON(jsonValue));
     }
 
     /**
      */
-    async authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.authorizeRaw(requestParameters, initOverrides);
+    async authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Authorization> {
+        const response = await this.authorizeRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -293,6 +323,51 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
      */
     async openidConfiguration(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdConfiguration> {
         const response = await this.openidConfigurationRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async registerClientRaw(requestParameters: RegisterClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+        if (requestParameters['clientRegisterRequest'] == null) {
+            throw new runtime.RequiredError(
+                'clientRegisterRequest',
+                'Required parameter "clientRegisterRequest" was null or undefined when calling registerClient().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json; charset=utf-8';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", ["client:create"]);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/register-client`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ClientRegisterRequestToJSON(requestParameters['clientRegisterRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async registerClient(requestParameters: RegisterClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
+        const response = await this.registerClientRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -4,16 +4,22 @@ use http::StatusCode;
 use crate::{
   core::{
     config::app_config::AppConfig,
-    jwk::{helper::to_encoding_key, sql::JwkSQLRow},
+    jwk::{
+      helper::to_encoding_key,
+      sql::{JwkSQLRow, get_jwk_for_sign_and_verify},
+    },
   },
-  model::user::sql::{
-    UserSQLRow, get_user_info_by_user_id, get_user_primary_email, get_user_primary_phone_number,
+  model::{
+    client::sql::ClientSQLRow,
+    user::sql::{
+      UserSQLRow, get_user_info_by_user_id, get_user_primary_email, get_user_primary_phone_number,
+    },
   },
   router::{
     common::{
       constants::{
         SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_OPENID, SCOPE_PHONE_NUMBER, SCOPE_PROFILE,
-        TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
+        TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
       },
       entity::{BasicClaims, Claims, OpenIdClaims, OpenIdProfile, Token},
     },
@@ -179,6 +185,70 @@ pub(crate) async fn create_user_token(
     refresh_token_expires_in: refresh_token_expires_in,
     id_token: id_token,
   })
+}
+
+pub(crate) async fn create_user_auhorization_code_token(
+  pool: &sqlx::AnyPool,
+  app_config: &AppConfig,
+  client: ClientSQLRow,
+  user: UserSQLRow,
+) -> Result<String, HttpError> {
+  let jwk_sql_row = match get_jwk_for_sign_and_verify(pool).await {
+    Ok(Some(jwk_sql_row)) => jwk_sql_row,
+    Ok(None) => {
+      log::error!("error no valid jwk for signing and verifying jwts");
+      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+    }
+    Err(e) => {
+      log::error!("error getting jwk: {}", e);
+      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+    }
+  };
+
+  let now = chrono::Utc::now();
+
+  let issuer = app_config.api_url();
+  let claims = BasicClaims {
+    r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
+    sub: user.id,
+    iat: now.timestamp(),
+    nbf: now.timestamp(),
+    exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
+    iss: issuer.clone(),
+    aud: client.audience,
+    scopes: Vec::default(),
+  };
+
+  let encoding_key = match to_encoding_key(&jwk_sql_row) {
+    Ok(encoding_key) => encoding_key,
+    Err(e) => {
+      log::error!("error getting converting into jwt encoding key: {}", e);
+      return Err(
+        HttpError::from(StatusCode::INTERNAL_SERVER_ERROR).with_application_error(INTERNAL_ERROR),
+      );
+    }
+  };
+  let jwk = match jwk_sql_row.try_into() {
+    Ok(jwk) => jwk,
+    Err(e) => {
+      log::error!("error getting converting into json web key: {}", e);
+      return Err(
+        HttpError::from(StatusCode::INTERNAL_SERVER_ERROR).with_application_error(INTERNAL_ERROR),
+      );
+    }
+  };
+
+  let auhorization_code_token = match claims.encode(&issuer, &jwk, &encoding_key) {
+    Ok(token) => token,
+    Err(e) => {
+      log::error!("error encoding access token: {}", e);
+      return Err(
+        HttpError::from(StatusCode::INTERNAL_SERVER_ERROR).with_application_error(INTERNAL_ERROR),
+      );
+    }
+  };
+
+  Ok(auhorization_code_token)
 }
 
 pub fn parse_scopes(scopes: Option<&str>) -> Vec<String> {

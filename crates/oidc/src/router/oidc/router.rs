@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 
 use axum::{
-  body::Body,
   extract::{Form, State},
-  response::{IntoResponse, Redirect, Response},
+  response::IntoResponse,
 };
-use http::{StatusCode, header};
+use http::StatusCode;
 use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
@@ -16,27 +15,33 @@ use crate::{
     jwk::sql::{get_jwk_for_sign_and_verify, list_jwks},
   },
   model::{
-    client::sql::get_client_by_client_id,
+    client::sql::{get_client_by_client_id, upsert_client},
     user::sql::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
+      get_user_client_by_client_id,
     },
   },
   router::{
+    client::constants::CLIENT_CREATE,
     common::{
-      constants::{TOKEN_ISSUE_TYPE_PASSWORD, TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_REFRESH},
+      constants::{
+        TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
+        TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
+      },
       entity::{BasicClaims, Token},
-      helper::create_user_token,
+      helper::{create_user_auhorization_code_token, create_user_token},
     },
     entity::RouterState,
     error::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
     },
+    json::Json,
     middleware::{authorization::parse_authorization, user_authorization::UserAuthorization},
     oidc::{
       constants::TAG,
       entity::{
-        AuthorizationRequest, JWK, JWKs, OpenIdConfiguration, ResponseMode, TokenRequest,
-        TokenRequestCommon,
+        Authorization, AuthorizationRequest, Client, ClientRegisterRequest, JWK, JWKs,
+        OpenIdConfiguration, TokenRequest, TokenRequestCommon,
       },
     },
   },
@@ -141,6 +146,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     token_endpoint: format!("{}/token", api_url),
     userinfo_endpoint: Some(format!("{}/current-user", api_url)),
     revocation_endpoint: Some(format!("{}/revoke", api_url)),
+    registration_endpoint: Some(format!("{}/register-client", api_url)),
     jwks_uri: format!("{}/.well-known/jwks.json", api_url),
     response_types_supported: vec![
       "code".to_owned(),
@@ -223,8 +229,8 @@ pub async fn token(
       common,
       refresh_token,
     } => refresh_token_grant(state, common, refresh_token).await,
-    TokenRequest::AuthorizationCode { .. } => {
-      Err(HttpError::internal_error().with_application_error(NOT_ALLOWED_ERROR))
+    TokenRequest::AuthorizationCode { common, code } => {
+      authorization_code_grant(state, common, code).await
     }
   };
   match token_result {
@@ -325,14 +331,48 @@ async fn refresh_token_grant(
   .await
 }
 
+async fn authorization_code_grant(
+  state: RouterState,
+  _common: TokenRequestCommon,
+  code: String,
+) -> Result<Token, HttpError> {
+  let (token_data, jwk_sql_row) =
+    parse_authorization::<BasicClaims>(&state.pool, &state.config, &code).await?;
+
+  if token_data.claims.r#type != TOKEN_TYPE_AUTHORIZATION_CODE {
+    return Err(HttpError::unauthorized());
+  }
+
+  let user = match get_user_by_id(&state.pool, token_data.claims.sub).await {
+    Ok(Some(user)) => user,
+    Ok(None) => return Err(HttpError::unauthorized()),
+    Err(e) => {
+      log::error!("error fetching user: {}", e);
+      return Err(HttpError::internal_error());
+    }
+  };
+
+  create_user_token(
+    &state.pool,
+    &state.config,
+    jwk_sql_row,
+    user,
+    Some(token_data.claims.scopes.join(" ").to_owned()),
+    TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
+  )
+  .await
+}
+
 #[utoipa::path(
   post,
   path = "/authorize",
   tags = [TAG],
   request_body(content = AuthorizationRequest, content_type = "application/x-www-form-urlencoded"),
   responses(
-    (status = 302, description = "Redirect"),
+    (status = 200, description = "Authorized", body = Authorization),
+    (status = 400, description = "Application Error", body = HttpError),
     (status = 401, description = "Application Error", body = HttpError),
+    (status = 403, description = "Application Error", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
@@ -341,7 +381,7 @@ async fn refresh_token_grant(
 )]
 pub async fn authorize(
   State(state): State<RouterState>,
-  _user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization,
   Form(authorization_request): Form<AuthorizationRequest>,
 ) -> impl IntoResponse {
   let client_sql_row =
@@ -360,7 +400,28 @@ pub async fn authorize(
       }
     };
 
-  let mut redirect_uri = match Url::parse(&authorization_request.redirect_uri) {
+  match get_user_client_by_client_id(
+    &state.pool,
+    user_authorization.user_sql_row.id,
+    &client_sql_row.client_id,
+  )
+  .await
+  {
+    Ok(Some(_client_allowed)) => {}
+    Ok(None) => {
+      return HttpError::forbidden()
+        .with_error("client", NOT_ALLOWED_ERROR)
+        .into_response();
+    }
+    Err(e) => {
+      log::error!("failed to check user client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  }
+
+  let redirect_uri = match Url::parse(&authorization_request.redirect_uri) {
     Ok(redirect_uri) => redirect_uri,
     Err(e) => {
       log::error!("invalid redirect_uri: {}", e);
@@ -370,28 +431,101 @@ pub async fn authorize(
     }
   };
 
-  let redirect_uris = client_sql_row
+  if let Some(redirect_uris) = client_sql_row
     .redirect_uris
+    .as_ref()
     .map(json_to_string_vec)
-    .unwrap_or_default();
-
-  if !redirect_uris.contains(&redirect_uri.origin().ascii_serialization()) {
+  {
+    let redirect_uri_string = redirect_uri.origin().ascii_serialization() + redirect_uri.path();
+    log::info!("{:?} ~ {:?}", redirect_uris, redirect_uri_string);
+    if !redirect_uris.contains(&redirect_uri_string) {
+      return HttpError::bad_request()
+        .with_error("redirect_uri", NOT_ALLOWED_ERROR)
+        .into_response();
+    }
+  } else {
     return HttpError::bad_request()
-      .with_error("redirect_uri", NOT_ALLOWED_ERROR)
+      .with_error("client", INVALID_ERROR)
       .into_response();
   }
 
-  match authorization_request.response_mode {
-    ResponseMode::Query => Response::builder()
-      .header(header::LOCATION, redirect_uri.to_string())
-      .status(StatusCode::FOUND)
-      .body(Body::empty())
-      .unwrap_or_default()
-      .into_response(),
-    ResponseMode::Fragment => unimplemented!(),
-    ResponseMode::FormPost => unimplemented!(),
-    ResponseMode::WebMessage => unimplemented!(),
-  }
+  let authorization_response = match authorization_request.response_type {
+    super::entity::ResponseType::Code => match create_user_auhorization_code_token(
+      &state.pool,
+      &state.config,
+      client_sql_row,
+      user_authorization.user_sql_row,
+    )
+    .await
+    {
+      Ok(code) => Authorization::AuthorizationCode { code },
+      Err(e) => {
+        return e.into_response();
+      }
+    },
+    super::entity::ResponseType::IdToken => todo!(),
+    super::entity::ResponseType::IdTokenToken => todo!(),
+    super::entity::ResponseType::CodeIdTokenToken => todo!(),
+    super::entity::ResponseType::CodeToken => todo!(),
+    super::entity::ResponseType::None => todo!(),
+  };
+
+  axum::Json(authorization_response).into_response()
+}
+
+#[utoipa::path(
+  post,
+  path = "/register-client",
+  tags = [TAG],
+  request_body(content = ClientRegisterRequest, content_type = "application/json; charset=utf-8"),
+  responses(
+    (status = 200, description = "Client registation updated", body = Client),
+    (status = 201, description = "Client registered", body = Client),
+    (status = 401, description = "Application Error", body = HttpError),
+    (status = 403, description = "Application Error", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = ["client:create"])
+  )
+)]
+pub async fn register_client(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Json(client_register_request): Json<ClientRegisterRequest>,
+) -> impl IntoResponse {
+  match user_authorization.has_permission(CLIENT_CREATE) {
+    Ok(_) => {}
+    Err(e) => {
+      log::error!("error registering client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
+
+  let (client_sql_row, is_new) =
+    match upsert_client(&state.pool, client_register_request.into()).await {
+      Ok(result) => result,
+      Err(e) => {
+        log::error!("error registering client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
+
+  let client: Client = client_sql_row.into();
+
+  (
+    if is_new {
+      StatusCode::CREATED
+    } else {
+      StatusCode::OK
+    },
+    axum::Json(client),
+  )
+    .into_response()
 }
 
 pub fn create_router(state: RouterState) -> OpenApiRouter {
@@ -400,5 +534,6 @@ pub fn create_router(state: RouterState) -> OpenApiRouter {
     .routes(routes!(openid_configuration))
     .routes(routes!(token))
     .routes(routes!(authorize))
+    .routes(routes!(register_client))
     .with_state(state)
 }

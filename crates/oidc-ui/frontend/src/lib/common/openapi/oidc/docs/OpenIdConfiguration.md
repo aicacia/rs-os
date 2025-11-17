@@ -14,6 +14,7 @@ Name | Type
 `idTokenSigningAlgValuesSupported` | Array&lt;string&gt;
 `issuer` | string
 `jwksUri` | string
+`registrationEndpoint` | string
 `responseModesSupported` | Array&lt;string&gt;
 `responseTypesSupported` | Array&lt;string&gt;
 `revocationEndpoint` | string
@@ -38,6 +39,7 @@ const example = {
   "idTokenSigningAlgValuesSupported": null,
   "issuer": null,
   "jwksUri": null,
+  "registrationEndpoint": null,
   "responseModesSupported": null,
   "responseTypesSupported": null,
   "revocationEndpoint": null,

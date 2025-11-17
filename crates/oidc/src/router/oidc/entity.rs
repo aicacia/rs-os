@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+use crate::{model::client::sql::ClientSQLCommon, router::common::entity::Token};
+
 #[derive(Default, Serialize, ToSchema)]
 pub struct JWK {
   pub kid: String,
@@ -90,6 +92,8 @@ pub struct OpenIdConfiguration {
   pub userinfo_endpoint: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub revocation_endpoint: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub registration_endpoint: Option<String>,
   pub jwks_uri: String,
   pub response_types_supported: Vec<String>,
   pub response_modes_supported: Vec<String>,
@@ -112,9 +116,23 @@ pub enum ResponseMode {
 }
 
 #[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ResponseType {
+  Code,
+  IdToken,
+  #[serde(rename = "id_token token")]
+  IdTokenToken,
+  #[serde(rename = "code id_token token")]
+  CodeIdTokenToken,
+  #[serde(rename = "code token")]
+  CodeToken,
+  None,
+}
+
+#[derive(Deserialize, ToSchema)]
 pub struct AuthorizationRequest {
   pub client_id: String,
-  pub response_type: String,
+  pub response_type: ResponseType,
   pub response_mode: ResponseMode,
   pub scope: String,
   pub redirect_uri: String,
@@ -122,4 +140,75 @@ pub struct AuthorizationRequest {
   pub state: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub nonce: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "type")]
+pub enum Authorization {
+  #[serde(rename = "authorization_code")]
+  #[schema(title = "AuthorizationCode")]
+  AuthorizationCode { code: String },
+  #[serde(rename = "authorization_code")]
+  #[schema(title = "AuthorizationImplicit")]
+  Implicit {
+    #[serde(flatten)]
+    token: Token,
+  },
+}
+
+pub type Client = crate::router::client::entity::Client;
+
+#[derive(Deserialize, ToSchema)]
+pub struct ClientRegisterRequest {
+  pub name: String,
+  pub client_id: String,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub redirect_uris: Option<Vec<String>>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub post_logout_redirect_uris: Option<Vec<String>>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub logo_uri: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub client_uri: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub policy_uri: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub terms_of_service_uri: Option<String>,
+  pub application_type: String,
+  pub auth_method: String,
+  pub grant_types: Vec<String>,
+  pub response_types: Vec<String>,
+  pub scopes: Vec<String>,
+  pub audience: Option<Vec<String>>,
+  pub access_token_expires_in_seconds: i64,
+  pub id_token_expires_in_seconds: i64,
+  pub refresh_expires_in_seconds: i64,
+}
+
+impl Into<ClientSQLCommon> for ClientRegisterRequest {
+  fn into(self) -> ClientSQLCommon {
+    ClientSQLCommon {
+      name: self.name,
+      client_id: self.client_id,
+      redirect_uris: self
+        .redirect_uris
+        .map(|v| serde_json::to_string(&v).unwrap()),
+      post_logout_redirect_uris: self
+        .post_logout_redirect_uris
+        .map(|v| serde_json::to_string(&v).unwrap()),
+      logo_uri: self.logo_uri,
+      client_uri: self.client_uri,
+      policy_uri: self.policy_uri,
+      terms_of_service_uri: self.terms_of_service_uri,
+      application_type: self.application_type,
+      auth_method: self.auth_method,
+      grant_types: serde_json::to_string(&self.grant_types).unwrap(),
+      response_types: serde_json::to_string(&self.response_types).unwrap(),
+      scopes: serde_json::to_string(&self.scopes).unwrap(),
+      audience: self.audience.map(|v| serde_json::to_string(&v).unwrap()),
+      access_token_expires_in_seconds: self.access_token_expires_in_seconds,
+      id_token_expires_in_seconds: self.id_token_expires_in_seconds,
+      refresh_expires_in_seconds: self.refresh_expires_in_seconds,
+    }
+  }
 }

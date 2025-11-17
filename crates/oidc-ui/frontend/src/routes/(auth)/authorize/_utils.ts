@@ -1,11 +1,12 @@
-import type { AuthorizeRequest, Client } from '$lib/common/openapi/oidc';
+import { oidcApi } from '$lib/common/openapi';
+import { ResponseMode, type AuthorizeRequest, type Client } from '$lib/common/openapi/oidc';
 import {
-	ClientUpsertRequestFromJSON,
-	type ClientUpsertRequest
-} from '$lib/common/openapi/oidc/models/ClientUpsertRequest';
+	ClientRegisterRequestFromJSON,
+	type ClientRegisterRequest
+} from '$lib/common/openapi/oidc/models/ClientRegisterRequest';
 
-export type ClientInfo = ClientUpsertRequest;
-export const ClientInfoFromJSON = ClientUpsertRequestFromJSON;
+export type ClientInfo = ClientRegisterRequest;
+export const ClientInfoFromJSON = ClientRegisterRequestFromJSON;
 
 export function getClientDiff(client: Client, clientInfo: ClientInfo): Partial<ClientInfo> | false {
 	const diff: Partial<ClientInfo> = {};
@@ -52,7 +53,7 @@ export function getClientDiff(client: Client, clientInfo: ClientInfo): Partial<C
 }
 
 export function rejectAuthorizeRequest(
-	authorizeRequest: AuthorizeRequest,
+	authorizeRequest: Pick<AuthorizeRequest, 'redirectUri' | 'state' | 'nonce'>,
 	error: string,
 	errorDescription: string
 ) {
@@ -66,4 +67,46 @@ export function rejectAuthorizeRequest(
 	url.searchParams.append('error', error);
 	url.searchParams.append('error_description', errorDescription);
 	window.location.href = url.toString();
+}
+
+export async function resolveAuthorizeRequest(authorizeRequest: AuthorizeRequest) {
+	const url = new URL(authorizeRequest.redirectUri);
+	if (authorizeRequest.state) {
+		url.searchParams.append('state', authorizeRequest.state);
+	}
+	if (authorizeRequest.nonce) {
+		url.searchParams.append('nonce', authorizeRequest.nonce);
+	}
+	const authorizeResponse = await oidcApi.authorize(authorizeRequest);
+	switch (authorizeRequest.responseMode) {
+		case 'fragment':
+		case 'query': {
+			switch (authorizeResponse.type) {
+				case 'authorization_code': {
+					url.searchParams.set('code', authorizeResponse.code);
+					break;
+				}
+				case 'implicit':
+				case 'hybrid': {
+					url.searchParams.set('access_token', authorizeResponse.accessToken);
+					url.searchParams.set('token_type', authorizeResponse.tokenType);
+					url.searchParams.set('expires_in', authorizeResponse.expiresIn);
+					if (authorizeResponse.idToken) {
+						url.searchParams.set('id_token', authorizeResponse.idToken);
+					}
+					break;
+				}
+			}
+			window.location.href = url.toString();
+			break;
+		}
+		case 'form_post': {
+			throw new Error('not supported yet!');
+			break;
+		}
+		case 'web_message': {
+			throw new Error('not supported yet!');
+			break;
+		}
+	}
 }

@@ -1,8 +1,11 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './Authorization';
+export * from './AuthorizationCode';
+export * from './AuthorizationOneOf';
 export * from './Client';
 export * from './ClientAllowed';
-export * from './ClientUpsertRequest';
+export * from './ClientRegisterRequest';
 export * from './Health';
 export * from './HttpError';
 export * from './HttpErrorMessage';
@@ -10,6 +13,7 @@ export * from './JWK';
 export * from './JWKs';
 export * from './OpenIdConfiguration';
 export * from './ResponseMode';
+export * from './ResponseType';
 export * from './SignupRequest';
 export * from './Token';
 export * from './User';

@@ -7,7 +7,7 @@
 	import { handleError } from '$lib/common/errors';
 	import { type AuthorizeRequest, ResponseMode } from '$lib/common/openapi/oidc';
 	import Authorize from './_Authorize.svelte';
-	import { ClientInfoFromJSON, type ClientInfo } from './_utils';
+	import { ClientInfoFromJSON, rejectAuthorizeRequest, type ClientInfo } from './_utils';
 
 	let { data } = $props();
 
@@ -32,9 +32,11 @@
 
 	let clientIdInfo = $state<ClientInfo | null>(null);
 	let clientId = $state<string | null>(null);
+	let loadingClientIdInfo = $state(true);
 
 	$effect(() => {
 		if (clientUrl) {
+			loadingClientIdInfo = true;
 			fetch(clientUrl)
 				.then(async (response) => {
 					if (!response.ok) {
@@ -45,8 +47,12 @@
 					clientIdInfo = ClientInfoFromJSON(await response.json());
 					clientId = clientIdInfo.clientId;
 				})
-				.catch(handleError);
+				.catch(handleError)
+				.finally(() => {
+					loadingClientIdInfo = false;
+				});
 		} else if (urlClientId) {
+			loadingClientIdInfo = true;
 			try {
 				clientIdInfo = ClientInfoFromJSON(JSON.parse(urlClientId));
 			} catch (_e) {}
@@ -55,6 +61,7 @@
 				return;
 			}
 			clientId = urlClientId;
+			loadingClientIdInfo = false;
 		}
 	});
 
@@ -67,6 +74,10 @@
 	let authorizeRequest = $state<AuthorizeRequest>();
 
 	$effect(() => {
+		if (loadingClientIdInfo) {
+			authorizeRequest = undefined;
+			return;
+		}
 		if (!clientId) {
 			clientIdError = 'Client ID is required';
 		} else {
@@ -108,6 +119,22 @@
 			nonce: urlNonce
 		};
 	});
+
+	function onReject() {
+		if (!urlRedirectUri) {
+			window.close();
+			return;
+		}
+		rejectAuthorizeRequest(
+			{
+				redirectUri: urlRedirectUri,
+				state: urlState,
+				nonce: urlNonce
+			},
+			'invalid_request',
+			'The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.'
+		);
+	}
 </script>
 
 <div class="overflow-auto">
@@ -135,6 +162,11 @@
 							<li><strong>Invalid Scope:</strong> {scopeError}</li>
 						{/if}
 					</ul>
+					<div>
+						<div class="mt-4 flex flex-row justify-center gap-4">
+							<button class="btn secondary" onclick={onReject}>Deny</button>
+						</div>
+					</div>
 				</section>
 			{/if}
 		</div>

@@ -9,8 +9,8 @@ use crate::{
     common::{constants::TOKEN_ISSUE_TYPE_PASSWORD, entity::Token, helper::create_user_token},
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR},
+    json::Json,
     register::{constants::TAG, entity::SignupRequest},
-    validated_json::ValidatedJson,
   },
 };
 
@@ -18,7 +18,7 @@ use crate::{
   post,
   path = "/register",
   tags = [TAG],
-  request_body = SignupRequest,
+  request_body(content = SignupRequest, content_type = "application/json; charset=utf-8"),
   responses(
     (status = 201, description = "Token created", body = Token),
     (status = 401, description = "Invalid username or password", body = HttpError),
@@ -28,7 +28,7 @@ use crate::{
 )]
 pub async fn register(
   State(state): State<RouterState>,
-  ValidatedJson(register_request): ValidatedJson<SignupRequest>,
+  Json(register_request): Json<SignupRequest>,
 ) -> impl IntoResponse {
   let user = match create_user_with_password(
     &state.pool,

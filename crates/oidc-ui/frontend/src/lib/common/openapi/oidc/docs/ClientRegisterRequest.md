@@ -1,5 +1,5 @@
 
-# ClientUpsertRequest
+# ClientRegisterRequest
 
 
 ## Properties
@@ -27,7 +27,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ClientUpsertRequest } from ''
+import type { ClientRegisterRequest } from ''
 
 // TODO: Update the object below with actual values
 const example = {
@@ -48,7 +48,7 @@ const example = {
   "responseTypes": null,
   "scopes": null,
   "termsOfServiceUri": null,
-} satisfies ClientUpsertRequest
+} satisfies ClientRegisterRequest
 
 console.log(example)
 
@@ -57,7 +57,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as ClientUpsertRequest
+const exampleParsed = JSON.parse(exampleJSON) as ClientRegisterRequest
 console.log(exampleParsed)
 ```
 

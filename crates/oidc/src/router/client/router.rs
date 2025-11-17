@@ -1,5 +1,4 @@
 use axum::{
-  Json,
   extract::{Path, State},
   response::IntoResponse,
 };
@@ -8,13 +7,13 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 use crate::{
   core::helper::json_to_string_vec,
   model::{
-    client::sql::{get_client_by_client_id, upsert_client},
+    client::sql::get_client_by_client_id,
     user::sql::{get_user_client_by_client_id, upsert_user_client},
   },
   router::{
     client::{
-      constants::{CLIENT_CREATE, CLIENT_READ, TAG},
-      entity::{Client, ClientAllowed, ClientUpsertRequest},
+      constants::{CLIENT_READ, TAG},
+      entity::{Client, ClientAllowed},
     },
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR},
@@ -57,81 +56,6 @@ pub async fn client_by_client_id(
     }
     Err(e) => {
       log::error!("error fetching client: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
-
-  let client: Client = client_sql_row.into();
-
-  axum::Json(client).into_response()
-}
-
-#[utoipa::path(
-  post,
-  path = "/clients",
-  tags = [TAG],
-  responses(
-    (status = 201, content_type = "application/json", body = Client),
-    (status = 400, content_type = "application/json", body = HttpError),
-    (status = 401, content_type = "application/json", body = HttpError),
-    (status = 403, content_type = "application/json", body = HttpError),
-    (status = 500, content_type = "application/json", body = HttpError),
-  ),
-  security(
-    ("Authorization" = ["client:create"])
-  )
-)]
-pub async fn create_client(
-  State(_state): State<RouterState>,
-  user_authorization: UserAuthorization,
-) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_CREATE) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
-  }
-
-  axum::Json(()).into_response()
-}
-
-#[utoipa::path(
-  post,
-  path = "/clients:upsert",
-  tags = [TAG],
-  request_body(content = ClientUpsertRequest, content_type = "application/json"),
-  responses(
-    (status = 200, content_type = "application/json", body = Client),
-    (status = 201, content_type = "application/json", body = Client),
-    (status = 400, content_type = "application/json", body = HttpError),
-    (status = 401, content_type = "application/json", body = HttpError),
-    (status = 403, content_type = "application/json", body = HttpError),
-    (status = 404, content_type = "application/json", body = HttpError),
-    (status = 500, content_type = "application/json", body = HttpError),
-  ),
-  security(
-    ("Authorization" = ["client:create"])
-  )
-)]
-pub async fn client_upsert(
-  State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
-  Json(client_upsert_request): Json<ClientUpsertRequest>,
-) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_CREATE) {
-    Ok(_) => {}
-    Err(e) => {
-      log::error!("error fetching client: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
-
-  let client_sql_row = match upsert_client(&state.pool, client_upsert_request.into()).await {
-    Ok(client_sql_row) => client_sql_row,
-    Err(e) => {
-      log::error!("error upserting client: {}", e);
       return HttpError::internal_error()
         .with_application_error(INTERNAL_ERROR)
         .into_response();
@@ -242,8 +166,6 @@ pub async fn client_user_approve(
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(client_by_client_id))
-    .routes(routes!(create_client))
-    .routes(routes!(client_upsert))
     .routes(routes!(client_user_allowed))
     .routes(routes!(client_user_approve))
     .with_state(state)

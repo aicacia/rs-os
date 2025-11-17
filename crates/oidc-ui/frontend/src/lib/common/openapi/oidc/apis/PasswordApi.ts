@@ -73,7 +73,7 @@ export class PasswordApi extends runtime.BaseAPI implements PasswordApiInterface
 
         const headerParameters: runtime.HTTPHeaders = {};
 
-        headerParameters['Content-Type'] = 'application/json';
+        headerParameters['Content-Type'] = 'application/json; charset=utf-8';
 
 
         let urlPath = `/oidc/api/register`;
