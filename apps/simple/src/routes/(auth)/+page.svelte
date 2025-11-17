@@ -8,8 +8,12 @@
 	}
 </script>
 
-<pre>
-	{JSON.stringify(data.user, null, 2)}
-</pre>
+<div class="flex flex-col grow items-center justify-center">
+	<code class="flex flex-col w-full">
+		<pre>{JSON.stringify(data.user, null, 2)}</pre>
+	</code>
 
-<button class="btn danger" onclick={onSignOut}>Sign out</button>
+	<div class="flex flex-row justify-center">
+		<button class="btn danger" onclick={onSignOut}>Sign out</button>
+	</div>
+</div>

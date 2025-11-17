@@ -10,11 +10,11 @@ export const load: PageLoad = async (event) => {
 
 	try {
 		await getUserManager().signinSilentCallback(event.url.toString());
-		redirect(302, '/');
 	} catch (e) {
 		if (e instanceof Error) {
 			createNotification(e.message);
 		}
 		redirect(302, '/signin');
 	}
+	redirect(302, '/');
 };

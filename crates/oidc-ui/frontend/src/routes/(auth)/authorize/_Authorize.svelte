@@ -110,10 +110,11 @@
 		);
 	}
 
-	let disabled = $derived(loadingClient || loadingUserAllowed);
+	let loading = $derived(loadingClient || loadingUserAllowed);
+	let disabled = $derived(loading);
 </script>
 
-{#if loadingClient}
+{#if loading}
 	<div class="flex flex-row items-center justify-center">
 		<LoaderCircle class="animate-spin" />
 	</div>

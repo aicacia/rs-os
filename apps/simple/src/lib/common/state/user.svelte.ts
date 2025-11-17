@@ -10,6 +10,7 @@ const userSettings = browser
 			response_type: 'code',
 			scope: 'openid profile',
 			response_mode: 'query',
+			loadUserInfo: true,
 			popup_redirect_uri: `${window.location.origin}/popup-callback`,
 			popup_post_logout_redirect_uri: `${window.location.origin}/popup-callback`,
 			silent_redirect_uri: `${window.location.origin}/silent-callback`,

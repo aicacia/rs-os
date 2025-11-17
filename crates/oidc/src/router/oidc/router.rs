@@ -10,12 +10,13 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
   core::{
+    config::app_config::AppConfig,
     encryption::verify_password,
     helper::json_to_string_vec,
     jwk::sql::{get_jwk_for_sign_and_verify, list_jwks},
   },
   model::{
-    client::sql::{get_client_by_client_id, upsert_client},
+    client::sql::{ClientSQLRow, get_client_by_client_id, upsert_client},
     user::sql::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
       get_user_client_by_client_id,
@@ -245,6 +246,13 @@ async fn password_grant(
   username: String,
   password: String,
 ) -> Result<Token, HttpError> {
+  let audiences = get_audiences_by_client_id(
+    &state.pool,
+    &state.config,
+    common.client_id.as_ref().map(AsRef::as_ref),
+  )
+  .await?;
+
   let user = match get_user_by_username_or_primary_email(&state.pool, &username).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR)),
@@ -295,15 +303,23 @@ async fn password_grant(
     user,
     common.scope.or_else(|| Some("openid".to_owned())),
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
+    &audiences,
   )
   .await
 }
 
 async fn refresh_token_grant(
   state: RouterState,
-  _common: TokenRequestCommon,
+  common: TokenRequestCommon,
   refresh_token: String,
 ) -> Result<Token, HttpError> {
+  let audiences = get_audiences_by_client_id(
+    &state.pool,
+    &state.config,
+    common.client_id.as_ref().map(AsRef::as_ref),
+  )
+  .await?;
+
   let (token_data, jwk_sql_row) =
     parse_authorization::<BasicClaims>(&state.pool, &state.config, &refresh_token).await?;
 
@@ -327,15 +343,23 @@ async fn refresh_token_grant(
     user,
     Some(token_data.claims.scopes.join(" ").to_owned()),
     TOKEN_ISSUE_TYPE_REFRESH_TOKEN.to_owned(),
+    &audiences,
   )
   .await
 }
 
 async fn authorization_code_grant(
   state: RouterState,
-  _common: TokenRequestCommon,
+  common: TokenRequestCommon,
   code: String,
 ) -> Result<Token, HttpError> {
+  let audiences = get_audiences_by_client_id(
+    &state.pool,
+    &state.config,
+    common.client_id.as_ref().map(AsRef::as_ref),
+  )
+  .await?;
+
   let (token_data, jwk_sql_row) =
     parse_authorization::<BasicClaims>(&state.pool, &state.config, &code).await?;
 
@@ -359,8 +383,41 @@ async fn authorization_code_grant(
     user,
     Some(token_data.claims.scopes.join(" ").to_owned()),
     TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
+    &audiences,
   )
   .await
+}
+
+fn get_audiences_by_client(client_sql_row: &ClientSQLRow) -> Result<Vec<String>, HttpError> {
+  let audiences = client_sql_row
+    .audience
+    .as_ref()
+    .map(json_to_string_vec)
+    .unwrap_or_default();
+
+  if audiences.is_empty() {
+    return Err(HttpError::unauthorized().with_error("client", NOT_FOUND_ERROR));
+  }
+  Ok(audiences)
+}
+
+async fn get_audiences_by_client_id(
+  pool: &sqlx::AnyPool,
+  config: &AppConfig,
+  client_id: Option<&str>,
+) -> Result<Vec<String>, HttpError> {
+  if let Some(client_id) = client_id {
+    match get_client_by_client_id(pool, client_id).await {
+      Ok(Some(client_sql_row)) => get_audiences_by_client(&client_sql_row),
+      Ok(None) => return Err(HttpError::unauthorized().with_error("client_uri", INVALID_ERROR)),
+      Err(e) => {
+        log::error!("error fetching client: {}", e);
+        return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+      }
+    }
+  } else {
+    Ok(vec![config.api_url()])
+  }
 }
 
 #[utoipa::path(
@@ -449,12 +506,17 @@ pub async fn authorize(
       .into_response();
   }
 
+  let audiences = match get_audiences_by_client(&client_sql_row) {
+    Ok(audiences) => audiences,
+    Err(e) => return e.into_response(),
+  };
+
   let authorization_response = match authorization_request.response_type {
     super::entity::ResponseType::Code => match create_user_auhorization_code_token(
       &state.pool,
       &state.config,
-      client_sql_row,
       user_authorization.user_sql_row,
+      &audiences,
     )
     .await
     {

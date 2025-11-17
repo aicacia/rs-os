@@ -9,11 +9,8 @@ use crate::{
       sql::{JwkSQLRow, get_jwk_for_sign_and_verify},
     },
   },
-  model::{
-    client::sql::ClientSQLRow,
-    user::sql::{
-      UserSQLRow, get_user_info_by_user_id, get_user_primary_email, get_user_primary_phone_number,
-    },
+  model::user::sql::{
+    UserSQLRow, get_user_info_by_user_id, get_user_primary_email, get_user_primary_phone_number,
   },
   router::{
     common::{
@@ -34,6 +31,7 @@ pub(crate) async fn create_user_token(
   user: UserSQLRow,
   scope: Option<String>,
   issued_token_type: String,
+  audiences: &[String],
 ) -> Result<Token, HttpError> {
   let now = chrono::Utc::now();
   let scopes = parse_scopes(scope.as_ref().map(String::as_str));
@@ -46,7 +44,7 @@ pub(crate) async fn create_user_token(
     nbf: now.timestamp(),
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
-    aud: Some(app_config.api_url()),
+    aud: audiences.to_vec(),
     scopes: scopes.clone(),
   };
 
@@ -190,8 +188,8 @@ pub(crate) async fn create_user_token(
 pub(crate) async fn create_user_auhorization_code_token(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
-  client: ClientSQLRow,
   user: UserSQLRow,
+  audiences: &[String],
 ) -> Result<String, HttpError> {
   let jwk_sql_row = match get_jwk_for_sign_and_verify(pool).await {
     Ok(Some(jwk_sql_row)) => jwk_sql_row,
@@ -215,7 +213,7 @@ pub(crate) async fn create_user_auhorization_code_token(
     nbf: now.timestamp(),
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
-    aud: client.audience,
+    aud: audiences.to_vec(),
     scopes: Vec::default(),
   };
 
@@ -293,8 +291,8 @@ where
 {
   let mut validation = jsonwebtoken::Validation::new(algorithm);
   validation.validate_nbf = true;
+  validation.validate_aud = false;
   validation.set_issuer(&[app_config.api_url()]);
-  validation.set_audience(&[app_config.api_url()]);
 
   jsonwebtoken::decode(jwt, &decoding_key, &validation)
 }
