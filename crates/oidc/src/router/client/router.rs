@@ -263,6 +263,7 @@ pub async fn client_authorize(
       &state.pool,
       &state.config,
       user_authorization.user_sql_row,
+      Some(authorization_request.scope),
       &audiences,
     )
     .await

@@ -10,12 +10,12 @@ Name | Type
 `createdAt` | Date
 `email` | [UserEmail](UserEmail.md)
 `emails` | [Array&lt;UserEmail&gt;](UserEmail.md)
-`id` | number
 `info` | [UserInfo](UserInfo.md)
 `oauth2Providers` | [Array&lt;UserOAuth2Provider&gt;](UserOAuth2Provider.md)
 `phoneNumber` | [UserPhoneNumber](UserPhoneNumber.md)
 `phoneNumbers` | [Array&lt;UserPhoneNumber&gt;](UserPhoneNumber.md)
 `roles` | [Array&lt;UserRole&gt;](UserRole.md)
+`sub` | number
 `updatedAt` | Date
 `username` | string
 
@@ -30,12 +30,12 @@ const example = {
   "createdAt": null,
   "email": null,
   "emails": null,
-  "id": null,
   "info": null,
   "oauth2Providers": null,
   "phoneNumber": null,
   "phoneNumbers": null,
   "roles": null,
+  "sub": null,
   "updatedAt": null,
   "username": null,
 } satisfies User

@@ -81,12 +81,6 @@ export interface User {
     emails: Array<UserEmail>;
     /**
      * 
-     * @type {number}
-     * @memberof User
-     */
-    id: number;
-    /**
-     * 
      * @type {UserInfo}
      * @memberof User
      */
@@ -117,6 +111,12 @@ export interface User {
     roles: Array<UserRole>;
     /**
      * 
+     * @type {number}
+     * @memberof User
+     */
+    sub: number;
+    /**
+     * 
      * @type {Date}
      * @memberof User
      */
@@ -136,10 +136,10 @@ export function instanceOfUser(value: object): value is User {
     if (!('active' in value) || value['active'] === undefined) return false;
     if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
     if (!('emails' in value) || value['emails'] === undefined) return false;
-    if (!('id' in value) || value['id'] === undefined) return false;
     if (!('oauth2Providers' in value) || value['oauth2Providers'] === undefined) return false;
     if (!('phoneNumbers' in value) || value['phoneNumbers'] === undefined) return false;
     if (!('roles' in value) || value['roles'] === undefined) return false;
+    if (!('sub' in value) || value['sub'] === undefined) return false;
     if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
     if (!('username' in value) || value['username'] === undefined) return false;
     return true;
@@ -159,12 +159,12 @@ export function UserFromJSONTyped(json: any, ignoreDiscriminator: boolean): User
         'createdAt': (new Date(json['created_at'])),
         'email': json['email'] == null ? undefined : UserEmailFromJSON(json['email']),
         'emails': ((json['emails'] as Array<any>).map(UserEmailFromJSON)),
-        'id': json['id'],
         'info': json['info'] == null ? undefined : UserInfoFromJSON(json['info']),
         'oauth2Providers': ((json['oauth2_providers'] as Array<any>).map(UserOAuth2ProviderFromJSON)),
         'phoneNumber': json['phone_number'] == null ? undefined : UserPhoneNumberFromJSON(json['phone_number']),
         'phoneNumbers': ((json['phone_numbers'] as Array<any>).map(UserPhoneNumberFromJSON)),
         'roles': ((json['roles'] as Array<any>).map(UserRoleFromJSON)),
+        'sub': json['sub'],
         'updatedAt': (new Date(json['updated_at'])),
         'username': json['username'],
     };
@@ -185,12 +185,12 @@ export function UserToJSONTyped(value?: User | null, ignoreDiscriminator: boolea
         'created_at': value['createdAt'].toISOString(),
         'email': UserEmailToJSON(value['email']),
         'emails': ((value['emails'] as Array<any>).map(UserEmailToJSON)),
-        'id': value['id'],
         'info': UserInfoToJSON(value['info']),
         'oauth2_providers': ((value['oauth2Providers'] as Array<any>).map(UserOAuth2ProviderToJSON)),
         'phone_number': UserPhoneNumberToJSON(value['phoneNumber']),
         'phone_numbers': ((value['phoneNumbers'] as Array<any>).map(UserPhoneNumberToJSON)),
         'roles': ((value['roles'] as Array<any>).map(UserRoleToJSON)),
+        'sub': value['sub'],
         'updated_at': value['updatedAt'].toISOString(),
         'username': value['username'],
     };

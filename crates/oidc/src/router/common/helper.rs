@@ -189,6 +189,7 @@ pub(crate) async fn create_user_auhorization_code_token(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
   user: UserSQLRow,
+  scope: Option<String>,
   audiences: &[String],
 ) -> Result<String, HttpError> {
   let jwk_sql_row = match get_jwk_for_sign_and_verify(pool).await {
@@ -214,7 +215,7 @@ pub(crate) async fn create_user_auhorization_code_token(
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
     aud: audiences.to_vec(),
-    scopes: Vec::default(),
+    scopes: parse_scopes(scope.as_ref().map(String::as_str)),
   };
 
   let encoding_key = match to_encoding_key(&jwk_sql_row) {
