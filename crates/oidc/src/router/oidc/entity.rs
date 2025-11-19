@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{model::client::sql::ClientSQLCommon, router::common::entity::Token};
+use crate::model::client::sql::ClientSQLCommon;
 
 #[derive(Default, Serialize, ToSchema)]
 pub struct JWK {
@@ -89,6 +89,8 @@ pub struct OpenIdConfiguration {
   pub device_authorization_endpoint: Option<String>,
   pub token_endpoint: String,
   #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub end_session_endpoint: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
   pub userinfo_endpoint: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub revocation_endpoint: Option<String>,
@@ -115,22 +117,60 @@ pub enum ResponseMode {
   WebMessage, // Silent authentication
 }
 
+impl ResponseMode {
+  pub fn as_str(&self) -> &str {
+    match self {
+      ResponseMode::Query => "query",
+      ResponseMode::Fragment => "fragment",
+      ResponseMode::FormPost => "form_post",
+      ResponseMode::WebMessage => "web_message",
+    }
+  }
+}
+
 #[derive(Deserialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
 pub enum ResponseType {
+  #[serde(rename = "none")]
+  None,
+  #[serde(rename = "code")]
   Code,
+  #[serde(rename = "token")]
+  Token,
+  #[serde(rename = "id_token")]
   IdToken,
+  #[serde(rename = "code token")]
+  CodeToken,
+  #[serde(rename = "code id_token")]
+  CodeIdToken,
   #[serde(rename = "id_token token")]
   IdTokenToken,
   #[serde(rename = "code id_token token")]
   CodeIdTokenToken,
-  #[serde(rename = "code token")]
-  CodeToken,
-  None,
+}
+
+impl ResponseType {
+  pub fn as_str(&self) -> &str {
+    match self {
+      ResponseType::None => "none",
+      ResponseType::Code => "code",
+      ResponseType::Token => "token",
+      ResponseType::IdToken => "id_token",
+      ResponseType::CodeToken => "code token",
+      ResponseType::CodeIdToken => "code id_token",
+      ResponseType::IdTokenToken => "id_token token",
+      ResponseType::CodeIdTokenToken => "code id_token token",
+    }
+  }
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct AuthorizationRequest {
+pub struct EndSessionRequest {
+  pub client_id: String,
+  pub post_logout_redirect_uri: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct AuthorizeRequest {
   pub client_id: String,
   pub response_type: ResponseType,
   pub response_mode: ResponseMode,
@@ -140,20 +180,6 @@ pub struct AuthorizationRequest {
   pub state: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub nonce: Option<String>,
-}
-
-#[derive(Serialize, ToSchema)]
-#[serde(tag = "type")]
-pub enum Authorization {
-  #[serde(rename = "authorization_code")]
-  #[schema(title = "AuthorizationCode")]
-  AuthorizationCode { code: String },
-  #[serde(rename = "authorization_code")]
-  #[schema(title = "AuthorizationImplicit")]
-  Implicit {
-    #[serde(flatten)]
-    token: Token,
-  },
 }
 
 pub type Client = crate::router::client::entity::Client;

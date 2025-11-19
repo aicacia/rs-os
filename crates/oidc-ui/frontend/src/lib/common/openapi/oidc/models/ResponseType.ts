@@ -18,12 +18,14 @@
  * @export
  */
 export const ResponseType = {
+    None: 'none',
     Code: 'code',
+    Token: 'token',
     IdToken: 'id_token',
-    IdTokenToken: 'id_token token',
-    CodeIdTokenToken: 'code id_token token',
     CodeToken: 'code token',
-    None: 'none'
+    CodeIdToken: 'code id_token',
+    IdTokenToken: 'id_token token',
+    CodeIdTokenToken: 'code id_token token'
 } as const;
 export type ResponseType = typeof ResponseType[keyof typeof ResponseType];
 

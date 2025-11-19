@@ -16,85 +16,85 @@ import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface AuthorizationOneOf
+ * @interface ClientAuthorizationOneOf
  */
-export interface AuthorizationOneOf {
+export interface ClientAuthorizationOneOf {
     /**
      * 
      * @type {string}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     accessToken: string;
     /**
      * 
      * @type {number}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     expiresIn: number;
     /**
      * 
      * @type {string}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     idToken?: string;
     /**
      * 
      * @type {Date}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     issuedAt: Date;
     /**
      * 
      * @type {string}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     issuedTokenType: string;
     /**
      * 
      * @type {string}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     refreshToken?: string;
     /**
      * 
      * @type {number}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     refreshTokenExpiresIn?: number;
     /**
      * 
      * @type {string}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     scope?: string;
     /**
      * 
      * @type {string}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
     tokenType: string;
     /**
      * 
      * @type {string}
-     * @memberof AuthorizationOneOf
+     * @memberof ClientAuthorizationOneOf
      */
-    type: AuthorizationOneOfTypeEnum;
+    type: ClientAuthorizationOneOfTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const AuthorizationOneOfTypeEnum = {
+export const ClientAuthorizationOneOfTypeEnum = {
     AuthorizationCode: 'authorization_code'
 } as const;
-export type AuthorizationOneOfTypeEnum = typeof AuthorizationOneOfTypeEnum[keyof typeof AuthorizationOneOfTypeEnum];
+export type ClientAuthorizationOneOfTypeEnum = typeof ClientAuthorizationOneOfTypeEnum[keyof typeof ClientAuthorizationOneOfTypeEnum];
 
 
 /**
- * Check if a given object implements the AuthorizationOneOf interface.
+ * Check if a given object implements the ClientAuthorizationOneOf interface.
  */
-export function instanceOfAuthorizationOneOf(value: object): value is AuthorizationOneOf {
+export function instanceOfClientAuthorizationOneOf(value: object): value is ClientAuthorizationOneOf {
     if (!('accessToken' in value) || value['accessToken'] === undefined) return false;
     if (!('expiresIn' in value) || value['expiresIn'] === undefined) return false;
     if (!('issuedAt' in value) || value['issuedAt'] === undefined) return false;
@@ -104,11 +104,11 @@ export function instanceOfAuthorizationOneOf(value: object): value is Authorizat
     return true;
 }
 
-export function AuthorizationOneOfFromJSON(json: any): AuthorizationOneOf {
-    return AuthorizationOneOfFromJSONTyped(json, false);
+export function ClientAuthorizationOneOfFromJSON(json: any): ClientAuthorizationOneOf {
+    return ClientAuthorizationOneOfFromJSONTyped(json, false);
 }
 
-export function AuthorizationOneOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): AuthorizationOneOf {
+export function ClientAuthorizationOneOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): ClientAuthorizationOneOf {
     if (json == null) {
         return json;
     }
@@ -127,11 +127,11 @@ export function AuthorizationOneOfFromJSONTyped(json: any, ignoreDiscriminator: 
     };
 }
 
-export function AuthorizationOneOfToJSON(json: any): AuthorizationOneOf {
-    return AuthorizationOneOfToJSONTyped(json, false);
+export function ClientAuthorizationOneOfToJSON(json: any): ClientAuthorizationOneOf {
+    return ClientAuthorizationOneOfToJSONTyped(json, false);
 }
 
-export function AuthorizationOneOfToJSONTyped(value?: AuthorizationOneOf | null, ignoreDiscriminator: boolean = false): any {
+export function ClientAuthorizationOneOfToJSONTyped(value?: ClientAuthorizationOneOf | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

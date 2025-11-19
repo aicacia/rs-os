@@ -1,11 +1,11 @@
 <script lang="ts" module>
+	const RESPONSE_TYPES = Object.values(ResponseType);
 	const RESPONSE_MODES = Object.values(ResponseMode);
 </script>
 
 <script lang="ts">
 	import { page } from '$app/state';
-	import { handleError } from '$lib/common/errors';
-	import { type AuthorizeRequest, ResponseMode } from '$lib/common/openapi/oidc';
+	import { type AuthorizeRequest, ResponseMode, ResponseType } from '$lib/common/openapi/oidc';
 	import Authorize from './_Authorize.svelte';
 	import { ClientInfoFromJSON, rejectAuthorizeRequest, type ClientInfo } from './_utils';
 
@@ -18,50 +18,15 @@
 	let urlRedirectUri = $derived(page.url.searchParams.get('redirect_uri'));
 	let urlState = $derived(page.url.searchParams.get('state'));
 	let urlNonce = $derived(page.url.searchParams.get('nonce'));
-
-	let clientUrl = $derived.by(() => {
-		if (!urlClientId) {
-			return null;
-		}
-		try {
-			return new URL(urlClientId);
-		} catch (e) {
-			return null;
-		}
-	});
+	let urlRegistration = $derived(page.url.searchParams.get('registration'));
 
 	let clientIdInfo = $state<ClientInfo | null>(null);
-	let clientId = $state<string | null>(null);
-	let loadingClientIdInfo = $state(true);
 
 	$effect(() => {
-		if (clientUrl) {
-			loadingClientIdInfo = true;
-			fetch(clientUrl)
-				.then(async (response) => {
-					if (!response.ok) {
-						console.error(`failed to load client url ${clientUrl}: ${await response.text()}`);
-						return;
-					}
-
-					clientIdInfo = ClientInfoFromJSON(await response.json());
-					clientId = clientIdInfo.clientId;
-				})
-				.catch(handleError)
-				.finally(() => {
-					loadingClientIdInfo = false;
-				});
-		} else if (urlClientId) {
-			loadingClientIdInfo = true;
+		if (urlRegistration) {
 			try {
-				clientIdInfo = ClientInfoFromJSON(JSON.parse(urlClientId));
+				clientIdInfo = ClientInfoFromJSON(JSON.parse(urlRegistration));
 			} catch (_e) {}
-			if (clientIdInfo) {
-				clientId = clientIdInfo.clientId;
-				return;
-			}
-			clientId = urlClientId;
-			loadingClientIdInfo = false;
 		}
 	});
 
@@ -74,11 +39,7 @@
 	let authorizeRequest = $state<AuthorizeRequest>();
 
 	$effect(() => {
-		if (loadingClientIdInfo) {
-			authorizeRequest = undefined;
-			return;
-		}
-		if (!clientId) {
+		if (!urlClientId) {
 			clientIdError = 'Client ID is required';
 		} else {
 			clientIdError = undefined;
@@ -88,10 +49,17 @@
 		} else {
 			responseTypeError = undefined;
 		}
+		if (!urlResponseType) {
+			responseTypeError = 'Response Type is required';
+		} else if (!RESPONSE_TYPES.includes(urlResponseType as never)) {
+			responseTypeError = `${urlResponseType} is not one of ${RESPONSE_TYPES.join(',')}`;
+		} else {
+			responseTypeError = undefined;
+		}
 		if (!urlResponseMode) {
 			responseModeError = 'Response Mode is required';
 		} else if (!RESPONSE_MODES.includes(urlResponseMode as never)) {
-			responseModeError = `Invalid Response Mode: ${urlResponseMode} is not one of ${RESPONSE_MODES.join(',')}`;
+			responseModeError = `${urlResponseMode} is not one of ${RESPONSE_MODES.join(',')}`;
 		} else {
 			responseModeError = undefined;
 		}
@@ -110,8 +78,8 @@
 			return;
 		}
 		authorizeRequest = {
-			clientId: clientId!,
-			responseType: urlResponseType!,
+			clientId: urlClientId!,
+			responseType: urlResponseType as ResponseType,
 			responseMode: urlResponseMode as ResponseMode,
 			redirectUri: urlRedirectUri!,
 			scope: urlScope!,

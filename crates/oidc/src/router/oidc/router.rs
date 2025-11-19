@@ -1,10 +1,11 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use axum::{
-  extract::{Form, State},
-  response::IntoResponse,
+  body::Body,
+  extract::{Query, State},
+  response::{IntoResponse, Response},
 };
-use http::StatusCode;
+use http::{StatusCode, header};
 use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
@@ -19,7 +20,6 @@ use crate::{
     client::sql::{ClientSQLRow, get_client_by_client_id, upsert_client},
     user::sql::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
-      get_user_client_by_client_id,
     },
   },
   router::{
@@ -30,18 +30,19 @@ use crate::{
         TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
       },
       entity::{BasicClaims, Token},
-      helper::{create_user_auhorization_code_token, create_user_token},
+      helper::create_user_token,
     },
     entity::RouterState,
     error::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
     },
+    form::Form,
     json::Json,
     middleware::{authorization::parse_authorization, user_authorization::UserAuthorization},
     oidc::{
       constants::TAG,
       entity::{
-        Authorization, AuthorizationRequest, Client, ClientRegisterRequest, JWK, JWKs,
+        AuthorizeRequest, Client, ClientRegisterRequest, EndSessionRequest, JWK, JWKs,
         OpenIdConfiguration, TokenRequest, TokenRequestCommon,
       },
     },
@@ -145,6 +146,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
       None
     },
     token_endpoint: format!("{}/token", api_url),
+    end_session_endpoint: Some(format!("{}/end-session", api_url)),
     userinfo_endpoint: Some(format!("{}/current-user", api_url)),
     revocation_endpoint: Some(format!("{}/revoke", api_url)),
     registration_endpoint: Some(format!("{}/register-client", api_url)),
@@ -202,6 +204,74 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     issuer: api_url,
   })
   .into_response()
+}
+
+#[utoipa::path(
+  get,
+  path = "/end-session",
+  tags = [TAG],
+  responses(
+    (status = 204, description = "Session ended"),
+    (status = 401, description = "Unauthorized Error", body = HttpError),
+    (status = 403, description = "Forbiddon Error", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  )
+)]
+pub async fn end_session(
+  State(state): State<RouterState>,
+  Query(end_session_request): Query<EndSessionRequest>,
+) -> impl IntoResponse {
+  let client_sql_row =
+    match get_client_by_client_id(&state.pool, &end_session_request.client_id).await {
+      Ok(Some(client_sql_row)) => client_sql_row,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("client", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("failed to fetch client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
+
+  let post_logout_redirect_uri = match Url::parse(&end_session_request.post_logout_redirect_uri) {
+    Ok(post_logout_redirect_uri) => post_logout_redirect_uri,
+    Err(e) => {
+      log::error!("invalid post_logout_redirect_uri: {}", e);
+      return HttpError::bad_request()
+        .with_error("post_logout_redirect_uri", INVALID_ERROR)
+        .into_response();
+    }
+  };
+
+  let post_logout_redirect_uri_string = if let Some(post_logout_redirect_uris) = client_sql_row
+    .post_logout_redirect_uris
+    .as_ref()
+    .map(json_to_string_vec)
+  {
+    let post_logout_redirect_uri_string =
+      post_logout_redirect_uri.origin().ascii_serialization() + post_logout_redirect_uri.path();
+    if !post_logout_redirect_uris.contains(&post_logout_redirect_uri_string) {
+      return HttpError::bad_request()
+        .with_error("post_logout_redirect_uri", NOT_ALLOWED_ERROR)
+        .into_response();
+    }
+    post_logout_redirect_uri_string
+  } else {
+    return HttpError::bad_request()
+      .with_error("client", INVALID_ERROR)
+      .into_response();
+  };
+
+  Response::builder()
+    .status(StatusCode::FOUND)
+    .header(header::LOCATION, post_logout_redirect_uri_string)
+    .body(Body::empty())
+    .unwrap()
+    .into_response()
 }
 
 #[utoipa::path(
@@ -388,7 +458,9 @@ async fn authorization_code_grant(
   .await
 }
 
-fn get_audiences_by_client(client_sql_row: &ClientSQLRow) -> Result<Vec<String>, HttpError> {
+pub(crate) fn get_audiences_by_client(
+  client_sql_row: &ClientSQLRow,
+) -> Result<Vec<String>, HttpError> {
   let audiences = client_sql_row
     .audience
     .as_ref()
@@ -401,7 +473,7 @@ fn get_audiences_by_client(client_sql_row: &ClientSQLRow) -> Result<Vec<String>,
   Ok(audiences)
 }
 
-async fn get_audiences_by_client_id(
+pub(crate) async fn get_audiences_by_client_id(
   pool: &sqlx::AnyPool,
   config: &AppConfig,
   client_id: Option<&str>,
@@ -421,64 +493,83 @@ async fn get_audiences_by_client_id(
 }
 
 #[utoipa::path(
-  post,
+  get,
   path = "/authorize",
   tags = [TAG],
-  request_body(content = AuthorizationRequest, content_type = "application/x-www-form-urlencoded"),
   responses(
-    (status = 200, description = "Authorized", body = Authorization),
+    (status = 302, description = "Redirect"),
     (status = 400, description = "Application Error", body = HttpError),
     (status = 401, description = "Application Error", body = HttpError),
     (status = 403, description = "Application Error", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
-  ),
-  security(
-    ("Authorization" = [])
   )
 )]
 pub async fn authorize(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
-  Form(authorization_request): Form<AuthorizationRequest>,
+  Query(authorize_request): Query<AuthorizeRequest>,
 ) -> impl IntoResponse {
-  let client_sql_row =
-    match get_client_by_client_id(&state.pool, &authorization_request.client_id).await {
-      Ok(Some(client_sql_row)) => client_sql_row,
-      Ok(None) => {
-        return HttpError::not_found()
-          .with_error("client", NOT_FOUND_ERROR)
-          .into_response();
-      }
+  authorize_internal(state.pool, state.config, authorize_request).await
+}
+
+#[utoipa::path(
+  post,
+  path = "/authorize",
+  tags = [TAG],
+  request_body(content = AuthorizeRequest, content_type = "application/json"),
+  responses(
+    (status = 302, description = "Redirect"),
+    (status = 400, description = "Application Error", body = HttpError),
+    (status = 401, description = "Application Error", body = HttpError),
+    (status = 403, description = "Application Error", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  )
+)]
+pub async fn post_authorize(
+  State(state): State<RouterState>,
+  Json(authorize_request): Json<AuthorizeRequest>,
+) -> impl IntoResponse {
+  authorize_internal(state.pool, state.config, authorize_request).await
+}
+
+async fn authorize_internal(
+  pool: sqlx::AnyPool,
+  config: Arc<AppConfig>,
+  authorize_request: AuthorizeRequest,
+) -> impl IntoResponse {
+  let mut ui_url = match &config.ui_url {
+    Some(ui_url) => match Url::parse(ui_url) {
+      Ok(ui_url) => ui_url,
       Err(e) => {
-        log::error!("failed to fetch client: {}", e);
+        log::error!("invalid config.ui_url: {}", e);
         return HttpError::internal_error()
           .with_application_error(INTERNAL_ERROR)
           .into_response();
       }
-    };
-
-  match get_user_client_by_client_id(
-    &state.pool,
-    user_authorization.user_sql_row.id,
-    &client_sql_row.client_id,
-  )
-  .await
-  {
-    Ok(Some(_client_allowed)) => {}
-    Ok(None) => {
-      return HttpError::forbidden()
-        .with_error("client", NOT_ALLOWED_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("failed to check user client: {}", e);
+    },
+    None => {
+      log::error!("invalid config: missing ui_url");
       return HttpError::internal_error()
         .with_application_error(INTERNAL_ERROR)
         .into_response();
     }
-  }
+  };
 
-  let redirect_uri = match Url::parse(&authorization_request.redirect_uri) {
+  let client_sql_row = match get_client_by_client_id(&pool, &authorize_request.client_id).await {
+    Ok(Some(client_sql_row)) => client_sql_row,
+    Ok(None) => {
+      return HttpError::not_found()
+        .with_error("client", NOT_FOUND_ERROR)
+        .into_response();
+    }
+    Err(e) => {
+      log::error!("failed to fetch client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
+
+  let redirect_uri = match Url::parse(&authorize_request.redirect_uri) {
     Ok(redirect_uri) => redirect_uri,
     Err(e) => {
       log::error!("invalid redirect_uri: {}", e);
@@ -494,52 +585,48 @@ pub async fn authorize(
     .map(json_to_string_vec)
   {
     let redirect_uri_string = redirect_uri.origin().ascii_serialization() + redirect_uri.path();
-    log::info!("{:?} ~ {:?}", redirect_uris, redirect_uri_string);
     if !redirect_uris.contains(&redirect_uri_string) {
       return HttpError::bad_request()
         .with_error("redirect_uri", NOT_ALLOWED_ERROR)
         .into_response();
     }
+    redirect_uri_string
   } else {
     return HttpError::bad_request()
       .with_error("client", INVALID_ERROR)
       .into_response();
+  };
+
+  {
+    let mut ui_url_params: form_urlencoded::Serializer<'_, url::UrlQuery<'_>> =
+      ui_url.query_pairs_mut();
+
+    ui_url_params.append_pair("client_id", &authorize_request.client_id);
+    ui_url_params.append_pair("response_type", &authorize_request.response_type.as_str());
+    ui_url_params.append_pair("response_mode", &authorize_request.response_mode.as_str());
+    ui_url_params.append_pair("scope", &authorize_request.scope);
+    ui_url_params.append_pair("redirect_uri", &authorize_request.redirect_uri);
+    if let Some(state) = &authorize_request.state {
+      ui_url_params.append_pair("state", state);
+    }
+    if let Some(nonce) = &authorize_request.nonce {
+      ui_url_params.append_pair("nonce", nonce);
+    }
   }
 
-  let audiences = match get_audiences_by_client(&client_sql_row) {
-    Ok(audiences) => audiences,
-    Err(e) => return e.into_response(),
-  };
-
-  let authorization_response = match authorization_request.response_type {
-    super::entity::ResponseType::Code => match create_user_auhorization_code_token(
-      &state.pool,
-      &state.config,
-      user_authorization.user_sql_row,
-      &audiences,
-    )
-    .await
-    {
-      Ok(code) => Authorization::AuthorizationCode { code },
-      Err(e) => {
-        return e.into_response();
-      }
-    },
-    super::entity::ResponseType::IdToken => todo!(),
-    super::entity::ResponseType::IdTokenToken => todo!(),
-    super::entity::ResponseType::CodeIdTokenToken => todo!(),
-    super::entity::ResponseType::CodeToken => todo!(),
-    super::entity::ResponseType::None => todo!(),
-  };
-
-  axum::Json(authorization_response).into_response()
+  Response::builder()
+    .status(StatusCode::FOUND)
+    .header(header::LOCATION, ui_url.as_str())
+    .body(Body::empty())
+    .unwrap()
+    .into_response()
 }
 
 #[utoipa::path(
   post,
   path = "/register-client",
   tags = [TAG],
-  request_body(content = ClientRegisterRequest, content_type = "application/json; charset=utf-8"),
+  request_body(content = ClientRegisterRequest, content_type = "application/json"),
   responses(
     (status = 200, description = "Client registation updated", body = Client),
     (status = 201, description = "Client registered", body = Client),
@@ -594,7 +681,9 @@ pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(jwks))
     .routes(routes!(openid_configuration))
+    .routes(routes!(end_session))
     .routes(routes!(token))
+    .routes(routes!(post_authorize))
     .routes(routes!(authorize))
     .routes(routes!(register_client))
     .with_state(state)

@@ -10,6 +10,7 @@ Name | Type
 `claimsSupported` | Array&lt;string&gt;
 `codeChallengeMethodsSupported` | Array&lt;string&gt;
 `deviceAuthorizationEndpoint` | string
+`endSessionEndpoint` | string
 `grantTypesSupported` | Array&lt;string&gt;
 `idTokenSigningAlgValuesSupported` | Array&lt;string&gt;
 `issuer` | string
@@ -35,6 +36,7 @@ const example = {
   "claimsSupported": null,
   "codeChallengeMethodsSupported": null,
   "deviceAuthorizationEndpoint": null,
+  "endSessionEndpoint": null,
   "grantTypesSupported": null,
   "idTokenSigningAlgValuesSupported": null,
   "issuer": null,

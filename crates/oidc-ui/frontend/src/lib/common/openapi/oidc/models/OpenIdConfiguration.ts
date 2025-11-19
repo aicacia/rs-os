@@ -45,6 +45,12 @@ export interface OpenIdConfiguration {
     deviceAuthorizationEndpoint?: string | null;
     /**
      * 
+     * @type {string}
+     * @memberof OpenIdConfiguration
+     */
+    endSessionEndpoint?: string | null;
+    /**
+     * 
      * @type {Array<string>}
      * @memberof OpenIdConfiguration
      */
@@ -156,6 +162,7 @@ export function OpenIdConfigurationFromJSONTyped(json: any, ignoreDiscriminator:
         'claimsSupported': json['claims_supported'],
         'codeChallengeMethodsSupported': json['code_challenge_methods_supported'],
         'deviceAuthorizationEndpoint': json['device_authorization_endpoint'] == null ? undefined : json['device_authorization_endpoint'],
+        'endSessionEndpoint': json['end_session_endpoint'] == null ? undefined : json['end_session_endpoint'],
         'grantTypesSupported': json['grant_types_supported'],
         'idTokenSigningAlgValuesSupported': json['id_token_signing_alg_values_supported'],
         'issuer': json['issuer'],
@@ -187,6 +194,7 @@ export function OpenIdConfigurationToJSONTyped(value?: OpenIdConfiguration | nul
         'claims_supported': value['claimsSupported'],
         'code_challenge_methods_supported': value['codeChallengeMethodsSupported'],
         'device_authorization_endpoint': value['deviceAuthorizationEndpoint'],
+        'end_session_endpoint': value['endSessionEndpoint'],
         'grant_types_supported': value['grantTypesSupported'],
         'id_token_signing_alg_values_supported': value['idTokenSigningAlgValuesSupported'],
         'issuer': value['issuer'],

@@ -17,6 +17,8 @@ import * as runtime from '../runtime';
 import type {
   Client,
   ClientAllowed,
+  ClientAuthorization,
+  ClientAuthorizeRequest,
   HttpError,
 } from '../models/index';
 import {
@@ -24,9 +26,18 @@ import {
     ClientToJSON,
     ClientAllowedFromJSON,
     ClientAllowedToJSON,
+    ClientAuthorizationFromJSON,
+    ClientAuthorizationToJSON,
+    ClientAuthorizeRequestFromJSON,
+    ClientAuthorizeRequestToJSON,
     HttpErrorFromJSON,
     HttpErrorToJSON,
 } from '../models/index';
+
+export interface ClientAuthorizeOperationRequest {
+    clientId: string;
+    clientAuthorizeRequest: ClientAuthorizeRequest;
+}
 
 export interface ClientByClientIdRequest {
     clientId: string;
@@ -47,6 +58,20 @@ export interface ClientUserApproveRequest {
  * @interface ClientApiInterface
  */
 export interface ClientApiInterface {
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {ClientAuthorizeRequest} clientAuthorizeRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientAuthorizeRaw(requestParameters: ClientAuthorizeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ClientAuthorization>>;
+
+    /**
+     */
+    clientAuthorize(requestParameters: ClientAuthorizeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ClientAuthorization>;
+
     /**
      * 
      * @param {string} clientId 
@@ -92,6 +117,59 @@ export interface ClientApiInterface {
  * 
  */
 export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
+
+    /**
+     */
+    async clientAuthorizeRaw(requestParameters: ClientAuthorizeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ClientAuthorization>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling clientAuthorize().'
+            );
+        }
+
+        if (requestParameters['clientAuthorizeRequest'] == null) {
+            throw new runtime.RequiredError(
+                'clientAuthorizeRequest',
+                'Required parameter "clientAuthorizeRequest" was null or undefined when calling clientAuthorize().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/client/{client_id}/authorize`;
+        urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ClientAuthorizeRequestToJSON(requestParameters['clientAuthorizeRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientAuthorizationFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async clientAuthorize(requestParameters: ClientAuthorizeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ClientAuthorization> {
+        const response = await this.clientAuthorizeRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      */

@@ -1,8 +1,12 @@
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{core::helper::json_to_string_vec, model::client::sql::ClientSQLRow};
+use crate::{
+  core::helper::json_to_string_vec,
+  model::client::sql::ClientSQLRow,
+  router::{common::entity::Token, oidc::entity::ResponseType},
+};
 
 #[derive(Serialize, ToSchema, Default)]
 pub struct Client {
@@ -65,4 +69,25 @@ impl From<ClientSQLRow> for Client {
 #[derive(Serialize, ToSchema, Default)]
 pub struct ClientAllowed {
   pub allowed_scopes: Vec<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ClientAuthorizeRequest {
+  pub scope: String,
+  pub redirect_uri: String,
+  pub response_type: ResponseType,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "type")]
+pub enum ClientAuthorization {
+  #[serde(rename = "authorization_code")]
+  #[schema(title = "AuthorizationCode")]
+  AuthorizationCode { code: String },
+  #[serde(rename = "authorization_code")]
+  #[schema(title = "AuthorizationImplicit")]
+  Implicit {
+    #[serde(flatten)]
+    token: Token,
+  },
 }

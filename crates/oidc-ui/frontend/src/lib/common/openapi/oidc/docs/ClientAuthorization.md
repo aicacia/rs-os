@@ -1,11 +1,13 @@
 
-# AuthorizationOneOf
+# ClientAuthorization
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
+`code` | string
+`type` | string
 `accessToken` | string
 `expiresIn` | number
 `idToken` | string
@@ -15,15 +17,16 @@ Name | Type
 `refreshTokenExpiresIn` | number
 `scope` | string
 `tokenType` | string
-`type` | string
 
 ## Example
 
 ```typescript
-import type { AuthorizationOneOf } from ''
+import type { ClientAuthorization } from ''
 
 // TODO: Update the object below with actual values
 const example = {
+  "code": null,
+  "type": null,
   "accessToken": null,
   "expiresIn": null,
   "idToken": null,
@@ -33,8 +36,7 @@ const example = {
   "refreshTokenExpiresIn": null,
   "scope": null,
   "tokenType": null,
-  "type": null,
-} satisfies AuthorizationOneOf
+} satisfies ClientAuthorization
 
 console.log(example)
 
@@ -43,7 +45,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as AuthorizationOneOf
+const exampleParsed = JSON.parse(exampleJSON) as ClientAuthorization
 console.log(exampleParsed)
 ```
 

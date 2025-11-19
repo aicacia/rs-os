@@ -1,5 +1,5 @@
-import { oidcApi } from '$lib/common/openapi';
-import { ResponseMode, type AuthorizeRequest, type Client } from '$lib/common/openapi/oidc';
+import { clientApi } from '$lib/common/openapi';
+import type { AuthorizeRequest, Client } from '$lib/common/openapi/oidc';
 import {
 	ClientRegisterRequestFromJSON,
 	type ClientRegisterRequest
@@ -77,7 +77,10 @@ export async function resolveAuthorizeRequest(authorizeRequest: AuthorizeRequest
 	if (authorizeRequest.nonce) {
 		url.searchParams.append('nonce', authorizeRequest.nonce);
 	}
-	const authorizeResponse = await oidcApi.authorize(authorizeRequest);
+	const authorizeResponse = await clientApi.clientAuthorize({
+		clientId: authorizeRequest.clientId,
+		clientAuthorizeRequest: authorizeRequest
+	});
 	switch (authorizeRequest.responseMode) {
 		case 'fragment':
 		case 'query': {

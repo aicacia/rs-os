@@ -1,10 +1,12 @@
 /* tslint:disable */
 /* eslint-disable */
-export * from './Authorization';
 export * from './AuthorizationCode';
-export * from './AuthorizationOneOf';
+export * from './AuthorizeRequest';
 export * from './Client';
 export * from './ClientAllowed';
+export * from './ClientAuthorization';
+export * from './ClientAuthorizationOneOf';
+export * from './ClientAuthorizeRequest';
 export * from './ClientRegisterRequest';
 export * from './Health';
 export * from './HttpError';

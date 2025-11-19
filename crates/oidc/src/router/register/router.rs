@@ -18,7 +18,7 @@ use crate::{
   post,
   path = "/register",
   tags = [TAG],
-  request_body(content = SignupRequest, content_type = "application/json; charset=utf-8"),
+  request_body(content = SignupRequest, content_type = "application/json"),
   responses(
     (status = 201, description = "Token created", body = Token),
     (status = 401, description = "Invalid username or password", body = HttpError),
