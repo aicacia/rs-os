@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::model::client::sql::ClientSQLCommon;
 
@@ -163,13 +163,14 @@ impl ResponseType {
   }
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct EndSessionRequest {
-  pub client_id: String,
+  pub client_id: Option<String>,
+  pub id_token_hint: Option<String>,
   pub post_logout_redirect_uri: String,
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct AuthorizeRequest {
   pub client_id: String,
   pub response_type: ResponseType,

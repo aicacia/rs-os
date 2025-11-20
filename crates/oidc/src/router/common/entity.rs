@@ -31,6 +31,7 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
   fn iss(&self) -> &String;
   fn aud(&self) -> &[String];
   fn sub(&self) -> i64;
+  fn client_id(&self) -> &String;
   fn scopes(&self) -> &[String];
 
   fn has_scope(&self, scope: &str) -> bool {
@@ -88,6 +89,7 @@ pub struct BasicClaims {
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub aud: Vec<String>,
   pub sub: i64,
+  pub client_id: String,
   pub scopes: Vec<String>,
 }
 
@@ -112,6 +114,9 @@ impl Claims for BasicClaims {
   }
   fn sub(&self) -> i64 {
     self.sub
+  }
+  fn client_id(&self) -> &String {
+    &self.client_id
   }
   fn scopes(&self) -> &[String] {
     &self.scopes
@@ -213,6 +218,9 @@ impl Claims for OpenIdClaims {
   }
   fn sub(&self) -> i64 {
     self.claims.sub
+  }
+  fn client_id(&self) -> &String {
+    &self.claims.client_id
   }
   fn scopes(&self) -> &[String] {
     &self.claims.scopes

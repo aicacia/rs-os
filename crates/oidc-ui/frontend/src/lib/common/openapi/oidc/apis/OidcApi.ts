@@ -21,6 +21,8 @@ import type {
   HttpError,
   JWKs,
   OpenIdConfiguration,
+  ResponseMode,
+  ResponseType,
   Token,
 } from '../models/index';
 import {
@@ -36,9 +38,29 @@ import {
     JWKsToJSON,
     OpenIdConfigurationFromJSON,
     OpenIdConfigurationToJSON,
+    ResponseModeFromJSON,
+    ResponseModeToJSON,
+    ResponseTypeFromJSON,
+    ResponseTypeToJSON,
     TokenFromJSON,
     TokenToJSON,
 } from '../models/index';
+
+export interface AuthorizeRequest {
+    clientId: string;
+    responseType: ResponseType;
+    responseMode: ResponseMode;
+    scope: string;
+    redirectUri: string;
+    state?: string | null;
+    nonce?: string | null;
+}
+
+export interface EndSessionRequest {
+    postLogoutRedirectUri: string;
+    clientId?: string | null;
+    idTokenHint?: string | null;
+}
 
 export interface PostAuthorizeRequest {
     authorizeRequest: AuthorizeRequest;
@@ -67,27 +89,37 @@ export interface TokenRequest {
 export interface OidcApiInterface {
     /**
      * 
+     * @param {string} clientId 
+     * @param {ResponseType} responseType 
+     * @param {ResponseMode} responseMode 
+     * @param {string} scope 
+     * @param {string} redirectUri 
+     * @param {string} [state] 
+     * @param {string} [nonce] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OidcApiInterface
      */
-    authorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+    authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
 
     /**
      */
-    authorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+    authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
     /**
      * 
+     * @param {string} postLogoutRedirectUri 
+     * @param {string} [clientId] 
+     * @param {string} [idTokenHint] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OidcApiInterface
      */
-    endSessionRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+    endSessionRaw(requestParameters: EndSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
 
     /**
      */
-    endSession(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+    endSession(requestParameters: EndSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
     /**
      * 
@@ -167,8 +199,71 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async authorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async authorizeRaw(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['responseType'] == null) {
+            throw new runtime.RequiredError(
+                'responseType',
+                'Required parameter "responseType" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['responseMode'] == null) {
+            throw new runtime.RequiredError(
+                'responseMode',
+                'Required parameter "responseMode" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['scope'] == null) {
+            throw new runtime.RequiredError(
+                'scope',
+                'Required parameter "scope" was null or undefined when calling authorize().'
+            );
+        }
+
+        if (requestParameters['redirectUri'] == null) {
+            throw new runtime.RequiredError(
+                'redirectUri',
+                'Required parameter "redirectUri" was null or undefined when calling authorize().'
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters['clientId'] != null) {
+            queryParameters['client_id'] = requestParameters['clientId'];
+        }
+
+        if (requestParameters['responseType'] != null) {
+            queryParameters['response_type'] = requestParameters['responseType'];
+        }
+
+        if (requestParameters['responseMode'] != null) {
+            queryParameters['response_mode'] = requestParameters['responseMode'];
+        }
+
+        if (requestParameters['scope'] != null) {
+            queryParameters['scope'] = requestParameters['scope'];
+        }
+
+        if (requestParameters['redirectUri'] != null) {
+            queryParameters['redirect_uri'] = requestParameters['redirectUri'];
+        }
+
+        if (requestParameters['state'] != null) {
+            queryParameters['state'] = requestParameters['state'];
+        }
+
+        if (requestParameters['nonce'] != null) {
+            queryParameters['nonce'] = requestParameters['nonce'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -187,14 +282,33 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async authorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.authorizeRaw(initOverrides);
+    async authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.authorizeRaw(requestParameters, initOverrides);
     }
 
     /**
      */
-    async endSessionRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async endSessionRaw(requestParameters: EndSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['postLogoutRedirectUri'] == null) {
+            throw new runtime.RequiredError(
+                'postLogoutRedirectUri',
+                'Required parameter "postLogoutRedirectUri" was null or undefined when calling endSession().'
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters['clientId'] != null) {
+            queryParameters['client_id'] = requestParameters['clientId'];
+        }
+
+        if (requestParameters['idTokenHint'] != null) {
+            queryParameters['id_token_hint'] = requestParameters['idTokenHint'];
+        }
+
+        if (requestParameters['postLogoutRedirectUri'] != null) {
+            queryParameters['post_logout_redirect_uri'] = requestParameters['postLogoutRedirectUri'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -213,8 +327,8 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async endSession(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.endSessionRaw(initOverrides);
+    async endSession(requestParameters: EndSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.endSessionRaw(requestParameters, initOverrides);
     }
 
     /**

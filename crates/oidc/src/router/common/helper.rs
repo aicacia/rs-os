@@ -29,6 +29,7 @@ pub(crate) async fn create_user_token(
   app_config: &AppConfig,
   jwk_sql_row: JwkSQLRow,
   user: UserSQLRow,
+  client_id: String,
   scope: Option<String>,
   issued_token_type: String,
   audiences: &[String],
@@ -40,6 +41,7 @@ pub(crate) async fn create_user_token(
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id,
+    client_id: client_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
@@ -188,7 +190,8 @@ pub(crate) async fn create_user_token(
 pub(crate) async fn create_user_auhorization_code_token(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
-  user: UserSQLRow,
+  user_id: i64,
+  client_id: String,
   scope: Option<String>,
   audiences: &[String],
 ) -> Result<String, HttpError> {
@@ -209,12 +212,13 @@ pub(crate) async fn create_user_auhorization_code_token(
   let issuer = app_config.api_url();
   let claims = BasicClaims {
     r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
-    sub: user.id,
+    sub: user_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
     aud: audiences.to_vec(),
+    client_id,
     scopes: parse_scopes(scope.as_ref().map(String::as_str)),
   };
 

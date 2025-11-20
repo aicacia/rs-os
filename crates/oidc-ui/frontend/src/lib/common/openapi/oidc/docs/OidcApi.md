@@ -16,7 +16,7 @@ All URIs are relative to *http://localhost:3000*
 
 ## authorize
 
-> authorize()
+> authorize(clientId, responseType, responseMode, scope, redirectUri, state, nonce)
 
 
 
@@ -33,8 +33,25 @@ async function example() {
   console.log("🚀 Testing  SDK...");
   const api = new OidcApi();
 
+  const body = {
+    // string
+    clientId: clientId_example,
+    // ResponseType
+    responseType: ...,
+    // ResponseMode
+    responseMode: ...,
+    // string
+    scope: scope_example,
+    // string
+    redirectUri: redirectUri_example,
+    // string (optional)
+    state: state_example,
+    // string (optional)
+    nonce: nonce_example,
+  } satisfies AuthorizeRequest;
+
   try {
-    const data = await api.authorize();
+    const data = await api.authorize(body);
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -47,7 +64,16 @@ example().catch(console.error);
 
 ### Parameters
 
-This endpoint does not need any parameter.
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **clientId** | `string` |  | [Defaults to `undefined`] |
+| **responseType** | `ResponseType` |  | [Defaults to `undefined`] [Enum: none, code, token, id_token, code token, code id_token, id_token token, code id_token token] |
+| **responseMode** | `ResponseMode` |  | [Defaults to `undefined`] [Enum: query, fragment, form_post, web_message] |
+| **scope** | `string` |  | [Defaults to `undefined`] |
+| **redirectUri** | `string` |  | [Defaults to `undefined`] |
+| **state** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **nonce** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 
@@ -77,7 +103,7 @@ No authorization required
 
 ## endSession
 
-> endSession()
+> endSession(postLogoutRedirectUri, clientId, idTokenHint)
 
 
 
@@ -94,8 +120,17 @@ async function example() {
   console.log("🚀 Testing  SDK...");
   const api = new OidcApi();
 
+  const body = {
+    // string
+    postLogoutRedirectUri: postLogoutRedirectUri_example,
+    // string (optional)
+    clientId: clientId_example,
+    // string (optional)
+    idTokenHint: idTokenHint_example,
+  } satisfies EndSessionRequest;
+
   try {
-    const data = await api.endSession();
+    const data = await api.endSession(body);
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -108,7 +143,12 @@ example().catch(console.error);
 
 ### Parameters
 
-This endpoint does not need any parameter.
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **postLogoutRedirectUri** | `string` |  | [Defaults to `undefined`] |
+| **clientId** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **idTokenHint** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 

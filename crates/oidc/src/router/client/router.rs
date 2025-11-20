@@ -262,7 +262,8 @@ pub async fn client_authorize(
     ResponseType::Code => match create_user_auhorization_code_token(
       &state.pool,
       &state.config,
-      user_authorization.user_sql_row,
+      user_authorization.user_sql_row.id,
+      client_id,
       Some(authorization_request.scope),
       &audiences,
     )

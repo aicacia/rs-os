@@ -210,6 +210,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
   get,
   path = "/end-session",
   tags = [TAG],
+  params(EndSessionRequest),
   responses(
     (status = 204, description = "Session ended"),
     (status = 401, description = "Unauthorized Error", body = HttpError),
@@ -221,21 +222,41 @@ pub async fn end_session(
   State(state): State<RouterState>,
   Query(end_session_request): Query<EndSessionRequest>,
 ) -> impl IntoResponse {
-  let client_sql_row =
-    match get_client_by_client_id(&state.pool, &end_session_request.client_id).await {
-      Ok(Some(client_sql_row)) => client_sql_row,
-      Ok(None) => {
-        return HttpError::not_found()
-          .with_error("client", NOT_FOUND_ERROR)
+  let client_id = match end_session_request.client_id {
+    Some(client_id) => client_id,
+    None => match end_session_request.id_token_hint {
+      Some(id_token_hint) => {
+        match parse_authorization::<BasicClaims>(&state.pool, &state.config, &id_token_hint).await {
+          Ok((token, _jwk)) => token.claims.client_id,
+          Err(e) => {
+            log::error!("failed to parse id_token_hint: {}", e);
+            return e.into_response();
+          }
+        }
+      }
+      None => {
+        return HttpError::bad_request()
+          .with_error("client_id", INVALID_ERROR)
+          .with_error("id_token_hint", INVALID_ERROR)
           .into_response();
       }
-      Err(e) => {
-        log::error!("failed to fetch client: {}", e);
-        return HttpError::internal_error()
-          .with_application_error(INTERNAL_ERROR)
-          .into_response();
-      }
-    };
+    },
+  };
+
+  let client_sql_row = match get_client_by_client_id(&state.pool, &client_id).await {
+    Ok(Some(client_sql_row)) => client_sql_row,
+    Ok(None) => {
+      return HttpError::not_found()
+        .with_error("client", NOT_FOUND_ERROR)
+        .into_response();
+    }
+    Err(e) => {
+      log::error!("failed to fetch client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
 
   let post_logout_redirect_uri = match Url::parse(&end_session_request.post_logout_redirect_uri) {
     Ok(post_logout_redirect_uri) => post_logout_redirect_uri,
@@ -371,6 +392,7 @@ async fn password_grant(
     &state.config,
     jwk,
     user,
+    common.client_id.unwrap_or_else(|| state.config.api_url()),
     common.scope.or_else(|| Some("openid".to_owned())),
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
     &audiences,
@@ -411,6 +433,7 @@ async fn refresh_token_grant(
     &state.config,
     jwk_sql_row,
     user,
+    common.client_id.unwrap_or_else(|| state.config.api_url()),
     Some(token_data.claims.scopes.join(" ").to_owned()),
     TOKEN_ISSUE_TYPE_REFRESH_TOKEN.to_owned(),
     &audiences,
@@ -451,6 +474,7 @@ async fn authorization_code_grant(
     &state.config,
     jwk_sql_row,
     user,
+    common.client_id.unwrap_or_else(|| state.config.api_url()),
     Some(token_data.claims.scopes.join(" ").to_owned()),
     TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
     &audiences,
@@ -496,6 +520,7 @@ pub(crate) async fn get_audiences_by_client_id(
   get,
   path = "/authorize",
   tags = [TAG],
+  params(AuthorizeRequest),
   responses(
     (status = 302, description = "Redirect"),
     (status = 400, description = "Application Error", body = HttpError),
