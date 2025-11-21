@@ -2,6 +2,7 @@
 /* eslint-disable */
 export * from './AuthorizationCode';
 export * from './AuthorizeRequest';
+export * from './BasicClaims';
 export * from './Client';
 export * from './ClientAllowed';
 export * from './ClientAuthorization';
@@ -13,7 +14,9 @@ export * from './HttpError';
 export * from './HttpErrorMessage';
 export * from './JWK';
 export * from './JWKs';
+export * from './OpenIdClaims';
 export * from './OpenIdConfiguration';
+export * from './OpenIdProfile';
 export * from './ResponseMode';
 export * from './ResponseType';
 export * from './SignupRequest';

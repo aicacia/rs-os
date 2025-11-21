@@ -69,9 +69,10 @@ pub async fn register(
     jwk,
     user,
     state.config.api_url(),
-    register_request.scope.or_else(|| Some("openid".to_owned())),
+    register_request
+      .scope
+      .unwrap_or_else(|| "openid".to_owned()),
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
-    &[state.config.api_url()],
   )
   .await
   {

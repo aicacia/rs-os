@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::model::client::sql::ClientSQLCommon;
+use crate::{core::helper::type_to_json_value, model::client::sql::ClientSQLCommon};
 
 #[derive(Default, Serialize, ToSchema)]
 pub struct JWK {
@@ -44,21 +44,13 @@ pub struct JWKs {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct TokenRequestCommon {
-  #[schema(example = "fda33145-9596-4294-904d-bb554202ce81")]
-  pub client_id: Option<String>,
-  #[schema(example = "openid profile offline")]
-  pub scope: Option<String>,
-}
-
-#[derive(Deserialize, ToSchema)]
 #[serde(tag = "grant_type")]
 pub enum TokenRequest {
   #[serde(rename = "password")]
   #[schema(title = "TokenRequestPassword")]
   Password {
-    #[serde(flatten)]
-    common: TokenRequestCommon,
+    #[schema(example = "openid profile offline")]
+    scope: String,
     #[schema(example = "admin")]
     username: String,
     #[schema(example = "admin")]
@@ -66,18 +58,10 @@ pub enum TokenRequest {
   },
   #[serde(rename = "refresh_token")]
   #[schema(title = "TokenRequestRefreshToken")]
-  RefreshToken {
-    #[serde(flatten)]
-    common: TokenRequestCommon,
-    refresh_token: String,
-  },
+  RefreshToken { refresh_token: String },
   #[serde(rename = "authorization_code")]
   #[schema(title = "TokenRequestAuthorizationCode")]
-  AuthorizationCode {
-    #[serde(flatten)]
-    common: TokenRequestCommon,
-    code: String,
-  },
+  AuthorizationCode { code: String },
 }
 
 #[derive(Serialize, ToSchema)]
@@ -219,20 +203,20 @@ impl Into<ClientSQLCommon> for ClientRegisterRequest {
       client_id: self.client_id,
       redirect_uris: self
         .redirect_uris
-        .map(|v| serde_json::to_string(&v).unwrap()),
+        .map(|v| type_to_json_value(&v).to_string()),
       post_logout_redirect_uris: self
         .post_logout_redirect_uris
-        .map(|v| serde_json::to_string(&v).unwrap()),
+        .map(|v| type_to_json_value(&v).to_string()),
       logo_uri: self.logo_uri,
       client_uri: self.client_uri,
       policy_uri: self.policy_uri,
       terms_of_service_uri: self.terms_of_service_uri,
       application_type: self.application_type,
       auth_method: self.auth_method,
-      grant_types: serde_json::to_string(&self.grant_types).unwrap(),
-      response_types: serde_json::to_string(&self.response_types).unwrap(),
-      scopes: serde_json::to_string(&self.scopes).unwrap(),
-      audience: self.audience.map(|v| serde_json::to_string(&v).unwrap()),
+      grant_types: type_to_json_value(&self.grant_types).to_string(),
+      response_types: type_to_json_value(&self.response_types).to_string(),
+      scopes: type_to_json_value(&self.scopes).to_string(),
+      audience: self.audience.map(|v| type_to_json_value(&v).to_string()),
       access_token_expires_in_seconds: self.access_token_expires_in_seconds,
       id_token_expires_in_seconds: self.id_token_expires_in_seconds,
       refresh_expires_in_seconds: self.refresh_expires_in_seconds,

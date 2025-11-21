@@ -11,6 +11,7 @@ All URIs are relative to *http://localhost:3000*
 | [**postAuthorize**](OidcApi.md#postauthorize) | **POST** /oidc/api/authorize |  |
 | [**registerClient**](OidcApi.md#registerclient) | **POST** /oidc/api/register-client |  |
 | [**token**](OidcApi.md#token) | **POST** /oidc/api/token |  |
+| [**userInfo**](OidcApi.md#userinfo) | **GET** /oidc/api/user-info |  |
 
 
 
@@ -94,8 +95,8 @@ No authorization required
 |-------------|-------------|------------------|
 | **302** | Redirect |  -  |
 | **400** | Application Error |  -  |
-| **401** | Application Error |  -  |
-| **403** | Application Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -353,8 +354,8 @@ No authorization required
 |-------------|-------------|------------------|
 | **302** | Redirect |  -  |
 | **400** | Application Error |  -  |
-| **401** | Application Error |  -  |
-| **403** | Application Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -426,8 +427,8 @@ example().catch(console.error);
 |-------------|-------------|------------------|
 | **200** | Client registation updated |  -  |
 | **201** | Client registered |  -  |
-| **401** | Application Error |  -  |
-| **403** | Application Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -435,7 +436,7 @@ example().catch(console.error);
 
 ## token
 
-> Token token(clientId, scope, password, username, grantType, refreshToken, code)
+> Token token(grantType, password, scope, username, refreshToken, code)
 
 
 
@@ -454,15 +455,13 @@ async function example() {
 
   const body = {
     // string (optional)
-    clientId: clientId_example,
-    // string (optional)
-    scope: scope_example,
+    grantType: grantType_example,
     // string (optional)
     password: password_example,
     // string (optional)
-    username: username_example,
+    scope: scope_example,
     // string (optional)
-    grantType: grantType_example,
+    username: username_example,
     // string (optional)
     refreshToken: refreshToken_example,
     // string (optional)
@@ -486,11 +485,10 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **clientId** | `string` |  | [Optional] [Defaults to `undefined`] |
-| **scope** | `string` |  | [Optional] [Defaults to `undefined`] |
-| **password** | `string` |  | [Optional] [Defaults to `undefined`] |
-| **username** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **grantType** | `authorization_code` |  | [Optional] [Defaults to `undefined`] [Enum: authorization_code] |
+| **password** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **scope** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **username** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **refreshToken** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **code** | `string` |  | [Optional] [Defaults to `undefined`] |
 
@@ -514,6 +512,78 @@ No authorization required
 | **201** | Token returned |  -  |
 | **401** | Unauthorized Error |  -  |
 | **403** | Forbiddon Error |  -  |
+| **500** | Application Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## userInfo
+
+> OpenIdClaims userInfo(clientRegisterRequest)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  OidcApi,
+} from '';
+import type { UserInfoRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new OidcApi(config);
+
+  const body = {
+    // ClientRegisterRequest
+    clientRegisterRequest: ...,
+  } satisfies UserInfoRequest;
+
+  try {
+    const data = await api.userInfo(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **clientRegisterRequest** | [ClientRegisterRequest](ClientRegisterRequest.md) |  | |
+
+### Return type
+
+[**OpenIdClaims**](OpenIdClaims.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Consented claims |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)

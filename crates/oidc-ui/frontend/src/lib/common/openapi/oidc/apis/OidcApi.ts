@@ -20,6 +20,7 @@ import type {
   ClientRegisterRequest,
   HttpError,
   JWKs,
+  OpenIdClaims,
   OpenIdConfiguration,
   ResponseMode,
   ResponseType,
@@ -36,6 +37,8 @@ import {
     HttpErrorToJSON,
     JWKsFromJSON,
     JWKsToJSON,
+    OpenIdClaimsFromJSON,
+    OpenIdClaimsToJSON,
     OpenIdConfigurationFromJSON,
     OpenIdConfigurationToJSON,
     ResponseModeFromJSON,
@@ -71,13 +74,16 @@ export interface RegisterClientRequest {
 }
 
 export interface TokenRequest {
-    clientId?: string | null;
-    scope?: string | null;
-    password?: string;
-    username?: string;
     grantType?: TokenGrantTypeEnum;
+    password?: string;
+    scope?: string;
+    username?: string;
     refreshToken?: string;
     code?: string;
+}
+
+export interface UserInfoRequest {
+    clientRegisterRequest: ClientRegisterRequest;
 }
 
 /**
@@ -173,11 +179,10 @@ export interface OidcApiInterface {
 
     /**
      * 
-     * @param {string} [clientId] 
-     * @param {string} [scope] 
-     * @param {string} [password] 
-     * @param {string} [username] 
      * @param {string} [grantType] 
+     * @param {string} [password] 
+     * @param {string} [scope] 
+     * @param {string} [username] 
      * @param {string} [refreshToken] 
      * @param {string} [code] 
      * @param {*} [options] Override http request option.
@@ -189,6 +194,19 @@ export interface OidcApiInterface {
     /**
      */
     token(requestParameters: TokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Token>;
+
+    /**
+     * 
+     * @param {ClientRegisterRequest} clientRegisterRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    userInfoRaw(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>>;
+
+    /**
+     */
+    userInfo(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims>;
 
 }
 
@@ -487,24 +505,20 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             formParams = new URLSearchParams();
         }
 
-        if (requestParameters['clientId'] != null) {
-            formParams.append('client_id', requestParameters['clientId'] as any);
-        }
-
-        if (requestParameters['scope'] != null) {
-            formParams.append('scope', requestParameters['scope'] as any);
+        if (requestParameters['grantType'] != null) {
+            formParams.append('grant_type', requestParameters['grantType'] as any);
         }
 
         if (requestParameters['password'] != null) {
             formParams.append('password', requestParameters['password'] as any);
         }
 
-        if (requestParameters['username'] != null) {
-            formParams.append('username', requestParameters['username'] as any);
+        if (requestParameters['scope'] != null) {
+            formParams.append('scope', requestParameters['scope'] as any);
         }
 
-        if (requestParameters['grantType'] != null) {
-            formParams.append('grant_type', requestParameters['grantType'] as any);
+        if (requestParameters['username'] != null) {
+            formParams.append('username', requestParameters['username'] as any);
         }
 
         if (requestParameters['refreshToken'] != null) {
@@ -533,6 +547,51 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
      */
     async token(requestParameters: TokenRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Token> {
         const response = await this.tokenRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async userInfoRaw(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>> {
+        if (requestParameters['clientRegisterRequest'] == null) {
+            throw new runtime.RequiredError(
+                'clientRegisterRequest',
+                'Required parameter "clientRegisterRequest" was null or undefined when calling userInfo().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/user-info`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ClientRegisterRequestToJSON(requestParameters['clientRegisterRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => OpenIdClaimsFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async userInfo(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims> {
+        const response = await this.userInfoRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -17,7 +17,7 @@ use crate::{
     jwk::sql::{get_jwk_for_sign_and_verify, list_jwks},
   },
   model::{
-    client::sql::{ClientSQLRow, get_client_by_client_id, upsert_client},
+    client::sql::{get_client_by_client_id, upsert_client},
     user::sql::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
     },
@@ -29,7 +29,7 @@ use crate::{
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
         TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
       },
-      entity::{BasicClaims, Token},
+      entity::{BasicClaims, OpenIdClaims, Token},
       helper::create_user_token,
     },
     entity::RouterState,
@@ -38,12 +38,15 @@ use crate::{
     },
     form::Form,
     json::Json,
-    middleware::{authorization::parse_authorization, user_authorization::UserAuthorization},
+    middleware::{
+      authorization::{Authorization, parse_authorization},
+      user_authorization::UserAuthorization,
+    },
     oidc::{
       constants::TAG,
       entity::{
         AuthorizeRequest, Client, ClientRegisterRequest, EndSessionRequest, JWK, JWKs,
-        OpenIdConfiguration, TokenRequest, TokenRequestCommon,
+        OpenIdConfiguration, TokenRequest,
       },
     },
   },
@@ -147,7 +150,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     },
     token_endpoint: format!("{}/token", api_url),
     end_session_endpoint: Some(format!("{}/end-session", api_url)),
-    userinfo_endpoint: Some(format!("{}/current-user", api_url)),
+    userinfo_endpoint: Some(format!("{}/user-info", api_url)),
     revocation_endpoint: Some(format!("{}/revoke", api_url)),
     registration_endpoint: Some(format!("{}/register-client", api_url)),
     jwks_uri: format!("{}/.well-known/jwks.json", api_url),
@@ -227,7 +230,7 @@ pub async fn end_session(
     None => match end_session_request.id_token_hint {
       Some(id_token_hint) => {
         match parse_authorization::<BasicClaims>(&state.pool, &state.config, &id_token_hint).await {
-          Ok((token, _jwk)) => token.claims.client_id,
+          Ok((token, _jwk)) => token.claims.aud,
           Err(e) => {
             log::error!("failed to parse id_token_hint: {}", e);
             return e.into_response();
@@ -313,17 +316,12 @@ pub async fn token(
 ) -> impl IntoResponse {
   let token_result = match token_request {
     TokenRequest::Password {
-      common,
+      scope,
       username,
       password,
-    } => password_grant(state, common, username, password).await,
-    TokenRequest::RefreshToken {
-      common,
-      refresh_token,
-    } => refresh_token_grant(state, common, refresh_token).await,
-    TokenRequest::AuthorizationCode { common, code } => {
-      authorization_code_grant(state, common, code).await
-    }
+    } => password_grant(state, scope, username, password).await,
+    TokenRequest::RefreshToken { refresh_token } => refresh_token_grant(state, refresh_token).await,
+    TokenRequest::AuthorizationCode { code } => authorization_code_grant(state, code).await,
   };
   match token_result {
     Ok(token) => axum::Json(token).into_response(),
@@ -333,17 +331,10 @@ pub async fn token(
 
 async fn password_grant(
   state: RouterState,
-  common: TokenRequestCommon,
+  scope: String,
   username: String,
   password: String,
 ) -> Result<Token, HttpError> {
-  let audiences = get_audiences_by_client_id(
-    &state.pool,
-    &state.config,
-    common.client_id.as_ref().map(AsRef::as_ref),
-  )
-  .await?;
-
   let user = match get_user_by_username_or_primary_email(&state.pool, &username).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR)),
@@ -392,26 +383,17 @@ async fn password_grant(
     &state.config,
     jwk,
     user,
-    common.client_id.unwrap_or_else(|| state.config.api_url()),
-    common.scope.or_else(|| Some("openid".to_owned())),
+    state.config.api_url(),
+    scope,
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
-    &audiences,
   )
   .await
 }
 
 async fn refresh_token_grant(
   state: RouterState,
-  common: TokenRequestCommon,
   refresh_token: String,
 ) -> Result<Token, HttpError> {
-  let audiences = get_audiences_by_client_id(
-    &state.pool,
-    &state.config,
-    common.client_id.as_ref().map(AsRef::as_ref),
-  )
-  .await?;
-
   let (token_data, jwk_sql_row) =
     parse_authorization::<BasicClaims>(&state.pool, &state.config, &refresh_token).await?;
 
@@ -433,26 +415,14 @@ async fn refresh_token_grant(
     &state.config,
     jwk_sql_row,
     user,
-    common.client_id.unwrap_or_else(|| state.config.api_url()),
-    Some(token_data.claims.scopes.join(" ").to_owned()),
+    token_data.claims.aud,
+    token_data.claims.scope,
     TOKEN_ISSUE_TYPE_REFRESH_TOKEN.to_owned(),
-    &audiences,
   )
   .await
 }
 
-async fn authorization_code_grant(
-  state: RouterState,
-  common: TokenRequestCommon,
-  code: String,
-) -> Result<Token, HttpError> {
-  let audiences = get_audiences_by_client_id(
-    &state.pool,
-    &state.config,
-    common.client_id.as_ref().map(AsRef::as_ref),
-  )
-  .await?;
-
+async fn authorization_code_grant(state: RouterState, code: String) -> Result<Token, HttpError> {
   let (token_data, jwk_sql_row) =
     parse_authorization::<BasicClaims>(&state.pool, &state.config, &code).await?;
 
@@ -474,46 +444,11 @@ async fn authorization_code_grant(
     &state.config,
     jwk_sql_row,
     user,
-    common.client_id.unwrap_or_else(|| state.config.api_url()),
-    Some(token_data.claims.scopes.join(" ").to_owned()),
+    token_data.claims.aud,
+    token_data.claims.scope,
     TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
-    &audiences,
   )
   .await
-}
-
-pub(crate) fn get_audiences_by_client(
-  client_sql_row: &ClientSQLRow,
-) -> Result<Vec<String>, HttpError> {
-  let audiences = client_sql_row
-    .audience
-    .as_ref()
-    .map(json_to_string_vec)
-    .unwrap_or_default();
-
-  if audiences.is_empty() {
-    return Err(HttpError::unauthorized().with_error("client", NOT_FOUND_ERROR));
-  }
-  Ok(audiences)
-}
-
-pub(crate) async fn get_audiences_by_client_id(
-  pool: &sqlx::AnyPool,
-  config: &AppConfig,
-  client_id: Option<&str>,
-) -> Result<Vec<String>, HttpError> {
-  if let Some(client_id) = client_id {
-    match get_client_by_client_id(pool, client_id).await {
-      Ok(Some(client_sql_row)) => get_audiences_by_client(&client_sql_row),
-      Ok(None) => return Err(HttpError::unauthorized().with_error("client_uri", INVALID_ERROR)),
-      Err(e) => {
-        log::error!("error fetching client: {}", e);
-        return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
-      }
-    }
-  } else {
-    Ok(vec![config.api_url()])
-  }
 }
 
 #[utoipa::path(
@@ -524,8 +459,8 @@ pub(crate) async fn get_audiences_by_client_id(
   responses(
     (status = 302, description = "Redirect"),
     (status = 400, description = "Application Error", body = HttpError),
-    (status = 401, description = "Application Error", body = HttpError),
-    (status = 403, description = "Application Error", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
   )
 )]
@@ -544,8 +479,8 @@ pub async fn authorize(
   responses(
     (status = 302, description = "Redirect"),
     (status = 400, description = "Application Error", body = HttpError),
-    (status = 401, description = "Application Error", body = HttpError),
-    (status = 403, description = "Application Error", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
   )
 )]
@@ -655,8 +590,8 @@ async fn authorize_internal(
   responses(
     (status = 200, description = "Client registation updated", body = Client),
     (status = 201, description = "Client registered", body = Client),
-    (status = 401, description = "Application Error", body = HttpError),
-    (status = 403, description = "Application Error", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
@@ -702,12 +637,35 @@ pub async fn register_client(
     .into_response()
 }
 
+#[utoipa::path(
+  get,
+  path = "/user-info",
+  tags = [TAG],
+  request_body(content = ClientRegisterRequest, content_type = "application/json"),
+  responses(
+    (status = 200, description = "Consented claims", body = OpenIdClaims),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
+  )
+)]
+pub async fn user_info(
+  State(_state): State<RouterState>,
+  authorization: Authorization<OpenIdClaims>,
+) -> impl IntoResponse {
+  axum::Json(authorization.claims).into_response()
+}
+
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(jwks))
     .routes(routes!(openid_configuration))
     .routes(routes!(end_session))
     .routes(routes!(token))
+    .routes(routes!(user_info))
     .routes(routes!(post_authorize))
     .routes(routes!(authorize))
     .routes(routes!(register_client))

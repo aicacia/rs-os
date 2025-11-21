@@ -13,9 +13,11 @@ use crate::{
   },
   router::{
     common::{
-      constants::{ADMIN_ALL, AUTHORIZATION_HEADER, TOKEN_TYPE_BEARER},
-      entity::BasicClaims,
-      helper::{has_address_scope, has_email_scope, has_phone_number_scope, has_profile_scope},
+      constants::{
+        ADMIN_ALL, AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE_NUMBER,
+        SCOPE_PROFILE, TOKEN_TYPE_BEARER,
+      },
+      entity::{BasicClaims, Claims},
     },
     current_user::entity::{User, UserOAuth2Provider, UserRole},
     entity::RouterState,
@@ -35,10 +37,10 @@ impl UserAuthorization {
   pub async fn get_user(&self, pool: &sqlx::AnyPool) -> Result<User, HttpError> {
     let mut user: User = self.user_sql_row.clone().into();
 
-    let has_profile = has_profile_scope(&self.claims.scopes);
-    let has_email = has_email_scope(&self.claims.scopes);
-    let has_phone_number = has_phone_number_scope(&self.claims.scopes);
-    let has_address = has_address_scope(&self.claims.scopes);
+    let has_profile = self.claims.has_scope(SCOPE_PROFILE);
+    let has_email = self.claims.has_scope(SCOPE_EMAIL);
+    let has_phone_number = self.claims.has_scope(SCOPE_PHONE_NUMBER);
+    let has_address = self.claims.has_scope(SCOPE_ADDRESS);
 
     if has_profile {
       let role_sql_rows = match get_user_roles_by_user_id(pool, user.id).await {

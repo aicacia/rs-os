@@ -7,24 +7,30 @@
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault();
 
-		const user = await signInUsernamePassword(username, password);
+		await signInUsernamePassword(username, password);
 	}
 </script>
 
 <form onsubmit={onSubmit} class="flex flex-col">
-	<input
-		type="text"
-		aria-label="Username"
-		autocomplete="username"
-		placeholder="Username"
-		bind:value={username}
-	/>
-	<input
-		aria-label="Password"
-		type="password"
-		autocomplete="current-password"
-		placeholder="Password"
-		bind:value={password}
-	/>
-	<input class="btn primary mt-4" type="submit" value="Sign in" />
+	<label class="flex flex-col"
+		>Username
+		<input
+			type="text"
+			aria-label="Username"
+			autocomplete="username"
+			placeholder="Enter Username"
+			bind:value={username}
+		/>
+	</label>
+	<label class="flex flex-col"
+		>Password
+		<input
+			aria-label="Password"
+			type="password"
+			autocomplete="current-password"
+			placeholder="Enter Password"
+			bind:value={password}
+		/>
+		<input class="btn primary mt-4" type="submit" value="Sign in" />
+	</label>
 </form>

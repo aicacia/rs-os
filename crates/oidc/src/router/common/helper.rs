@@ -15,7 +15,7 @@ use crate::{
   router::{
     common::{
       constants::{
-        SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_OPENID, SCOPE_PHONE_NUMBER, SCOPE_PROFILE,
+        SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE_NUMBER, SCOPE_PROFILE,
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
       },
       entity::{BasicClaims, Claims, OpenIdClaims, OpenIdProfile, Token},
@@ -30,24 +30,21 @@ pub(crate) async fn create_user_token(
   jwk_sql_row: JwkSQLRow,
   user: UserSQLRow,
   client_id: String,
-  scope: Option<String>,
+  scope: String,
   issued_token_type: String,
-  audiences: &[String],
 ) -> Result<Token, HttpError> {
   let now = chrono::Utc::now();
-  let scopes = parse_scopes(scope.as_ref().map(String::as_str));
 
   let issuer = app_config.api_url();
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id,
-    client_id: client_id,
+    aud: client_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
-    aud: audiences.to_vec(),
-    scopes: scopes.clone(),
+    scope: scope.clone(),
   };
 
   let encoding_key = match to_encoding_key(&jwk_sql_row) {
@@ -79,7 +76,7 @@ pub(crate) async fn create_user_token(
     }
   };
 
-  let (refresh_token, refresh_token_expires_in) = if has_offline_scope(&scopes) {
+  let (refresh_token, refresh_token_expires_in) = if claims.has_scope(SCOPE_OFFLINE) {
     let mut refresh_claims = claims.clone();
     refresh_claims.r#type = TOKEN_TYPE_REFRESH.to_owned();
     refresh_claims.exp = refresh_claims.iat + app_config.token.refresh_expires_in_seconds as i64;
@@ -100,9 +97,9 @@ pub(crate) async fn create_user_token(
     (None, None)
   };
 
-  let show_profile = has_profile_scope(&scopes);
-  let show_email = has_email_scope(&scopes);
-  let show_phone_number = has_phone_number_scope(&scopes);
+  let show_profile = claims.has_scope(SCOPE_PROFILE);
+  let show_email = claims.has_scope(SCOPE_EMAIL);
+  let show_phone_number = claims.has_scope(SCOPE_PHONE_NUMBER);
 
   let mut id_token = None;
   if show_profile || show_email || show_phone_number {
@@ -192,8 +189,7 @@ pub(crate) async fn create_user_auhorization_code_token(
   app_config: &AppConfig,
   user_id: i64,
   client_id: String,
-  scope: Option<String>,
-  audiences: &[String],
+  scope: String,
 ) -> Result<String, HttpError> {
   let jwk_sql_row = match get_jwk_for_sign_and_verify(pool).await {
     Ok(Some(jwk_sql_row)) => jwk_sql_row,
@@ -213,13 +209,12 @@ pub(crate) async fn create_user_auhorization_code_token(
   let claims = BasicClaims {
     r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
     sub: user_id,
+    aud: client_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
     exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
     iss: issuer.clone(),
-    aud: audiences.to_vec(),
-    client_id,
-    scopes: parse_scopes(scope.as_ref().map(String::as_str)),
+    scope: scope,
   };
 
   let encoding_key = match to_encoding_key(&jwk_sql_row) {
@@ -252,37 +247,6 @@ pub(crate) async fn create_user_auhorization_code_token(
   };
 
   Ok(auhorization_code_token)
-}
-
-pub fn parse_scopes(scopes: Option<&str>) -> Vec<String> {
-  match scopes {
-    Some(scopes) => scopes.split(' ').map(|s| s.trim().to_owned()).collect(),
-    None => vec![],
-  }
-}
-
-pub fn has_profile_scope(scopes: &[String]) -> bool {
-  scopes.contains(&SCOPE_PROFILE.to_owned())
-}
-
-pub fn has_openid_scope(scopes: &[String]) -> bool {
-  scopes.contains(&SCOPE_OPENID.to_owned())
-}
-
-pub fn has_address_scope(scopes: &[String]) -> bool {
-  scopes.contains(&SCOPE_ADDRESS.to_owned())
-}
-
-pub fn has_email_scope(scopes: &[String]) -> bool {
-  scopes.contains(&SCOPE_EMAIL.to_owned())
-}
-
-pub fn has_phone_number_scope(scopes: &[String]) -> bool {
-  scopes.contains(&SCOPE_PHONE_NUMBER.to_owned())
-}
-
-pub fn has_offline_scope(scopes: &[String]) -> bool {
-  scopes.contains(&SCOPE_OFFLINE.to_owned())
 }
 
 pub fn parse_jwt<T>(

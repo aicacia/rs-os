@@ -70,11 +70,15 @@
 			});
 	});
 
+	let loadingAuthorizeRequest = $state(false);
 	async function onAuthorize() {
+		loadingAuthorizeRequest = true;
 		try {
 			await resolveAuthorizeRequest(authorizeRequest);
 		} catch (e) {
 			handleError(e);
+		} finally {
+			loadingAuthorizeRequest = false;
 		}
 	}
 	async function onAllow() {
@@ -110,7 +114,7 @@
 		);
 	}
 
-	let loading = $derived(loadingClient || loadingUserAllowed);
+	let loading = $derived(loadingClient || loadingUserAllowed || loadingAuthorizeRequest);
 	let disabled = $derived(loading);
 </script>
 

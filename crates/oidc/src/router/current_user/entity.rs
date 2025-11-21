@@ -12,7 +12,6 @@ use crate::model::{
 
 #[derive(Serialize, ToSchema, Default)]
 pub struct User {
-  #[serde(rename = "sub")]
   pub id: i64,
   pub username: String,
   pub active: bool,

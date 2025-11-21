@@ -80,8 +80,8 @@ example().catch(console.error);
 |-------------|-------------|------------------|
 | **200** | Authorized |  -  |
 | **400** | Application Error |  -  |
-| **401** | Application Error |  -  |
-| **403** | Application Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)

@@ -66,7 +66,7 @@ export interface ClientAuthorizationOneOf {
      * @type {string}
      * @memberof ClientAuthorizationOneOf
      */
-    scope?: string;
+    scope: string;
     /**
      * 
      * @type {string}
@@ -99,6 +99,7 @@ export function instanceOfClientAuthorizationOneOf(value: object): value is Clie
     if (!('expiresIn' in value) || value['expiresIn'] === undefined) return false;
     if (!('issuedAt' in value) || value['issuedAt'] === undefined) return false;
     if (!('issuedTokenType' in value) || value['issuedTokenType'] === undefined) return false;
+    if (!('scope' in value) || value['scope'] === undefined) return false;
     if (!('tokenType' in value) || value['tokenType'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
@@ -121,7 +122,7 @@ export function ClientAuthorizationOneOfFromJSONTyped(json: any, ignoreDiscrimin
         'issuedTokenType': json['issued_token_type'],
         'refreshToken': json['refresh_token'] == null ? undefined : json['refresh_token'],
         'refreshTokenExpiresIn': json['refresh_token_expires_in'] == null ? undefined : json['refresh_token_expires_in'],
-        'scope': json['scope'] == null ? undefined : json['scope'],
+        'scope': json['scope'],
         'tokenType': json['token_type'],
         'type': json['type'],
     };

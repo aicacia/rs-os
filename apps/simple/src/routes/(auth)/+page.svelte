@@ -9,7 +9,7 @@
 </script>
 
 <div class="flex flex-col grow items-center justify-center">
-	<code class="flex flex-col w-full">
+	<code class="flex flex-col w-lg h-96 overflow-auto">
 		<pre>{JSON.stringify(data.user, null, 2)}</pre>
 	</code>
 

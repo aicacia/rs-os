@@ -21,7 +21,7 @@ use crate::{
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR},
     middleware::user_authorization::UserAuthorization,
-    oidc::{entity::ResponseType, router::get_audiences_by_client},
+    oidc::entity::ResponseType,
   },
 };
 
@@ -175,8 +175,8 @@ pub async fn client_user_approve(
   responses(
     (status = 200, description = "Authorized", body = ClientAuthorization),
     (status = 400, description = "Application Error", body = HttpError),
-    (status = 401, description = "Application Error", body = HttpError),
-    (status = 403, description = "Application Error", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
@@ -252,11 +252,6 @@ pub async fn client_authorize(
       .into_response();
   }
 
-  let audiences = match get_audiences_by_client(&client_sql_row) {
-    Ok(audiences) => audiences,
-    Err(e) => return e.into_response(),
-  };
-
   let authorization_response = match authorization_request.response_type {
     ResponseType::None => todo!(),
     ResponseType::Code => match create_user_auhorization_code_token(
@@ -264,8 +259,7 @@ pub async fn client_authorize(
       &state.config,
       user_authorization.user_sql_row.id,
       client_id,
-      Some(authorization_request.scope),
-      &audiences,
+      authorization_request.scope,
     )
     .await
     {

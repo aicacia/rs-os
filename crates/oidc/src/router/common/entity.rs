@@ -13,8 +13,7 @@ pub struct Token {
   pub issued_token_type: String,
   pub issued_at: DateTime<Utc>,
   pub expires_in: i64,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub scope: Option<String>,
+  pub scope: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub refresh_token: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -24,18 +23,17 @@ pub struct Token {
 }
 
 pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
-  fn r#type(&self) -> &String;
+  fn r#type(&self) -> &str;
   fn exp(&self) -> i64;
   fn iat(&self) -> i64;
   fn nbf(&self) -> i64;
-  fn iss(&self) -> &String;
-  fn aud(&self) -> &[String];
+  fn iss(&self) -> &str;
+  fn aud(&self) -> &str;
   fn sub(&self) -> i64;
-  fn client_id(&self) -> &String;
-  fn scopes(&self) -> &[String];
+  fn scope(&self) -> &str;
 
   fn has_scope(&self, scope: &str) -> bool {
-    self.scopes().iter().any(|s| s == scope)
+    self.scope().split_whitespace().any(|s| s == scope)
   }
 
   fn encode(
@@ -79,22 +77,20 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
   }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, ToSchema)]
 pub struct BasicClaims {
   pub r#type: String,
   pub exp: i64,
   pub iat: i64,
   pub nbf: i64,
   pub iss: String,
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub aud: Vec<String>,
+  pub aud: String,
   pub sub: i64,
-  pub client_id: String,
-  pub scopes: Vec<String>,
+  pub scope: String,
 }
 
 impl Claims for BasicClaims {
-  fn r#type(&self) -> &String {
+  fn r#type(&self) -> &str {
     &self.r#type
   }
   fn exp(&self) -> i64 {
@@ -106,24 +102,22 @@ impl Claims for BasicClaims {
   fn nbf(&self) -> i64 {
     self.nbf
   }
-  fn iss(&self) -> &String {
+  fn iss(&self) -> &str {
     &self.iss
   }
-  fn aud(&self) -> &[String] {
+  fn aud(&self) -> &str {
     &self.aud
   }
   fn sub(&self) -> i64 {
     self.sub
   }
-  fn client_id(&self) -> &String {
-    &self.client_id
-  }
-  fn scopes(&self) -> &[String] {
-    &self.scopes
+
+  fn scope(&self) -> &str {
+    &self.scope
   }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, ToSchema)]
 pub struct OpenIdProfile {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
@@ -187,7 +181,7 @@ impl From<UserInfoSQLRow> for OpenIdProfile {
   }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, ToSchema)]
 pub struct OpenIdClaims {
   #[serde(flatten)]
   pub claims: BasicClaims,
@@ -198,7 +192,7 @@ pub struct OpenIdClaims {
 unsafe impl Send for OpenIdClaims {}
 
 impl Claims for OpenIdClaims {
-  fn r#type(&self) -> &String {
+  fn r#type(&self) -> &str {
     &self.claims.r#type
   }
   fn exp(&self) -> i64 {
@@ -210,19 +204,16 @@ impl Claims for OpenIdClaims {
   fn nbf(&self) -> i64 {
     self.claims.nbf
   }
-  fn iss(&self) -> &String {
+  fn iss(&self) -> &str {
     &self.claims.iss
   }
-  fn aud(&self) -> &[String] {
+  fn aud(&self) -> &str {
     &self.claims.aud
   }
   fn sub(&self) -> i64 {
     self.claims.sub
   }
-  fn client_id(&self) -> &String {
-    &self.claims.client_id
-  }
-  fn scopes(&self) -> &[String] {
-    &self.claims.scopes
+  fn scope(&self) -> &str {
+    &self.claims.scope
   }
 }
