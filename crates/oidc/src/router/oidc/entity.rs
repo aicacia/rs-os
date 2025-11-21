@@ -67,10 +67,8 @@ pub enum TokenRequest {
 #[derive(Serialize, ToSchema)]
 pub struct OpenIdConfiguration {
   pub issuer: String,
-  #[serde(skip_serializing_if = "Option::is_none", default)]
-  pub authorization_endpoint: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none", default)]
-  pub device_authorization_endpoint: Option<String>,
+  pub authorization_endpoint: String,
+  pub device_authorization_endpoint: String,
   pub token_endpoint: String,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub end_session_endpoint: Option<String>,

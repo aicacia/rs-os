@@ -137,17 +137,19 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     }
   }
 
+  let mut response_modes_supported = vec![
+    "query".to_owned(),
+    "fragment".to_owned(),
+    "form_post".to_owned(),
+  ];
+
+  if state.config.ui_url.is_some() {
+    response_modes_supported.push("web_message".to_owned());
+  }
+
   axum::Json(OpenIdConfiguration {
-    authorization_endpoint: if let Some(ui_url) = &state.config.ui_url {
-      Some(format!("{}/authorize", ui_url))
-    } else {
-      None
-    },
-    device_authorization_endpoint: if let Some(ui_url) = &state.config.ui_url {
-      Some(format!("{}/device-authorize", ui_url))
-    } else {
-      None
-    },
+    authorization_endpoint: format!("{}/authorize", api_url),
+    device_authorization_endpoint: format!("{}/device-authorize", api_url),
     token_endpoint: format!("{}/token", api_url),
     end_session_endpoint: Some(format!("{}/end-session", api_url)),
     userinfo_endpoint: Some(format!("{}/user-info", api_url)),
@@ -164,11 +166,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
       "code token id_token".to_owned(),
       "none".to_owned(),
     ],
-    response_modes_supported: vec![
-      "query".to_owned(),
-      "fragment".to_owned(),
-      "form_post".to_owned(),
-    ],
+    response_modes_supported: response_modes_supported,
     subject_types_supported: vec!["public".to_owned(), "pairwise".to_owned()],
     id_token_signing_alg_values_supported: signing_algs.into_iter().collect(),
     scopes_supported: vec![
@@ -497,7 +495,7 @@ async fn authorize_internal(
   authorize_request: AuthorizeRequest,
 ) -> impl IntoResponse {
   let mut ui_url = match &config.ui_url {
-    Some(ui_url) => match Url::parse(ui_url) {
+    Some(ui_url) => match Url::parse(&format!("{}/authorize", ui_url)) {
       Ok(ui_url) => ui_url,
       Err(e) => {
         log::error!("invalid config.ui_url: {}", e);
