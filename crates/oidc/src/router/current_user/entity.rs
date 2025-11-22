@@ -200,9 +200,9 @@ pub struct UpdateUserPassword {
 }
 
 #[derive(Validate, Deserialize, ToSchema)]
-pub struct UpdateUserInfo {
+pub struct UpdateUsernameRequest {
   #[validate(length(min = 1))]
-  pub name: Option<String>,
+  pub username: String,
 }
 
 #[derive(Validate, Deserialize, ToSchema)]

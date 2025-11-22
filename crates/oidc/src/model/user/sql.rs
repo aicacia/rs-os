@@ -353,8 +353,8 @@ pub async fn get_user_primary_phone_number(
 pub async fn update_user_username(
   pool: &sqlx::AnyPool,
   user_id: i64,
-  username: Option<String>,
-) -> sqlx::Result<UserInfoSQLRow> {
+  username: String,
+) -> sqlx::Result<UserSQLRow> {
   sqlx::query_as(
     r#"UPDATE users
       SET

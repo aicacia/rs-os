@@ -7,7 +7,7 @@ All URIs are relative to *http://localhost:3000*
 | [**currentUser**](CurrentUserApi.md#currentuser) | **GET** /oidc/api/current-user |  |
 | [**updatePassword**](CurrentUserApi.md#updatepassword) | **PATCH** /oidc/api/current-user/password |  |
 | [**updateUserInfo**](CurrentUserApi.md#updateuserinfooperation) | **PATCH** /oidc/api/current-user/info |  |
-| [**updateUsername**](CurrentUserApi.md#updateusername) | **PATCH** /oidc/api/current-user |  |
+| [**updateUsername**](CurrentUserApi.md#updateusernameoperation) | **PATCH** /oidc/api/current-user |  |
 
 
 
@@ -221,7 +221,7 @@ example().catch(console.error);
 
 ## updateUsername
 
-> User updateUsername(updateUserInfo)
+> User updateUsername(updateUsernameRequest)
 
 
 
@@ -232,7 +232,7 @@ import {
   Configuration,
   CurrentUserApi,
 } from '';
-import type { UpdateUsernameRequest } from '';
+import type { UpdateUsernameOperationRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
@@ -243,9 +243,9 @@ async function example() {
   const api = new CurrentUserApi(config);
 
   const body = {
-    // UpdateUserInfo
-    updateUserInfo: ...,
-  } satisfies UpdateUsernameRequest;
+    // UpdateUsernameRequest
+    updateUsernameRequest: ...,
+  } satisfies UpdateUsernameOperationRequest;
 
   try {
     const data = await api.updateUsername(body);
@@ -264,7 +264,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **updateUserInfo** | [UpdateUserInfo](UpdateUserInfo.md) |  | |
+| **updateUsernameRequest** | [UpdateUsernameRequest](UpdateUsernameRequest.md) |  | |
 
 ### Return type
 

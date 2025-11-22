@@ -1,5 +1,5 @@
 ---
-description: "UI agent for front-end changes"
+description: "Component and UI guidelines for Svelte, SvelteKit, Tailwind CSS, and Lucide icons."
 tools:
   [
     "edit",
@@ -22,7 +22,81 @@ tools:
   ]
 ---
 
-<SYSTEM>This is the abridged developer documentation for Svelte and SvelteKit.</SYSTEM>
+## Styles & Icons
+
+- **Tailwind CSS (required):** All UI work must use Tailwind CSS utility classes for styling. Do not introduce new global CSS frameworks or large handcrafted stylesheets unless there's a compelling, documented reason. Prefer composing UI using Tailwind utilities, component-local classes, and Svelte idioms.
+
+- **Lucide icons (required):** Use `lucide-svelte` for all icons. Import only the icons you need and style them with Tailwind classes (size, color, spacing). Avoid embedding SVG icon sources directly unless you need a custom icon not available in Lucide.
+
+- **SvelteKit integration (recommended setup):**
+
+  - Create `src/app.css` with the Tailwind entrypoints:
+
+    ```css
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+    ```
+
+  - Import `src/app.css` in your root layout (`src/routes/+layout.svelte` or equivalent):
+
+    ```svelte
+    <script>
+      import '../app.css';
+    </script>
+    <slot />
+    ```
+
+  - Install Tailwind and Lucide (example using `pnpm`):
+
+    ```bash
+    pnpm add -D tailwindcss postcss autoprefixer
+    pnpm add lucide-svelte
+    pnpm exec tailwindcss init -p
+    ```
+
+  - Configure `tailwind.config.cjs` (or `.js`) to include Svelte files:
+
+    ```js
+    module.exports = {
+      content: ["./src/**/*.{html,js,svelte,ts}"],
+      theme: { extend: {} },
+      plugins: [],
+    };
+    ```
+
+- **Usage examples:**
+
+  - Tailwind: prefer utility classes instead of writing new rules. Example: `<button class="px-3 py-2 rounded bg-blue-600 text-white">Save</button>`.
+  - Lucide: import and use an icon, styling via Tailwind classes:
+
+    ```svelte
+    <script>
+      import { AlertTriangle } from 'lucide-svelte';
+    </script>
+
+    <button class="flex items-center gap-2 px-3 py-2 rounded bg-yellow-50 text-yellow-800">
+      <AlertTriangle class="w-5 h-5" />
+      Warning
+    </button>
+    ```
+
+- **Developer expectations:**
+
+  - New components must use Tailwind utilities for spacing, layout, typography, and colors.
+  - Icons must come from `lucide-svelte` unless a justified exception is documented in the PR.
+  - Keep the CSS footprint minimal; avoid large custom styles that duplicate Tailwind utilities.
+
+## Translations
+
+Our UIs use a message‑file → generated‑functions workflow for translations.
+
+- Source of truth: Each app keeps locale JSON files under a `messages/` directory. For example, the OIDC UI uses `crates/oidc-ui/frontend/messages/{locale}.json` (e.g. `en.json`, `es.json`). New translation keys or languages are added only to these JSON files.
+- Code generation: During the frontend build/dev pipeline, the inlang/paraglide tooling watches `messages/{locale}.json` and compiles them into typed JS modules under `src/lib/paraglide/messages/` (e.g. `en.js`, `es.js`, `_index.js`).
+- Runtime API: These generated modules expose functions for each translation key. UI code imports those functions (usually via the aggregated `_index.js` helpers) and calls them to get localized strings instead of reading JSON directly.
+- Live updates: When a `messages/{locale}.json` file changes, the dev server rebuilds the paraglide modules and hot‑reloads the app, so translation edits are reflected immediately without manual regeneration.
+
+When adding or changing copy in any UI, edit the appropriate `messages/{locale}.json` file; the build will take care of regenerating the translation functions used by components.
 
 # Svelte documentation
 

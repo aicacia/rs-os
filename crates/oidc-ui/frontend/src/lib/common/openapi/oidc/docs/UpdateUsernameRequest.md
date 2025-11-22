@@ -1,22 +1,22 @@
 
-# UpdateUserInfo
+# UpdateUsernameRequest
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`name` | string
+`username` | string
 
 ## Example
 
 ```typescript
-import type { UpdateUserInfo } from ''
+import type { UpdateUsernameRequest } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "name": null,
-} satisfies UpdateUserInfo
+  "username": null,
+} satisfies UpdateUsernameRequest
 
 console.log(example)
 
@@ -25,7 +25,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as UpdateUserInfo
+const exampleParsed = JSON.parse(exampleJSON) as UpdateUsernameRequest
 console.log(exampleParsed)
 ```
 

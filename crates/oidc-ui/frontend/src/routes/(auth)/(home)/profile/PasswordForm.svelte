@@ -1,0 +1,46 @@
+<script lang="ts">
+	import type { UpdateUserPassword, User } from '$lib/common/openapi/oidc/models/index';
+	import { currentUserApi } from '$lib/common/openapi';
+	import { handleError } from '$lib/common/errors';
+
+	let { user = $bindable() }: { user: User } = $props();
+
+	let passwordForm = $state({ password: '', passwordConfirmation: '' } as UpdateUserPassword);
+
+	async function submit(e: SubmitEvent) {
+		e.preventDefault();
+		if (!passwordForm.password || passwordForm.password !== passwordForm.passwordConfirmation) {
+			handleError(new Error('Passwords do not match'));
+			return;
+		}
+		try {
+			user = await currentUserApi.updatePassword({ updateUserPassword: passwordForm });
+			passwordForm = { password: '', passwordConfirmation: '' } as UpdateUserPassword;
+		} catch (e) {
+			handleError(e);
+		}
+	}
+</script>
+
+<form onsubmit={submit} class="card">
+	<h3 class="text-lg font-medium">Change Password</h3>
+	<label class="block">
+		<span class="text-sm font-medium">New password</span>
+		<input
+			type="password"
+			class="mt-1 block w-full px-3 py-2"
+			bind:value={passwordForm.password}
+			required
+		/>
+	</label>
+	<label class="block">
+		<span class="text-sm font-medium">Confirm password</span>
+		<input
+			type="password"
+			class="mt-1 block w-full px-3 py-2"
+			bind:value={passwordForm.passwordConfirmation}
+			required
+		/>
+	</label>
+	<button type="submit" class="btn danger mt-4">Change password</button>
+</form>

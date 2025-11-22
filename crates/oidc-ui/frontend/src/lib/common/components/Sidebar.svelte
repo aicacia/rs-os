@@ -41,7 +41,6 @@
 				onclick={toggleCollapsed}
 			>
 				<ChevronLeft
-					size={18}
 					class={'text-gray-200 transition-transform duration-200' +
 						(collapsed ? ' rotate-180' : '')}
 				/>
@@ -49,7 +48,13 @@
 		</div>
 	</nav>
 
-	<main class="flex grow flex-col p-4">
-		{@render children()}
+	<main class="flex grow flex-col">
+		<div class="h-full w-full overflow-auto">
+			<div class="p-4 pb-20">
+				<div class="mx-auto max-w-4xl">
+					{@render children()}
+				</div>
+			</div>
+		</div>
 	</main>
 </div>

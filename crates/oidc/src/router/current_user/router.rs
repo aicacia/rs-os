@@ -11,7 +11,7 @@ use crate::router::{
 
 use crate::model::user::sql::{update_user_password, update_user_username};
 use crate::router::current_user::entity::UpdateUserInfoRequest;
-use crate::router::current_user::entity::{UpdateUserInfo, UpdateUserPassword};
+use crate::router::current_user::entity::{UpdateUserPassword, UpdateUsernameRequest};
 
 #[utoipa::path(
   get,
@@ -41,7 +41,7 @@ pub async fn current_user(
   patch,
   path = "/current-user",
   tags = [TAG],
-  request_body(content = UpdateUserInfo, content_type = "application/json"),
+  request_body(content = UpdateUsernameRequest, content_type = "application/json"),
   responses(
     (status = 200, content_type = "application/json", body = User),
     (status = 400, content_type = "application/json", body = HttpError),
@@ -55,15 +55,21 @@ pub async fn current_user(
 pub async fn update_username(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Json(update): Json<UpdateUserInfo>,
+  Json(update): Json<UpdateUsernameRequest>,
 ) -> impl IntoResponse {
-  match update_user_username(&state.pool, user_authorization.user_sql_row.id, update.name).await {
+  match update_user_username(
+    &state.pool,
+    user_authorization.user_sql_row.id,
+    update.username,
+  )
+  .await
+  {
     Ok(_) => match user_authorization.get_user(&state.pool).await {
       Ok(user) => axum::Json(user).into_response(),
       Err(e) => return e.into_response(),
     },
     Err(e) => {
-      log::error!("error updating user info name: {}", e);
+      log::error!("error updating username: {}", e);
       return HttpError::internal_error().into_response();
     }
   }
