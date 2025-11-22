@@ -106,3 +106,7 @@ function resetAuth() {
 	token.value = null;
 	setAuthToken(undefined);
 }
+
+export async function logout() {
+	resetAuth();
+}
