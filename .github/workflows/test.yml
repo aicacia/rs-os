@@ -17,20 +17,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ env.RUST_VERSION }}
           profile: minimal
           override: true
-      - name: Set up Node.js for frontend build
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Use Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
-      - name: Install pnpm via npm
-        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
       - name: Install frontend dependencies
         working-directory: crates/oidc-ui/frontend
         run: pnpm install --frozen-lockfile
