@@ -15,7 +15,7 @@ async fn not_found() -> Result<(), Box<dyn Error>> {
   let response = router
     .oneshot(Request::builder().uri("/").body(Body::empty())?)
     .await
-    .unwrap();
+    .expect("failed to send request");
 
   assert_eq!(response.status(), StatusCode::NOT_FOUND);
 

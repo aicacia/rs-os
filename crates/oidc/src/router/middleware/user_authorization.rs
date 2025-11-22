@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use axum::extract::{FromRef, FromRequestParts};
 use hashbrown::{HashMap, HashSet};
 use http::request::Parts;
@@ -18,6 +20,7 @@ use crate::{
         SCOPE_PROFILE, TOKEN_TYPE_BEARER,
       },
       entity::{BasicClaims, Claims},
+      permissions::Permission,
     },
     current_user::entity::{User, UserOAuth2Provider, UserRole},
     entity::RouterState,
@@ -30,7 +33,8 @@ pub struct UserAuthorization {
   pub claims: BasicClaims,
   pub user_sql_row: UserSQLRow,
   pub permission_sql_rows: HashMap<i64, Vec<PermissionSQLRow>>,
-  pub permissions: HashSet<String>,
+  pub admin_all: bool,
+  pub permissions: HashSet<Permission>,
 }
 
 impl UserAuthorization {
@@ -135,21 +139,21 @@ impl UserAuthorization {
     Ok(user)
   }
 
-  pub fn has_permission(&self, permission: &str) -> Result<(), HttpError> {
-    if self.permissions.contains(ADMIN_ALL) || self.permissions.contains(permission) {
+  pub fn has_permission(&self, permission: Permission) -> Result<(), HttpError> {
+    if self.admin_all || self.permissions.contains(&permission) {
       return Ok(());
     }
-    Err(HttpError::forbidden().with_error(permission, REQUIRED_ERROR))
+    Err(HttpError::forbidden().with_error(permission.as_str(), REQUIRED_ERROR))
   }
 
   pub fn has_permissions<'a, I>(&self, permissions: I) -> Result<(), HttpError>
   where
-    I: IntoIterator<Item = &'a String>,
+    I: IntoIterator<Item = &'a Permission>,
   {
-    if self.permissions.contains(ADMIN_ALL) {
+    if self.admin_all {
       return Ok(());
     }
-    let mut missing_permissions: HashSet<&String> = HashSet::default();
+    let mut missing_permissions: HashSet<&Permission> = HashSet::default();
     for permission in permissions {
       if !self.permissions.contains(permission) {
         missing_permissions.insert(permission);
@@ -160,7 +164,7 @@ impl UserAuthorization {
     }
     let mut e = HttpError::forbidden();
     for missing_permission in missing_permissions {
-      e = e.with_error(missing_permission, REQUIRED_ERROR);
+      e = e.with_error(missing_permission.as_str(), REQUIRED_ERROR);
     }
     return Err(e);
   }
@@ -196,15 +200,23 @@ where
             }
           };
 
-        let permissions = permission_sql_rows
-          .iter()
-          .flat_map(|(_, permissions)| permissions.iter().map(|p| p.uri.clone()))
-          .collect();
+        let mut admin_all = false;
+        let mut permissions: HashSet<Permission> = HashSet::default();
+        for (_role_id, perms) in permission_sql_rows.iter() {
+          for p in perms {
+            if p.uri == ADMIN_ALL {
+              admin_all = true;
+            } else if let Ok(permission) = Permission::from_str(&p.uri) {
+              permissions.insert(permission);
+            }
+          }
+        }
 
         return Ok(Self {
           claims: authorization.claims,
           user_sql_row,
           permission_sql_rows,
+          admin_all,
           permissions,
         });
       }

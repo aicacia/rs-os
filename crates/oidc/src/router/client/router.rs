@@ -14,10 +14,10 @@ use crate::{
   },
   router::{
     client::{
-      constants::{CLIENT_CREATE, CLIENT_DELETE, CLIENT_READ, CLIENT_UPDATE, TAG},
+      constants::TAG,
       entity::{Client, ClientAllowed, ClientAuthorization, ClientAuthorizeRequest},
     },
-    common::helper::create_user_auhorization_code_token,
+    common::{helper::create_user_auhorization_code_token, permissions::Permission},
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR},
     middleware::user_authorization::UserAuthorization,
@@ -46,7 +46,7 @@ pub async fn client_by_client_id(
   user_authorization: UserAuthorization,
   Path(client_id): Path<String>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_READ) {
+  match user_authorization.has_permission(Permission::ClientRead) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -89,7 +89,7 @@ pub async fn client_list(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_READ) {
+  match user_authorization.has_permission(Permission::ClientRead) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -130,7 +130,7 @@ pub async fn client_create(
   user_authorization: UserAuthorization,
   Json(client_register_request): Json<crate::router::oidc::entity::ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_CREATE) {
+  match user_authorization.has_permission(Permission::ClientCreate) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -177,7 +177,7 @@ pub async fn client_update(
   Path(client_id): Path<String>,
   Json(client_register_request): Json<crate::router::oidc::entity::ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_UPDATE) {
+  match user_authorization.has_permission(Permission::ClientUpdate) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -224,7 +224,7 @@ pub async fn client_delete(
   user_authorization: UserAuthorization,
   Path(client_id): Path<String>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_DELETE) {
+  match user_authorization.has_permission(Permission::ClientDelete) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }

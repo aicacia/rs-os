@@ -23,7 +23,7 @@ use crate::{
     },
   },
   router::{
-    client::constants::CLIENT_CREATE,
+    common::permissions::Permission,
     common::{
       constants::{
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
@@ -288,12 +288,19 @@ pub async fn end_session(
       .into_response();
   };
 
-  Response::builder()
+  match Response::builder()
     .status(StatusCode::FOUND)
     .header(header::LOCATION, post_logout_redirect_uri_string)
     .body(Body::empty())
-    .unwrap()
-    .into_response()
+  {
+    Ok(response) => response.into_response(),
+    Err(e) => {
+      log::error!("Failed to build response: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
+  }
 }
 
 #[utoipa::path(
@@ -572,12 +579,19 @@ async fn authorize_internal(
     }
   }
 
-  Response::builder()
+  match Response::builder()
     .status(StatusCode::FOUND)
     .header(header::LOCATION, ui_url.as_str())
     .body(Body::empty())
-    .unwrap()
-    .into_response()
+  {
+    Ok(response) => response.into_response(),
+    Err(e) => {
+      log::error!("Failed to build response: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
+  }
 }
 
 #[utoipa::path(
@@ -601,7 +615,7 @@ pub async fn register_client(
   user_authorization: UserAuthorization,
   Json(client_register_request): Json<ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(CLIENT_CREATE) {
+  match user_authorization.has_permission(Permission::ClientCreate) {
     Ok(_) => {}
     Err(e) => {
       log::error!("error registering client: {}", e);

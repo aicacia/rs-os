@@ -10,6 +10,7 @@ use crate::router::{
 };
 
 use crate::model::user::sql::{update_user_password, update_user_username};
+use crate::router::current_user::entity::UpdateUserInfoRequest;
 use crate::router::current_user::entity::{UpdateUserInfo, UpdateUserPassword};
 
 #[utoipa::path(
@@ -107,10 +108,49 @@ pub async fn update_password(
   }
 }
 
+#[utoipa::path(
+  patch,
+  path = "/current-user/info",
+  tags = [TAG],
+  request_body(content = UpdateUserInfoRequest, content_type = "application/json"),
+  responses(
+    (status = 200, content_type = "application/json", body = User),
+    (status = 400, content_type = "application/json", body = HttpError),
+    (status = 401, content_type = "application/json", body = HttpError),
+    (status = 500, content_type = "application/json", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
+  )
+)]
+pub async fn update_user_info(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Json(update): Json<UpdateUserInfoRequest>,
+) -> impl IntoResponse {
+  match crate::model::user::sql::update_user_info(
+    &state.pool,
+    user_authorization.user_sql_row.id,
+    update.into(),
+  )
+  .await
+  {
+    Ok(_) => match user_authorization.get_user(&state.pool).await {
+      Ok(user) => axum::Json(user).into_response(),
+      Err(e) => return e.into_response(),
+    },
+    Err(e) => {
+      log::error!("error updating user info: {}", e);
+      return HttpError::internal_error().into_response();
+    }
+  }
+}
+
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(current_user))
     .routes(routes!(update_username))
     .routes(routes!(update_password))
+    .routes(routes!(update_user_info))
     .with_state(state)
 }

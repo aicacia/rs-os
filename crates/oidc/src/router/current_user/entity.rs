@@ -204,3 +204,38 @@ pub struct UpdateUserInfo {
   #[validate(length(min = 1))]
   pub name: Option<String>,
 }
+
+#[derive(Validate, Deserialize, ToSchema)]
+pub struct UpdateUserInfoRequest {
+  pub name: Option<String>,
+  pub given_name: Option<String>,
+  pub family_name: Option<String>,
+  pub middle_name: Option<String>,
+  pub nickname: Option<String>,
+  pub profile_picture: Option<String>,
+  pub website: Option<String>,
+  pub gender: Option<String>,
+  pub birthdate: Option<i64>,
+  pub zone_info: Option<String>,
+  pub locale: Option<String>,
+  pub address: Option<String>,
+}
+
+impl Into<crate::model::user::sql::UserInfoUpdate> for UpdateUserInfoRequest {
+  fn into(self) -> crate::model::user::sql::UserInfoUpdate {
+    crate::model::user::sql::UserInfoUpdate {
+      name: self.name,
+      given_name: self.given_name,
+      family_name: self.family_name,
+      middle_name: self.middle_name,
+      nickname: self.nickname,
+      profile_picture: self.profile_picture,
+      website: self.website,
+      gender: self.gender,
+      birthdate: self.birthdate,
+      zone_info: self.zone_info,
+      locale: self.locale,
+      address: self.address,
+    }
+  }
+}

@@ -370,6 +370,48 @@ pub async fn update_user_username(
   .await
 }
 
+pub async fn update_user_info(
+  pool: &sqlx::AnyPool,
+  user_id: i64,
+  user_info: UserInfoUpdate,
+) -> sqlx::Result<UserInfoSQLRow> {
+  sqlx::query_as(
+    r#"UPDATE user_infos
+      SET
+        name = COALESCE($1, name),
+        given_name = COALESCE($2, given_name),
+        family_name = COALESCE($3, family_name),
+        middle_name = COALESCE($4, middle_name),
+        nickname = COALESCE($5, nickname),
+        profile_picture = COALESCE($6, profile_picture),
+        website = COALESCE($7, website),
+        gender = COALESCE($8, gender),
+        birthdate = COALESCE($9, birthdate),
+        zone_info = COALESCE($10, zone_info),
+        locale = COALESCE($11, locale),
+        address = COALESCE($12, address),
+        updated_at = $13
+      WHERE user_id = $14
+      RETURNING *;"#,
+  )
+  .bind(user_info.name)
+  .bind(user_info.given_name)
+  .bind(user_info.family_name)
+  .bind(user_info.middle_name)
+  .bind(user_info.nickname)
+  .bind(user_info.profile_picture)
+  .bind(user_info.website)
+  .bind(user_info.gender)
+  .bind(user_info.birthdate)
+  .bind(user_info.zone_info)
+  .bind(user_info.locale)
+  .bind(user_info.address)
+  .bind(chrono::Utc::now().timestamp())
+  .bind(user_id)
+  .fetch_one(pool)
+  .await
+}
+
 pub async fn update_user_password(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
