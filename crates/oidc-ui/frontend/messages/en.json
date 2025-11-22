@@ -1,6 +1,5 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from en!",
 	"sign_in": "Sign in",
 	"authorize": "Authorize",
 	"errors_name_application": "Application Error",
@@ -30,5 +29,11 @@
 	"client_accept": "Accept",
 	"client_reject": "Reject",
 	"client_denied": "Denied",
-	"client_approved": "Approved"
+	"client_approved": "Approved",
+	"signin_username_label": "Username",
+	"signin_username_placeholder": "Enter your username",
+	"signin_password_label": "Password",
+	"signin_password_placeholder": "Enter your password",
+	"home_welcome": "Hello, {name}!",
+	"home_title": "Home"
 }

@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { User } from '$lib/common/openapi/oidc';
+	import { Permission, type User } from '$lib/common/openapi/oidc';
 	import type { ClientInfo } from './_utils';
 
 	export interface ClientInfoProps {
@@ -13,7 +13,6 @@
 </script>
 
 <script lang="ts">
-	import { CLIENT_CREATE } from '$lib/common/permissions';
 	import { hasPermission } from '$lib/common/state/currentUser.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import ClientHeader from './_ClientHeader.svelte';
@@ -66,7 +65,7 @@
 		<button class="btn secondary" disabled={disabled || loading} onclick={onRejectInternal}
 			>{m.client_reject()}</button
 		>
-		{#if hasPermission(user, CLIENT_CREATE)}
+		{#if hasPermission(user, Permission.ClientCreate)}
 			<button class="btn danger" disabled={disabled || loading} onclick={onAcceptInternal}
 				>{m.client_accept()}</button
 			>
