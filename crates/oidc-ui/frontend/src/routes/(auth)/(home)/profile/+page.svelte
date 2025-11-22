@@ -4,6 +4,8 @@
 	import UsernameForm from './UsernameForm.svelte';
 	import PasswordForm from './PasswordForm.svelte';
 	import InfoForm from './InfoForm.svelte';
+	import { ArrowLeft } from '@lucide/svelte';
+	import { resolve } from '$app/paths';
 
 	let { data }: PageProps = $props();
 
@@ -15,28 +17,19 @@
 </svelte:head>
 
 <div class="space-y-4">
-	<h1 class="text-2xl font-semibold">Profile</h1>
-
 	<section class="card">
-		<h2 class="mb-2 text-lg font-medium">Account</h2>
-		<p class="text-sm"><strong>Username:</strong> <span class="ml-2">{user.username}</span></p>
-		<p class="text-sm">
-			<strong>Email:</strong>
-			<span class="ml-2">{user.email?.email ?? user.emails?.[0]?.email ?? '—'}</span>
-		</p>
-		<p class="text-sm">
-			<strong>Active:</strong> <span class="ml-2">{user.active ? 'Yes' : 'No'}</span>
-		</p>
-		<p class="text-sm">
-			<strong>Created:</strong>
-			<span class="ml-2">{new Date(user.createdAt).toLocaleString()}</span>
-		</p>
+		<div class="flex flex-row items-center justify-start space-x-2">
+			<a href={resolve('/')}>
+				<ArrowLeft />
+			</a>
+			<h2 class="m-0">Profile</h2>
+		</div>
 	</section>
 
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-		<UsernameForm {user} on:update={(e) => (user = e.detail)} />
-		<PasswordForm {user} on:update={(e) => (user = e.detail)} />
+		<UsernameForm {user} />
+		<PasswordForm {user} />
 	</div>
 
-	<InfoForm {user} on:update={(e) => (user = e.detail)} />
+	<InfoForm {user} />
 </div>
