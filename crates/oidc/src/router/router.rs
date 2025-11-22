@@ -4,7 +4,9 @@ use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::router::{
-  client, current_user,
+  client,
+  common::permissions::Permission,
+  current_user,
   entity::RouterState,
   jwk, oidc,
   openapi::{self, utoipa::SecurityAddon},
@@ -22,6 +24,11 @@ use crate::router::{
     (name = oidc::constants::TAG, description = oidc::constants::DESCRIPTION),
     (name = crate::router::openapi::constants::TAG, description = crate::router::openapi::constants::DESCRIPTION),
     (name = current_user::constants::TAG, description = current_user::constants::DESCRIPTION)
+  ),
+  components(
+    schemas(
+      Permission,
+    )
   ),
   modifiers(&SecurityAddon)
 )]

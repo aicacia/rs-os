@@ -1,6 +1,6 @@
-import { ADMIN_ALL } from '../permissions';
 import { currentUserApi, oidcApi, setAuthToken } from '../openapi';
 import {
+	Permission,
 	TokenFromJSON,
 	TokenToJSON,
 	UserFromJSON,
@@ -82,7 +82,7 @@ export function hasPermissions(user: User, permissions: string[]): boolean {
 }
 
 function hasAdminAll(user: User): boolean {
-	return hasPermissionInternal(user, ADMIN_ALL);
+	return hasPermissionInternal(user, Permission.Admin);
 }
 
 function hasPermissionInternal(user: User, permission: string): boolean {

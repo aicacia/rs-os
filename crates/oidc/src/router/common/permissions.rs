@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub enum Permission {
   #[serde(rename = "admin:*")]
   AdminAll,

@@ -16,14 +16,35 @@
 import * as runtime from '../runtime';
 import type {
   HttpError,
+  UpdateUserInfo,
+  UpdateUserInfoRequest,
+  UpdateUserPassword,
   User,
 } from '../models/index';
 import {
     HttpErrorFromJSON,
     HttpErrorToJSON,
+    UpdateUserInfoFromJSON,
+    UpdateUserInfoToJSON,
+    UpdateUserInfoRequestFromJSON,
+    UpdateUserInfoRequestToJSON,
+    UpdateUserPasswordFromJSON,
+    UpdateUserPasswordToJSON,
     UserFromJSON,
     UserToJSON,
 } from '../models/index';
+
+export interface UpdatePasswordRequest {
+    updateUserPassword: UpdateUserPassword;
+}
+
+export interface UpdateUserInfoOperationRequest {
+    updateUserInfoRequest: UpdateUserInfoRequest;
+}
+
+export interface UpdateUsernameRequest {
+    updateUserInfo: UpdateUserInfo;
+}
 
 /**
  * CurrentUserApi - interface
@@ -43,6 +64,45 @@ export interface CurrentUserApiInterface {
     /**
      */
     currentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
+
+    /**
+     * 
+     * @param {UpdateUserPassword} updateUserPassword 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CurrentUserApiInterface
+     */
+    updatePasswordRaw(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>>;
+
+    /**
+     */
+    updatePassword(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
+
+    /**
+     * 
+     * @param {UpdateUserInfoRequest} updateUserInfoRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CurrentUserApiInterface
+     */
+    updateUserInfoRaw(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>>;
+
+    /**
+     */
+    updateUserInfo(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
+
+    /**
+     * 
+     * @param {UpdateUserInfo} updateUserInfo 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CurrentUserApiInterface
+     */
+    updateUsernameRaw(requestParameters: UpdateUsernameRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>>;
+
+    /**
+     */
+    updateUsername(requestParameters: UpdateUsernameRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
 
 }
 
@@ -83,6 +143,141 @@ export class CurrentUserApi extends runtime.BaseAPI implements CurrentUserApiInt
      */
     async currentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
         const response = await this.currentUserRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async updatePasswordRaw(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>> {
+        if (requestParameters['updateUserPassword'] == null) {
+            throw new runtime.RequiredError(
+                'updateUserPassword',
+                'Required parameter "updateUserPassword" was null or undefined when calling updatePassword().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/current-user/password`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: UpdateUserPasswordToJSON(requestParameters['updateUserPassword']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => UserFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async updatePassword(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
+        const response = await this.updatePasswordRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async updateUserInfoRaw(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>> {
+        if (requestParameters['updateUserInfoRequest'] == null) {
+            throw new runtime.RequiredError(
+                'updateUserInfoRequest',
+                'Required parameter "updateUserInfoRequest" was null or undefined when calling updateUserInfo().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/current-user/info`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: UpdateUserInfoRequestToJSON(requestParameters['updateUserInfoRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => UserFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async updateUserInfo(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
+        const response = await this.updateUserInfoRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async updateUsernameRaw(requestParameters: UpdateUsernameRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>> {
+        if (requestParameters['updateUserInfo'] == null) {
+            throw new runtime.RequiredError(
+                'updateUserInfo',
+                'Required parameter "updateUserInfo" was null or undefined when calling updateUsername().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/current-user`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: UpdateUserInfoToJSON(requestParameters['updateUserInfo']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => UserFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async updateUsername(requestParameters: UpdateUsernameRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
+        const response = await this.updateUsernameRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

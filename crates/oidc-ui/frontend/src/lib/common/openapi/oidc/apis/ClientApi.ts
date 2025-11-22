@@ -19,6 +19,7 @@ import type {
   ClientAllowed,
   ClientAuthorization,
   ClientAuthorizeRequest,
+  ClientRegisterRequest,
   HttpError,
 } from '../models/index';
 import {
@@ -30,6 +31,8 @@ import {
     ClientAuthorizationToJSON,
     ClientAuthorizeRequestFromJSON,
     ClientAuthorizeRequestToJSON,
+    ClientRegisterRequestFromJSON,
+    ClientRegisterRequestToJSON,
     HttpErrorFromJSON,
     HttpErrorToJSON,
 } from '../models/index';
@@ -41,6 +44,19 @@ export interface ClientAuthorizeOperationRequest {
 
 export interface ClientByClientIdRequest {
     clientId: string;
+}
+
+export interface ClientCreateRequest {
+    clientRegisterRequest: ClientRegisterRequest;
+}
+
+export interface ClientDeleteRequest {
+    clientId: string;
+}
+
+export interface ClientUpdateRequest {
+    clientId: string;
+    clientRegisterRequest: ClientRegisterRequest;
 }
 
 export interface ClientUserAllowedRequest {
@@ -84,6 +100,58 @@ export interface ClientApiInterface {
     /**
      */
     clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
+
+    /**
+     * 
+     * @param {ClientRegisterRequest} clientRegisterRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientCreateRaw(requestParameters: ClientCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>>;
+
+    /**
+     */
+    clientCreate(requestParameters: ClientCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
+
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientDeleteRaw(requestParameters: ClientDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+
+    /**
+     */
+    clientDelete(requestParameters: ClientDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
+    /**
+     * 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientListRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<Client>>>;
+
+    /**
+     */
+    clientList(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<Client>>;
+
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {ClientRegisterRequest} clientRegisterRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ClientApiInterface
+     */
+    clientUpdateRaw(requestParameters: ClientUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>>;
+
+    /**
+     */
+    clientUpdate(requestParameters: ClientUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
 
     /**
      * 
@@ -211,6 +279,181 @@ export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
      */
     async clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
         const response = await this.clientByClientIdRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async clientCreateRaw(requestParameters: ClientCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+        if (requestParameters['clientRegisterRequest'] == null) {
+            throw new runtime.RequiredError(
+                'clientRegisterRequest',
+                'Required parameter "clientRegisterRequest" was null or undefined when calling clientCreate().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", ["client:create"]);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ClientRegisterRequestToJSON(requestParameters['clientRegisterRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async clientCreate(requestParameters: ClientCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
+        const response = await this.clientCreateRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async clientDeleteRaw(requestParameters: ClientDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling clientDelete().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", ["client:delete"]);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients/{client_id}`;
+        urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     */
+    async clientDelete(requestParameters: ClientDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.clientDeleteRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     */
+    async clientListRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<Client>>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", ["client:read"]);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(ClientFromJSON));
+    }
+
+    /**
+     */
+    async clientList(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<Client>> {
+        const response = await this.clientListRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async clientUpdateRaw(requestParameters: ClientUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling clientUpdate().'
+            );
+        }
+
+        if (requestParameters['clientRegisterRequest'] == null) {
+            throw new runtime.RequiredError(
+                'clientRegisterRequest',
+                'Required parameter "clientRegisterRequest" was null or undefined when calling clientUpdate().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", ["client:update"]);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients/{client_id}`;
+        urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'PUT',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ClientRegisterRequestToJSON(requestParameters['clientRegisterRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async clientUpdate(requestParameters: ClientUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
+        const response = await this.clientUpdateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -16,8 +16,8 @@ use crate::{
   router::{
     common::{
       constants::{
-        ADMIN_ALL, AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE_NUMBER,
-        SCOPE_PROFILE, TOKEN_TYPE_BEARER,
+        AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE_NUMBER, SCOPE_PROFILE,
+        TOKEN_TYPE_BEARER,
       },
       entity::{BasicClaims, Claims},
       permissions::Permission,
@@ -33,7 +33,6 @@ pub struct UserAuthorization {
   pub claims: BasicClaims,
   pub user_sql_row: UserSQLRow,
   pub permission_sql_rows: HashMap<i64, Vec<PermissionSQLRow>>,
-  pub admin_all: bool,
   pub permissions: HashSet<Permission>,
 }
 
@@ -140,7 +139,7 @@ impl UserAuthorization {
   }
 
   pub fn has_permission(&self, permission: Permission) -> Result<(), HttpError> {
-    if self.admin_all || self.permissions.contains(&permission) {
+    if self.permissions.contains(&Permission::AdminAll) || self.permissions.contains(&permission) {
       return Ok(());
     }
     Err(HttpError::forbidden().with_error(permission.as_str(), REQUIRED_ERROR))
@@ -150,7 +149,7 @@ impl UserAuthorization {
   where
     I: IntoIterator<Item = &'a Permission>,
   {
-    if self.admin_all {
+    if self.permissions.contains(&Permission::AdminAll) {
       return Ok(());
     }
     let mut missing_permissions: HashSet<&Permission> = HashSet::default();
@@ -200,13 +199,10 @@ where
             }
           };
 
-        let mut admin_all = false;
         let mut permissions: HashSet<Permission> = HashSet::default();
         for (_role_id, perms) in permission_sql_rows.iter() {
           for p in perms {
-            if p.uri == ADMIN_ALL {
-              admin_all = true;
-            } else if let Ok(permission) = Permission::from_str(&p.uri) {
+            if let Ok(permission) = Permission::from_str(&p.uri) {
               permissions.insert(permission);
             }
           }
@@ -216,7 +212,6 @@ where
           claims: authorization.claims,
           user_sql_row,
           permission_sql_rows,
-          admin_all,
           permissions,
         });
       }
