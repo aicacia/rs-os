@@ -70,5 +70,16 @@
 	"authorize_new_client_request": "This client is requesting to be added to your OIDC provider. Review the details before approving.",
 	"authorize_updated_client_request": "This client has updated its configuration and is requesting changes to your OIDC provider. Review the details before approving.",
 	"authorize_access_denied_reason": "Access to the requested resource was denied.",
-	"authorize_unauthorized_client_reason": "The client is not authorized to request an authorization code using this method."
+	"authorize_unauthorized_client_reason": "The client is not authorized to request an authorization code using this method.",
+	"policy_title": "Privacy Policy",
+	"policy_summary": "We collect only essential data to run the service.",
+	"policy_data": "Data collected: email (account), activity logs (security), tokens (sessions).",
+	"policy_use": "We use data only for authentication, security, and service operation.",
+	"policy_sharing": "We do not sell personal data; we share only to comply with law or with your consent.",
+	"policy_retention": "Account data is retained until you delete your account; logs retained up to 90 days.",
+	"terms_title": "Terms",
+	"terms_intro": "By using this service you accept these terms.",
+	"terms_use": "Use lawfully; do not abuse the service.",
+	"terms_liability": "Service provided as-is; limited liability.",
+	"terms_changes": "We may update terms; continued use implies acceptance."
 }
