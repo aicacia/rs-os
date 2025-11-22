@@ -13,7 +13,7 @@ env:
   PNPM_VERSION: "10"
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,9 +34,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+      - name: Cache node modules (frontend only)
+        uses: actions/cache@v3
+        with:
+          path: crates/oidc-ui/frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('crates/oidc-ui/frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
       - name: Install frontend dependencies
         working-directory: crates/oidc-ui/frontend
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
       - name: Build frontend
         working-directory: crates/oidc-ui/frontend
         run: pnpm build
