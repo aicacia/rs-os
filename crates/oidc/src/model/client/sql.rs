@@ -41,6 +41,30 @@ pub async fn get_client_by_client_id(
   get_client_by_client_id_internal(pool, client_id).await
 }
 
+pub async fn list_clients(pool: &sqlx::AnyPool) -> sqlx::Result<Vec<ClientSQLRow>> {
+  sqlx::query_as::<_, ClientSQLRow>(r#"SELECT c.* FROM clients c ORDER BY c.id;"#)
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn deactivate_client(
+  pool: &sqlx::AnyPool,
+  client_id: &str,
+) -> sqlx::Result<Option<ClientSQLRow>> {
+  let res = sqlx::query_as::<_, ClientSQLRow>(
+    r#"UPDATE clients
+         SET active = 0, updated_at = $1
+         WHERE client_id = $2
+         RETURNING *;"#,
+  )
+  .bind(chrono::Utc::now().timestamp())
+  .bind(client_id)
+  .fetch_optional(pool)
+  .await?;
+
+  Ok(res)
+}
+
 async fn get_client_by_client_id_internal<'e, E>(
   executor: E,
   client_id: &str,
@@ -100,7 +124,6 @@ impl PartialEq<ClientSQLRow> for ClientSQLCommon {
   }
 }
 
-// returns client and bool to indicate if its new or updated
 pub async fn upsert_client(
   pool: &sqlx::AnyPool,
   client_upsert: ClientSQLCommon,

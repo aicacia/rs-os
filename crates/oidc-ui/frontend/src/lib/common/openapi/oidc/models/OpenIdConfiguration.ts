@@ -24,7 +24,7 @@ export interface OpenIdConfiguration {
      * @type {string}
      * @memberof OpenIdConfiguration
      */
-    authorizationEndpoint?: string | null;
+    authorizationEndpoint: string;
     /**
      * 
      * @type {Array<string>}
@@ -42,7 +42,7 @@ export interface OpenIdConfiguration {
      * @type {string}
      * @memberof OpenIdConfiguration
      */
-    deviceAuthorizationEndpoint?: string | null;
+    deviceAuthorizationEndpoint: string;
     /**
      * 
      * @type {string}
@@ -133,8 +133,10 @@ export interface OpenIdConfiguration {
  * Check if a given object implements the OpenIdConfiguration interface.
  */
 export function instanceOfOpenIdConfiguration(value: object): value is OpenIdConfiguration {
+    if (!('authorizationEndpoint' in value) || value['authorizationEndpoint'] === undefined) return false;
     if (!('claimsSupported' in value) || value['claimsSupported'] === undefined) return false;
     if (!('codeChallengeMethodsSupported' in value) || value['codeChallengeMethodsSupported'] === undefined) return false;
+    if (!('deviceAuthorizationEndpoint' in value) || value['deviceAuthorizationEndpoint'] === undefined) return false;
     if (!('grantTypesSupported' in value) || value['grantTypesSupported'] === undefined) return false;
     if (!('idTokenSigningAlgValuesSupported' in value) || value['idTokenSigningAlgValuesSupported'] === undefined) return false;
     if (!('issuer' in value) || value['issuer'] === undefined) return false;
@@ -158,10 +160,10 @@ export function OpenIdConfigurationFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'authorizationEndpoint': json['authorization_endpoint'] == null ? undefined : json['authorization_endpoint'],
+        'authorizationEndpoint': json['authorization_endpoint'],
         'claimsSupported': json['claims_supported'],
         'codeChallengeMethodsSupported': json['code_challenge_methods_supported'],
-        'deviceAuthorizationEndpoint': json['device_authorization_endpoint'] == null ? undefined : json['device_authorization_endpoint'],
+        'deviceAuthorizationEndpoint': json['device_authorization_endpoint'],
         'endSessionEndpoint': json['end_session_endpoint'] == null ? undefined : json['end_session_endpoint'],
         'grantTypesSupported': json['grant_types_supported'],
         'idTokenSigningAlgValuesSupported': json['id_token_signing_alg_values_supported'],

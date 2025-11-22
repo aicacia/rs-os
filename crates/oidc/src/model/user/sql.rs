@@ -350,6 +350,66 @@ pub async fn get_user_primary_phone_number(
   .await
 }
 
+pub async fn update_user_username(
+  pool: &sqlx::AnyPool,
+  user_id: i64,
+  username: Option<String>,
+) -> sqlx::Result<UserInfoSQLRow> {
+  sqlx::query_as(
+    r#"UPDATE users
+      SET
+        username = $1,
+        updated_at = $2
+      WHERE id = $3
+      RETURNING *;"#,
+  )
+  .bind(username)
+  .bind(chrono::Utc::now().timestamp())
+  .bind(user_id)
+  .fetch_one(pool)
+  .await
+}
+
+pub async fn update_user_password(
+  pool: &sqlx::AnyPool,
+  app_config: &AppConfig,
+  user_id: i64,
+  password: &str,
+) -> sqlx::Result<()> {
+  let encrypted_password = match encrypt_password(app_config, &password) {
+    Ok(encrypted_password) => encrypted_password,
+    Err(e) => {
+      return Err(sqlx::Error::Encode(
+        format!("Failed to encrypt password: {}", e).into(),
+      ));
+    }
+  };
+
+  run_transaction(pool, |transaction| {
+    let encrypted_password = encrypted_password.clone();
+    Box::pin(async move {
+      // deactivate any existing active passwords for this user
+      sqlx::query(r#"UPDATE user_passwords SET active = 0 WHERE user_id = $1 AND active != 0;"#)
+        .bind(user_id)
+        .execute(&mut **transaction)
+        .await?;
+
+      // insert new active password row
+      sqlx::query(
+        r#"INSERT INTO user_passwords ("user_id", "encrypted_password", "active") VALUES ($1, $2, $3);"#,
+      )
+      .bind(user_id)
+      .bind(encrypted_password)
+      .bind(1)
+      .execute(&mut **transaction)
+      .await?;
+
+      Ok(())
+    })
+  })
+  .await
+}
+
 pub async fn get_user_roles_by_user_id(
   pool: &sqlx::AnyPool,
   user_id: i64,

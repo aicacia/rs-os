@@ -1,3 +1,4 @@
+use crate::router::json::Json;
 use axum::{extract::State, response::IntoResponse};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
@@ -7,6 +8,9 @@ use crate::router::{
   error::HttpError,
   middleware::user_authorization::UserAuthorization,
 };
+
+use crate::model::user::sql::{update_user_password, update_user_username};
+use crate::router::current_user::entity::{UpdateUserInfo, UpdateUserPassword};
 
 #[utoipa::path(
   get,
@@ -32,8 +36,81 @@ pub async fn current_user(
   }
 }
 
+#[utoipa::path(
+  patch,
+  path = "/current-user",
+  tags = [TAG],
+  request_body(content = UpdateUserInfo, content_type = "application/json"),
+  responses(
+    (status = 200, content_type = "application/json", body = User),
+    (status = 400, content_type = "application/json", body = HttpError),
+    (status = 401, content_type = "application/json", body = HttpError),
+    (status = 500, content_type = "application/json", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
+  )
+)]
+pub async fn update_username(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Json(update): Json<UpdateUserInfo>,
+) -> impl IntoResponse {
+  match update_user_username(&state.pool, user_authorization.user_sql_row.id, update.name).await {
+    Ok(_) => match user_authorization.get_user(&state.pool).await {
+      Ok(user) => axum::Json(user).into_response(),
+      Err(e) => return e.into_response(),
+    },
+    Err(e) => {
+      log::error!("error updating user info name: {}", e);
+      return HttpError::internal_error().into_response();
+    }
+  }
+}
+
+#[utoipa::path(
+  patch,
+  path = "/current-user/password",
+  tags = [TAG],
+  request_body(content = UpdateUserPassword, content_type = "application/json"),
+  responses(
+    (status = 200, content_type = "application/json", body = User),
+    (status = 400, content_type = "application/json", body = HttpError),
+    (status = 401, content_type = "application/json", body = HttpError),
+    (status = 500, content_type = "application/json", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
+  )
+)]
+pub async fn update_password(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Json(update): Json<UpdateUserPassword>,
+) -> impl IntoResponse {
+  match update_user_password(
+    &state.pool,
+    &state.config,
+    user_authorization.user_sql_row.id,
+    update.password.as_str(),
+  )
+  .await
+  {
+    Ok(_) => match user_authorization.get_user(&state.pool).await {
+      Ok(user) => axum::Json(user).into_response(),
+      Err(e) => return e.into_response(),
+    },
+    Err(e) => {
+      log::error!("error updating user password: {}", e);
+      return HttpError::internal_error().into_response();
+    }
+  }
+}
+
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(current_user))
+    .routes(routes!(update_username))
+    .routes(routes!(update_password))
     .with_state(state)
 }

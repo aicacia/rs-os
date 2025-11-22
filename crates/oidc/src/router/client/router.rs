@@ -9,12 +9,12 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 use crate::{
   core::helper::json_to_string_vec,
   model::{
-    client::sql::get_client_by_client_id,
+    client::sql::{deactivate_client, get_client_by_client_id, list_clients, upsert_client},
     user::sql::{get_user_client_by_client_id, upsert_user_client},
   },
   router::{
     client::{
-      constants::{CLIENT_READ, TAG},
+      constants::{CLIENT_CREATE, CLIENT_DELETE, CLIENT_READ, CLIENT_UPDATE, TAG},
       entity::{Client, ClientAllowed, ClientAuthorization, ClientAuthorizeRequest},
     },
     common::helper::create_user_auhorization_code_token,
@@ -69,6 +69,178 @@ pub async fn client_by_client_id(
   let client: Client = client_sql_row.into();
 
   axum::Json(client).into_response()
+}
+
+#[utoipa::path(
+  get,
+  path = "/clients",
+  tags = [TAG],
+  responses(
+    (status = 200, content_type = "application/json", body = [Client]),
+    (status = 401, content_type = "application/json", body = HttpError),
+    (status = 403, content_type = "application/json", body = HttpError),
+    (status = 500, content_type = "application/json", body = HttpError),
+  ),
+  security(
+    ("Authorization" = ["client:read"])
+  )
+)]
+pub async fn client_list(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+) -> impl IntoResponse {
+  match user_authorization.has_permission(CLIENT_READ) {
+    Ok(_) => {}
+    Err(e) => return e.into_response(),
+  }
+
+  match list_clients(&state.pool).await {
+    Ok(clients) => {
+      let clients: Vec<Client> = clients.into_iter().map(|c| c.into()).collect();
+      axum::Json(clients).into_response()
+    }
+    Err(e) => {
+      log::error!("error listing clients: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
+  }
+}
+
+#[utoipa::path(
+  post,
+  path = "/clients",
+  tags = [TAG],
+  request_body(content = crate::router::oidc::entity::ClientRegisterRequest, content_type = "application/json"),
+  responses(
+    (status = 200, description = "Client updated", body = Client),
+    (status = 201, description = "Client created", body = Client),
+    (status = 400, description = "Application Error", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = ["client:create"])
+  )
+)]
+pub async fn client_create(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Json(client_register_request): Json<crate::router::oidc::entity::ClientRegisterRequest>,
+) -> impl IntoResponse {
+  match user_authorization.has_permission(CLIENT_CREATE) {
+    Ok(_) => {}
+    Err(e) => return e.into_response(),
+  }
+
+  let (client_sql_row, is_new) =
+    match upsert_client(&state.pool, client_register_request.into()).await {
+      Ok(r) => r,
+      Err(e) => {
+        log::error!("error upserting client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
+
+  let client: Client = client_sql_row.into();
+  if is_new {
+    (axum::http::StatusCode::CREATED, axum::Json(client)).into_response()
+  } else {
+    axum::Json(client).into_response()
+  }
+}
+
+#[utoipa::path(
+  put,
+  path = "/clients/{client_id}",
+  tags = [TAG],
+  request_body(content = crate::router::oidc::entity::ClientRegisterRequest, content_type = "application/json"),
+  responses(
+    (status = 200, description = "Client updated", body = Client),
+    (status = 400, description = "Application Error", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
+    (status = 404, description = "Not Found", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = ["client:update"])
+  )
+)]
+pub async fn client_update(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Path(client_id): Path<String>,
+  Json(client_register_request): Json<crate::router::oidc::entity::ClientRegisterRequest>,
+) -> impl IntoResponse {
+  match user_authorization.has_permission(CLIENT_UPDATE) {
+    Ok(_) => {}
+    Err(e) => return e.into_response(),
+  }
+
+  if client_register_request.client_id != client_id {
+    return HttpError::bad_request()
+      .with_error("client_id", INVALID_ERROR)
+      .into_response();
+  }
+
+  let (client_sql_row, _is_new) =
+    match upsert_client(&state.pool, client_register_request.into()).await {
+      Ok(r) => r,
+      Err(e) => {
+        log::error!("error updating client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
+
+  let client: Client = client_sql_row.into();
+  axum::Json(client).into_response()
+}
+
+#[utoipa::path(
+  delete,
+  path = "/clients/{client_id}",
+  tags = [TAG],
+  responses(
+    (status = 204, description = "Client deleted"),
+    (status = 400, description = "Application Error", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
+    (status = 404, description = "Not Found", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = ["client:delete"])
+  )
+)]
+pub async fn client_delete(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Path(client_id): Path<String>,
+) -> impl IntoResponse {
+  match user_authorization.has_permission(CLIENT_DELETE) {
+    Ok(_) => {}
+    Err(e) => return e.into_response(),
+  }
+
+  match deactivate_client(&state.pool, &client_id).await {
+    Ok(Some(_client_sql_row)) => axum::http::StatusCode::NO_CONTENT.into_response(),
+    Ok(None) => HttpError::not_found()
+      .with_error("client", NOT_FOUND_ERROR)
+      .into_response(),
+    Err(e) => {
+      log::error!("error deleting client: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
+  }
 }
 
 #[utoipa::path(
@@ -282,6 +454,10 @@ pub async fn client_authorize(
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(client_by_client_id))
+    .routes(routes!(client_list))
+    .routes(routes!(client_create))
+    .routes(routes!(client_update))
+    .routes(routes!(client_delete))
     .routes(routes!(client_authorize))
     .routes(routes!(client_user_allowed))
     .routes(routes!(client_user_approve))

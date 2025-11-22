@@ -198,3 +198,9 @@ pub struct UpdateUserPassword {
   #[validate(length(min = 6))]
   pub password_confirmation: String,
 }
+
+#[derive(Validate, Deserialize, ToSchema)]
+pub struct UpdateUserInfo {
+  #[validate(length(min = 1))]
+  pub name: Option<String>,
+}
