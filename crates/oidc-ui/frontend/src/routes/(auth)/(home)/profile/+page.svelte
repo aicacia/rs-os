@@ -7,6 +7,8 @@
 	import { ArrowLeft } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 
+	import { m } from '$lib/paraglide/messages';
+
 	let { data }: PageProps = $props();
 
 	let user = $derived(data.user) as User;
@@ -22,7 +24,7 @@
 			<a href={resolve('/')}>
 				<ArrowLeft />
 			</a>
-			<h2 class="m-0">Profile</h2>
+			<h2 class="m-0">{m.profile_title()}</h2>
 		</div>
 	</section>
 

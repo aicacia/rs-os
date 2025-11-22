@@ -3,6 +3,7 @@
 	import type { UpdateUserInfoRequest, User } from '$lib/common/openapi/oidc/models/index';
 	import { currentUserApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
+	import { m } from '$lib/paraglide/messages';
 
 	let { user = $bindable() }: { user: User } = $props();
 
@@ -35,28 +36,58 @@
 </script>
 
 <form onsubmit={submit} class="card">
-	<h3 class="text-lg font-medium">Profile Info</h3>
+	<h3 class="text-lg font-medium">{m.profile_info_title()}</h3>
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<label class="block">
-			<span class="text-sm font-medium">Full name</span>
-			<input class="mt-1 block w-full px-3 py-2" bind:value={infoForm.name} />
+			<span class="text-sm font-medium">{m.profile_full_name_label()}</span>
+			<input
+				id="profile-full-name"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={infoForm.name}
+				placeholder={m.profile_full_name_placeholder()}
+				aria-label={m.profile_full_name_label()}
+			/>
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">Given name</span>
-			<input class="mt-1 block w-full px-3 py-2" bind:value={infoForm.givenName} />
+			<span class="text-sm font-medium">{m.profile_given_name_label()}</span>
+			<input
+				id="profile-given-name"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={infoForm.givenName}
+				placeholder={m.profile_given_name_placeholder()}
+				aria-label={m.profile_given_name_label()}
+			/>
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">Family name</span>
-			<input class="mt-1 block w-full px-3 py-2" bind:value={infoForm.familyName} />
+			<span class="text-sm font-medium">{m.profile_family_name_label()}</span>
+			<input
+				id="profile-family-name"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={infoForm.familyName}
+				placeholder={m.profile_family_name_placeholder()}
+				aria-label={m.profile_family_name_label()}
+			/>
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">Website</span>
-			<input class="mt-1 block w-full px-3 py-2" bind:value={infoForm.website} />
+			<span class="text-sm font-medium">{m.profile_website_label()}</span>
+			<input
+				id="profile-website"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={infoForm.website}
+				placeholder={m.profile_website_placeholder()}
+				aria-label={m.profile_website_label()}
+			/>
 		</label>
 		<label class="block md:col-span-2">
-			<span class="text-sm font-medium">Locale</span>
-			<input class="mt-1 block w-full px-3 py-2" bind:value={infoForm.locale} />
+			<span class="text-sm font-medium">{m.profile_locale_label()}</span>
+			<input
+				id="profile-locale"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={infoForm.locale}
+				placeholder={m.profile_locale_placeholder()}
+				aria-label={m.profile_locale_label()}
+			/>
 		</label>
 	</div>
-	<button type="submit" class="btn success mt-4">Save profile</button>
+	<button type="submit" class="btn success mt-4">{m.profile_save_profile()}</button>
 </form>
