@@ -122,7 +122,7 @@ pub async fn client_list(
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
-    ("Authorization" = ["client:create"])
+    ("Authorization" = ["client:write"])
   )
 )]
 pub async fn client_create(
@@ -130,7 +130,7 @@ pub async fn client_create(
   user_authorization: UserAuthorization,
   Json(client_register_request): Json<crate::router::oidc::entity::ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientCreate) {
+  match user_authorization.has_permission(Permission::ClientWrite) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -168,7 +168,7 @@ pub async fn client_create(
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
-    ("Authorization" = ["client:update"])
+    ("Authorization" = ["client:write"])
   )
 )]
 pub async fn client_update(
@@ -177,7 +177,7 @@ pub async fn client_update(
   Path(client_id): Path<String>,
   Json(client_register_request): Json<crate::router::oidc::entity::ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientUpdate) {
+  match user_authorization.has_permission(Permission::ClientWrite) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }

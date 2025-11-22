@@ -615,7 +615,7 @@ pub async fn register_client(
   user_authorization: UserAuthorization,
   Json(client_register_request): Json<ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientCreate) {
+  match user_authorization.has_permission(Permission::ClientWrite) {
     Ok(_) => {}
     Err(e) => {
       log::error!("error registering client: {}", e);

@@ -9,15 +9,17 @@ pub enum Permission {
 
   #[serde(rename = "client:read")]
   ClientRead,
-
-  #[serde(rename = "client:create")]
-  ClientCreate,
-
-  #[serde(rename = "client:update")]
-  ClientUpdate,
-
+  #[serde(rename = "client:write")]
+  ClientWrite,
   #[serde(rename = "client:delete")]
   ClientDelete,
+
+  #[serde(rename = "user:read")]
+  UserRead,
+  #[serde(rename = "user:write")]
+  UserWrite,
+  #[serde(rename = "user:delete")]
+  UserDelete,
 }
 
 impl Permission {
@@ -25,9 +27,11 @@ impl Permission {
     match self {
       Permission::AdminAll => "admin:*",
       Permission::ClientRead => "client:read",
-      Permission::ClientCreate => "client:create",
-      Permission::ClientUpdate => "client:update",
+      Permission::ClientWrite => "client:write",
       Permission::ClientDelete => "client:delete",
+      Permission::UserRead => "user:read",
+      Permission::UserWrite => "user:write",
+      Permission::UserDelete => "user:delete",
     }
   }
 }
@@ -45,9 +49,11 @@ impl FromStr for Permission {
     match s {
       "admin:*" => Ok(Permission::AdminAll),
       "client:read" => Ok(Permission::ClientRead),
-      "client:create" => Ok(Permission::ClientCreate),
-      "client:update" => Ok(Permission::ClientUpdate),
+      "client:write" => Ok(Permission::ClientWrite),
       "client:delete" => Ok(Permission::ClientDelete),
+      "user:read" => Ok(Permission::UserRead),
+      "user:write" => Ok(Permission::UserWrite),
+      "user:delete" => Ok(Permission::UserDelete),
       _ => Err(format!("unknown permission: {}", s)),
     }
   }
