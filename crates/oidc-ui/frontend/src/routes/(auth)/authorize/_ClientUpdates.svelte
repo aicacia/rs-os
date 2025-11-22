@@ -45,15 +45,9 @@
 <hr />
 
 {#if isNew}
-	<p>
-		This client is requesting to be added to your OIDC provider. Review the details before
-		approving.
-	</p>
+	<p>{m.authorize_new_client_request()}</p>
 {:else}
-	<p>
-		This client has updated its configuration and is requesting changes to your OIDC provider.
-		Review the details before approving.
-	</p>
+	<p>{m.authorize_updated_client_request()}</p>
 {/if}
 
 <ClientFields {client} />

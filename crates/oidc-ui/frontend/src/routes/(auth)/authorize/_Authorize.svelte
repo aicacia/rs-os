@@ -17,6 +17,7 @@
 		resolveAuthorizeRequest,
 		type ClientInfo
 	} from './_utils';
+	import { m } from '$lib/paraglide/messages';
 	import { LoaderCircle } from '@lucide/svelte';
 	import AddClient from './_ClientUpdates.svelte';
 	import AuthorizeClient from './_AuthorizeClient.svelte';
@@ -90,11 +91,7 @@
 		}
 	}
 	async function onDeny() {
-		rejectAuthorizeRequest(
-			authorizeRequest,
-			'access_denied',
-			'Access to the requested resource was denied.'
-		);
+		rejectAuthorizeRequest(authorizeRequest, 'access_denied', m.authorize_access_denied_reason());
 	}
 	async function onAcceptClientUpdates(clientRegisterRequest: ClientInfo) {
 		try {
@@ -110,7 +107,7 @@
 		rejectAuthorizeRequest(
 			authorizeRequest,
 			'unauthorized_client',
-			'The client is not authorized to request an authorization code using this method.'
+			m.authorize_unauthorized_client_reason()
 		);
 	}
 

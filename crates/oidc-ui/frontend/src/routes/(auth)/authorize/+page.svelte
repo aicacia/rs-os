@@ -5,6 +5,7 @@
 
 <script lang="ts">
 	import { page } from '$app/state';
+	import { m } from '$lib/paraglide/messages';
 	import { type AuthorizeRequest, ResponseMode, ResponseType } from '$lib/common/openapi/oidc';
 	import Authorize from './_Authorize.svelte';
 	import { ClientInfoFromJSON, rejectAuthorizeRequest, type ClientInfo } from './_utils';
@@ -40,36 +41,37 @@
 
 	$effect(() => {
 		if (!urlClientId) {
-			clientIdError = 'Client ID is required';
+			clientIdError = m.authorize_client_id_required();
 		} else {
 			clientIdError = undefined;
 		}
 		if (!urlResponseType) {
-			responseTypeError = 'Response Type is required';
-		} else {
-			responseTypeError = undefined;
-		}
-		if (!urlResponseType) {
-			responseTypeError = 'Response Type is required';
+			responseTypeError = m.authorize_response_type_required();
 		} else if (!RESPONSE_TYPES.includes(urlResponseType as never)) {
-			responseTypeError = `${urlResponseType} is not one of ${RESPONSE_TYPES.join(',')}`;
+			responseTypeError = m.authorize_response_type_invalid({
+				value: urlResponseType,
+				allowed: RESPONSE_TYPES.join(',')
+			});
 		} else {
 			responseTypeError = undefined;
 		}
 		if (!urlResponseMode) {
-			responseModeError = 'Response Mode is required';
+			responseModeError = m.authorize_response_mode_required();
 		} else if (!RESPONSE_MODES.includes(urlResponseMode as never)) {
-			responseModeError = `${urlResponseMode} is not one of ${RESPONSE_MODES.join(',')}`;
+			responseModeError = m.authorize_response_mode_invalid({
+				value: urlResponseMode,
+				allowed: RESPONSE_MODES.join(',')
+			});
 		} else {
 			responseModeError = undefined;
 		}
 		if (!urlRedirectUri) {
-			redirectUriError = 'Redirect URI is required';
+			redirectUriError = m.authorize_redirect_uri_required();
 		} else {
 			redirectUriError = undefined;
 		}
 		if (!urlScope) {
-			scopeError = 'Scope is required';
+			scopeError = m.authorize_scope_required();
 		} else {
 			scopeError = undefined;
 		}
@@ -112,27 +114,36 @@
 				<Authorize user={data.user} {clientIdInfo} {authorizeRequest} />
 			{:else}
 				<section>
-					<h5>Invalid Request</h5>
+					<h5>{m.authorize_invalid_request()}</h5>
 					<ul class="list-inside list-disc space-y-1 text-sm">
 						{#if clientIdError}
-							<li><strong>Invalid Client ID:</strong> {clientIdError}</li>
+							<li><strong>{m.authorize_invalid_client_id_label()}</strong> {clientIdError}</li>
 						{/if}
 						{#if responseTypeError}
-							<li><strong>Invalid Response Type:</strong> {responseTypeError}</li>
+							<li>
+								<strong>{m.authorize_invalid_response_type_label()}</strong>
+								{responseTypeError}
+							</li>
 						{/if}
 						{#if responseModeError}
-							<li><strong>Invalid Response Mode:</strong> {responseModeError}</li>
+							<li>
+								<strong>{m.authorize_invalid_response_mode_label()}</strong>
+								{responseModeError}
+							</li>
 						{/if}
 						{#if redirectUriError}
-							<li><strong>Invalid Redirect URI:</strong> {redirectUriError}</li>
+							<li>
+								<strong>{m.authorize_invalid_redirect_uri_label()}</strong>
+								{redirectUriError}
+							</li>
 						{/if}
 						{#if scopeError}
-							<li><strong>Invalid Scope:</strong> {scopeError}</li>
+							<li><strong>{m.authorize_invalid_scope_label()}</strong> {scopeError}</li>
 						{/if}
 					</ul>
 					<div>
 						<div class="mt-4 flex flex-row justify-center gap-4">
-							<button class="btn secondary" onclick={onReject}>Deny</button>
+							<button class="btn secondary" onclick={onReject}>{m.authorize_button_deny()}</button>
 						</div>
 					</div>
 				</section>

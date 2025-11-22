@@ -13,6 +13,7 @@
 
 <script lang="ts">
 	import Avatar from '../../../lib/common/components/Avatar.svelte';
+	import { m } from '$lib/paraglide/messages';
 
 	let { user, client, disabled, onAllow, onDeny }: ClientProps = $props();
 
@@ -48,14 +49,14 @@
 	</div>
 
 	<p class="text-center">
-		wants to access your account as <strong>{user.username}</strong>
+		{m.authorize_wants_to_access({ username: user.username })} <strong>{user.username}</strong>
 	</p>
 </div>
 
 <hr />
 
 <div class="my-4 flex flex-col justify-center">
-	<h2 class="text-sm font-medium">Requested permissions</h2>
+	<h2 class="text-sm font-medium">{m.authorize_requested_permissions()}</h2>
 
 	{#if client.scopes && client.scopes.length}
 		<ul class="list-inside list-disc text-sm">
@@ -64,7 +65,7 @@
 			{/each}
 		</ul>
 	{:else}
-		<p class="text-sm italic">No scopes requested</p>
+		<p class="text-sm italic">{m.authorize_no_scopes()}</p>
 	{/if}
 </div>
 
@@ -72,17 +73,19 @@
 	<hr />
 	<div class="mt-4 flex flex-row justify-center gap-4 text-xs">
 		{#if client.policyUri}
-			<a href={client.policyUri} target="_blank">Privacy Policy</a>
+			<a href={client.policyUri} target="_blank">{m.authorize_privacy_policy()}</a>
 		{/if}
 		{#if client.termsOfServiceUri}
-			<a href={client.termsOfServiceUri} target="_blank">Terms of Service</a>
+			<a href={client.termsOfServiceUri} target="_blank">{m.authorize_terms_of_service()}</a>
 		{/if}
 	</div>
 {/if}
 
 <div class="mt-4 flex flex-row justify-center gap-4">
-	<button class="btn secondary" disabled={disabled || loading} onclick={onDenyInternal}>Deny</button
+	<button class="btn secondary" disabled={disabled || loading} onclick={onDenyInternal}
+		>{m.authorize_button_deny()}</button
 	>
-	<button class="btn primary" disabled={disabled || loading} onclick={onAllowInternal}>Allow</button
+	<button class="btn primary" disabled={disabled || loading} onclick={onAllowInternal}
+		>{m.authorize_button_allow()}</button
 	>
 </div>
