@@ -4,10 +4,15 @@ import { ok, err, type Result } from '@aicacia/trycatch';
 
 export type FieldState = 'validating' | 'valid' | 'invalid' | 'unset' | 'set';
 
-export interface PrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>> {
+export interface CommonField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>> {
+	reset(newInitialValue?: v.InferInput<V>): void;
+	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
+}
+
+export interface PrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>
+	extends CommonField<V> {
 	value: v.InferInput<V> | undefined;
 	issues: v.InferIssue<V>[];
-	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
 }
 
 export interface ArrayField<
@@ -15,16 +20,14 @@ export interface ArrayField<
 		v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 		v.ErrorMessage<v.ArrayIssue> | undefined
 	>
-> {
+> extends CommonField<V> {
 	items: Field<V['item']>[];
-	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
 }
 
 export interface ObjectField<
 	V extends v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
-> {
+> extends CommonField<V> {
 	fields: { [K in keyof V['entries']]: Field<V['entries'][K]> };
-	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
 }
 
 export type Field<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>> =
@@ -39,10 +42,11 @@ export type Field<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
 
 function createObjectField<
 	V extends v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
->(schema: V, intialValue: v.InferInput<V> = {}): ObjectField<V> {
+>(schema: V, initialValue: v.InferInput<V> = {}): ObjectField<V> {
 	const objectField: ObjectField<V> = {
 		fields: {} as { [K in keyof V['entries']]: Field<V['entries'][K]> },
-		validate
+		validate,
+		reset
 	};
 
 	for (const [fieldName, fieldSchema] of Object.entries(schema.entries) as [
@@ -51,7 +55,7 @@ function createObjectField<
 	][]) {
 		objectField.fields[fieldName] = createField(
 			fieldSchema,
-			intialValue[fieldName as keyof v.InferInput<V>]
+			initialValue[fieldName as keyof v.InferInput<V>]
 		) as Field<V['entries'][typeof fieldName]>;
 	}
 
@@ -84,6 +88,15 @@ function createObjectField<
 		return ok(output);
 	}
 
+	function reset(newInitialValue?: v.InferInput<V>) {
+		for (const [fieldName, field] of Object.entries(objectField.fields)) {
+			field.reset(
+				newInitialValue?.[fieldName as keyof v.InferInput<V>] ??
+					initialValue[fieldName as keyof v.InferInput<V>]
+			);
+		}
+	}
+
 	return objectField;
 }
 
@@ -92,12 +105,13 @@ function createArrayField<
 		v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 		v.ErrorMessage<v.ArrayIssue> | undefined
 	>
->(schema: V, intialValue: v.InferInput<V> = []): ArrayField<V> {
+>(schema: V, initialValue: v.InferInput<V> = []): ArrayField<V> {
 	const arrayField: ArrayField<V> = {
-		items: intialValue.map((itemValue) => createField(schema.item, itemValue)) as Field<
+		items: initialValue.map((itemValue) => createField(schema.item, itemValue)) as Field<
 			V['item']
 		>[],
-		validate
+		validate,
+		reset
 	};
 
 	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
@@ -129,14 +143,20 @@ function createArrayField<
 		return ok(output);
 	}
 
+	function reset(newInitialValue?: v.InferInput<V>) {
+		for (let i = 0; i < arrayField.items.length; i++) {
+			arrayField.items[i].reset((newInitialValue?.[i] as never) ?? (initialValue[i] as never));
+		}
+	}
+
 	return arrayField;
 }
 
 function createPrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
 	schema: V,
-	intialValue: v.InferInput<V> = undefined
+	initialValue: v.InferInput<V> = undefined
 ): PrimitiveField<V> {
-	let value = $state(intialValue);
+	let value = $state(initialValue);
 	const issues = $state<v.InferIssue<V>[]>([]);
 
 	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
@@ -155,8 +175,12 @@ function createPrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIss
 			}
 		}
 	}
-
 	const debounceValidate = debounce(validate, 300);
+
+	function reset(newInitialValue?: v.InferInput<V>) {
+		value = newInitialValue ?? initialValue;
+		issues.length = 0;
+	}
 
 	return {
 		get value() {
@@ -169,18 +193,19 @@ function createPrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIss
 		get issues() {
 			return issues;
 		},
-		validate
+		validate,
+		reset
 	};
 }
 
 function createField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
 	schema: V,
-	intialValue: v.InferInput<V> = undefined
+	initialValue: v.InferInput<V> = undefined
 ): Field<V> {
 	if (schema.type === 'object') {
 		return createObjectField(
 			schema as V & v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>,
-			intialValue as v.InferInput<
+			initialValue as v.InferInput<
 				V & v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
 			>
 		) as Field<V>;
@@ -191,7 +216,7 @@ function createField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknow
 					v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 					v.ErrorMessage<v.ArrayIssue> | undefined
 				>,
-			intialValue as v.InferInput<
+			initialValue as v.InferInput<
 				V &
 					v.ArraySchema<
 						v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
@@ -200,7 +225,7 @@ function createField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknow
 			>
 		) as Field<V>;
 	} else {
-		return createPrimitiveField(schema, intialValue) as Field<V>;
+		return createPrimitiveField(schema, initialValue) as Field<V>;
 	}
 }
 
@@ -245,8 +270,18 @@ export function createForm<
 		return ok(output);
 	}
 
+	function reset(newInitialValue?: v.InferInput<V>) {
+		for (const fieldName of Object.keys(fields) as (keyof V['entries'])[]) {
+			fields[fieldName].reset(
+				(newInitialValue?.[fieldName as keyof v.InferInput<V>] ??
+					initialValue[fieldName as keyof v.InferInput<V>]) as never
+			);
+		}
+	}
+
 	return {
 		fields,
-		validate
+		validate,
+		reset
 	};
 }
