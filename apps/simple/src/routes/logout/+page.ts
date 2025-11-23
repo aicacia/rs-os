@@ -3,8 +3,6 @@ import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 import { createNotification } from '$lib/common/state/notifications.svelte';
 
-export const ssr = false;
-
 export const load: PageLoad = async (event) => {
 	await event.parent();
 

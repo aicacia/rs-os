@@ -1,14 +1,37 @@
-<script lang="ts">
-	import { signInUsernamePassword } from '$lib/common/state/currentUser.svelte';
+<script lang="ts" module>
+	import * as v from 'valibot';
 	import { m } from '$lib/paraglide/messages';
 
-	let username = $state('');
-	let password = $state('');
+	const SignInSchema = () =>
+		v.object({
+			email: v.pipe(v.string(), v.nonEmpty(m.validation_email_required())),
+			password: v.pipe(
+				v.string(),
+				v.nonEmpty(m.validation_password_required()),
+				v.minLength(1, m.validation_password_min_length({ characters: 1 }))
+			)
+		});
+</script>
+
+<script lang="ts">
+	import { signInUsernamePassword } from '$lib/common/state/currentUser.svelte';
+	import { createForm } from '$lib/common/util/form.svelte';
+
+	const form = createForm(SignInSchema(), {
+		email: '',
+		password: ''
+	});
 
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault();
 
-		await signInUsernamePassword(username, password);
+		const [value, err] = await form.validate();
+
+		if (err) {
+			return;
+		}
+
+		await signInUsernamePassword(value.email, value.password);
 	}
 </script>
 
@@ -20,7 +43,7 @@
 			aria-label={m.signin_username_label()}
 			autocomplete="username"
 			placeholder={m.signin_username_placeholder()}
-			bind:value={username}
+			bind:value={form.fields.email.value}
 		/>
 	</label>
 	<label class="flex flex-col">
@@ -30,7 +53,7 @@
 			type="password"
 			autocomplete="current-password"
 			placeholder={m.signin_password_placeholder()}
-			bind:value={password}
+			bind:value={form.fields.password.value}
 		/>
 		<input class="btn primary mt-4" type="submit" value={m.sign_in()} />
 	</label>

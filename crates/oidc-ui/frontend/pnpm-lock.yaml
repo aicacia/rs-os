@@ -8,12 +8,21 @@ importers:
 
   .:
     dependencies:
+      '@aicacia/debounce':
+        specifier: ^0.1.25
+        version: 0.1.25(tslib@2.8.1)
+      '@aicacia/trycatch':
+        specifier: ^0.1.1
+        version: 0.1.1(tslib@2.8.1)
       '@lucide/svelte':
         specifier: ^0.553.0
         version: 0.553.0(svelte@5.43.6)
       '@openapitools/openapi-generator-cli':
         specifier: ^2.25.0
         version: 2.25.0(@types/node@22.19.1)
+      valibot:
+        specifier: ^1.1.0
+        version: 1.1.0(typescript@5.9.3)
     devDependencies:
       '@eslint/compat':
         specifier: ^1.4.1
@@ -92,6 +101,16 @@ importers:
         version: 1.0.0(vite@7.2.2(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2))
 
 packages:
+
+  '@aicacia/debounce@0.1.25':
+    resolution: {integrity: sha512-EurGRRWPcUBL87YSagw5WKS8vwMNkR3OJKjFQv9DEmBZVpH0vc9ulEJw1NDV9OrfnhYmfM2paW90XoIdjRo6QQ==}
+    peerDependencies:
+      tslib: '2'
+
+  '@aicacia/trycatch@0.1.1':
+    resolution: {integrity: sha512-po/hUhRDGnIj5uCR7Z5VgHJh1EtiyN5ZeJsBsVrJkzfQL1Suz+2lGC57ouScRn7pKCm5WDACf2eU0C9bcnwHeQ==}
+    peerDependencies:
+      tslib: '2'
 
   '@borewit/text-codec@0.1.1':
     resolution: {integrity: sha512-5L/uBxmjaCIX5h8Z+uu+kA9BQLkc/Wl06UGR5ajNRxu+/XjonB5i8JpgFMrPj3LXTCPA0pv8yxUvbUi+QthGGA==}
@@ -2072,6 +2091,14 @@ packages:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
 
+  valibot@1.1.0:
+    resolution: {integrity: sha512-Nk8lX30Qhu+9txPYTwM0cFlWLdPFsFr6LblzqIySfbZph9+BFsAHsNvHOymEviUepeIW6KFHzpX8TKhbptBXXw==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   vite-plugin-devtools-json@1.0.0:
     resolution: {integrity: sha512-MobvwqX76Vqt/O4AbnNMNWoXWGrKUqZbphCUle/J2KXH82yKQiunOeKnz/nqEPosPsoWWPP9FtNuPBSYpiiwkw==}
     peerDependencies:
@@ -2182,6 +2209,14 @@ packages:
     resolution: {integrity: sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ==}
 
 snapshots:
+
+  '@aicacia/debounce@0.1.25(tslib@2.8.1)':
+    dependencies:
+      tslib: 2.8.1
+
+  '@aicacia/trycatch@0.1.1(tslib@2.8.1)':
+    dependencies:
+      tslib: 2.8.1
 
   '@borewit/text-codec@0.1.1': {}
 
@@ -4001,6 +4036,10 @@ snapshots:
   uuid@10.0.0: {}
 
   uuid@11.1.0: {}
+
+  valibot@1.1.0(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   vite-plugin-devtools-json@1.0.0(vite@7.2.2(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2)):
     dependencies:

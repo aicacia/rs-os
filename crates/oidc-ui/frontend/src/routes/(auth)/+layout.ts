@@ -4,8 +4,6 @@ import type { LayoutLoad } from './$types';
 import { resolve } from '$app/paths';
 import { setAfterSigninRedirectPathFromURL } from '$lib/common/state/afterSignInRedirectPath';
 
-export const ssr = false;
-
 export const load: LayoutLoad = async (event) => {
 	await event.parent();
 

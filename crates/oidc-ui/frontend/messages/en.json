@@ -104,5 +104,9 @@
 	"profile_given_name_placeholder": "Enter your given name",
 	"profile_family_name_placeholder": "Enter your family name",
 	"profile_website_placeholder": "https://example.com",
-	"profile_locale_placeholder": "en-US"
+	"profile_locale_placeholder": "en-US",
+	"validation_email_required": "Please enter your email.",
+	"validation_email_invalid": "The email address is badly formatted.",
+	"validation_password_required": "Please enter your password.",
+	"validation_password_min_length": "You password must have {characters} characters or more."
 }
