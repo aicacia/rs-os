@@ -1,22 +1,51 @@
+<script lang="ts" module>
+	import * as v from 'valibot';
+	import { m } from '$lib/paraglide/messages';
+
+	const PasswordFormSchema = () =>
+		v.pipe(
+			v.object({
+				password: v.pipe(v.string(), v.minLength(1)),
+				passwordConfirmation: v.pipe(v.string(), v.minLength(1))
+			}),
+			v.forward(
+				v.partialCheck(
+					[['password'], ['passwordConfirmation']],
+					(input) => input.password === input.passwordConfirmation,
+					'Passwords do not match'
+				),
+				['passwordConfirmation']
+			)
+		);
+</script>
+
 <script lang="ts">
-	import type { UpdateUserPassword, User } from '$lib/common/openapi/oidc/models/index';
+	import type { User } from '$lib/common/openapi/oidc/models/index';
 	import { currentUserApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
-	import { m } from '$lib/paraglide/messages';
+	import { createForm } from '$lib/common/util/form.svelte';
+	import Issues from '$lib/common/components/Issues.svelte';
 
 	let { user = $bindable() }: { user: User } = $props();
 
-	let passwordForm = $state({ password: '', passwordConfirmation: '' } as UpdateUserPassword);
+	const form = createForm(PasswordFormSchema(), {
+		password: '',
+		passwordConfirmation: ''
+	});
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
-		if (!passwordForm.password || passwordForm.password !== passwordForm.passwordConfirmation) {
-			handleError(new Error('Passwords do not match'));
+
+		const [value, err] = await form.validate();
+
+		if (err) {
 			return;
 		}
+
 		try {
-			user = await currentUserApi.updatePassword({ updateUserPassword: passwordForm });
-			passwordForm = { password: '', passwordConfirmation: '' } as UpdateUserPassword;
+			user = await currentUserApi.updatePassword({ updateUserPassword: value });
+			form.fields.password.value = '';
+			form.fields.passwordConfirmation.value = '';
 		} catch (e) {
 			handleError(e);
 		}
@@ -31,12 +60,11 @@
 			id="profile-new-password"
 			type="password"
 			class="mt-1 block w-full px-3 py-2"
-			bind:value={passwordForm.password}
-			required
+			bind:value={form.fields.password.value}
 			placeholder={m.profile_new_password_placeholder()}
 			aria-label={m.profile_new_password_label()}
-			aria-required="true"
 		/>
+		<Issues issues={form.fields.password.issues} />
 	</label>
 	<label class="block">
 		<span class="text-sm font-medium">{m.profile_confirm_password_label()}</span>
@@ -44,12 +72,11 @@
 			id="profile-confirm-password"
 			type="password"
 			class="mt-1 block w-full px-3 py-2"
-			bind:value={passwordForm.passwordConfirmation}
-			required
+			bind:value={form.fields.passwordConfirmation.value}
 			placeholder={m.profile_confirm_password_placeholder()}
 			aria-label={m.profile_confirm_password_label()}
-			aria-required="true"
 		/>
+		<Issues issues={form.fields.passwordConfirmation.issues} />
 	</label>
 	<button type="submit" class="btn danger mt-4">{m.profile_change_password_button()}</button>
 </form>
