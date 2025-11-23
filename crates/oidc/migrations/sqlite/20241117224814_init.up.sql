@@ -108,7 +108,6 @@ CREATE UNIQUE INDEX "users_username_unique_idx" ON "users" ("username");
 
 CREATE TABLE "user_infos"(
 	"user_id" INTEGER NOT NULL PRIMARY KEY,
-	"name" TEXT,
 	"given_name" TEXT,
 	"family_name" TEXT,
 	"middle_name" TEXT,

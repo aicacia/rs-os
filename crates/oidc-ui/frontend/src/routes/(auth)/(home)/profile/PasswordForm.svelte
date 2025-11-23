@@ -43,9 +43,8 @@
 		}
 
 		try {
-			user = await currentUserApi.updatePassword({ updateUserPassword: value });
-			form.fields.password.value = '';
-			form.fields.passwordConfirmation.value = '';
+			await currentUserApi.updatePassword({ updateUserPassword: value });
+			form.reset();
 		} catch (e) {
 			handleError(e);
 		}

@@ -87,8 +87,20 @@ pub struct UserInfo {
 
 impl From<UserInfoSQLRow> for UserInfo {
   fn from(user_info_sql_row: UserInfoSQLRow) -> Self {
+    let name = if let Some(given_name) = &user_info_sql_row.given_name {
+      if let Some(family_name) = &user_info_sql_row.family_name {
+        Some(format!("{} {}", given_name, family_name))
+      } else {
+        Some(given_name.clone())
+      }
+    } else if let Some(family_name) = &user_info_sql_row.family_name {
+      Some(family_name.clone())
+    } else {
+      None
+    };
+
     Self {
-      name: user_info_sql_row.name,
+      name,
       given_name: user_info_sql_row.given_name,
       family_name: user_info_sql_row.family_name,
       middle_name: user_info_sql_row.middle_name,
@@ -207,7 +219,6 @@ pub struct UpdateUsernameRequest {
 
 #[derive(Validate, Deserialize, ToSchema)]
 pub struct UpdateUserInfoRequest {
-  pub name: Option<String>,
   pub given_name: Option<String>,
   pub family_name: Option<String>,
   pub middle_name: Option<String>,
@@ -224,7 +235,6 @@ pub struct UpdateUserInfoRequest {
 impl Into<crate::model::user::sql::UserInfoUpdate> for UpdateUserInfoRequest {
   fn into(self) -> crate::model::user::sql::UserInfoUpdate {
     crate::model::user::sql::UserInfoUpdate {
-      name: self.name,
       given_name: self.given_name,
       family_name: self.family_name,
       middle_name: self.middle_name,

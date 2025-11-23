@@ -157,8 +157,20 @@ pub struct OpenIdProfile {
 
 impl From<UserInfoSQLRow> for OpenIdProfile {
   fn from(user_info_sql_row: UserInfoSQLRow) -> Self {
+    let name: Option<String> = if let Some(given_name) = &user_info_sql_row.given_name {
+      if let Some(family_name) = &user_info_sql_row.family_name {
+        Some(format!("{} {}", given_name, family_name))
+      } else {
+        Some(given_name.clone())
+      }
+    } else if let Some(family_name) = &user_info_sql_row.family_name {
+      Some(family_name.clone())
+    } else {
+      None
+    };
+
     Self {
-      name: user_info_sql_row.name,
+      name,
       given_name: user_info_sql_row.given_name,
       family_name: user_info_sql_row.family_name,
       middle_name: user_info_sql_row.middle_name,

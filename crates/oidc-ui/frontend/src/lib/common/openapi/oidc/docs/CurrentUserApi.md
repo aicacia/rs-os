@@ -77,7 +77,7 @@ This endpoint does not need any parameter.
 
 ## updatePassword
 
-> User updatePassword(updateUserPassword)
+> updatePassword(updateUserPassword)
 
 
 
@@ -124,7 +124,7 @@ example().catch(console.error);
 
 ### Return type
 
-[**User**](User.md)
+`void` (Empty response body)
 
 ### Authorization
 
@@ -139,7 +139,7 @@ example().catch(console.error);
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** |  |  -  |
+| **204** |  |  -  |
 | **400** |  |  -  |
 | **401** |  |  -  |
 | **500** |  |  -  |
@@ -149,7 +149,7 @@ example().catch(console.error);
 
 ## updateUserInfo
 
-> User updateUserInfo(updateUserInfoRequest)
+> UserInfo updateUserInfo(updateUserInfoRequest)
 
 
 
@@ -196,7 +196,7 @@ example().catch(console.error);
 
 ### Return type
 
-[**User**](User.md)
+[**UserInfo**](UserInfo.md)
 
 ### Authorization
 
@@ -221,7 +221,7 @@ example().catch(console.error);
 
 ## updateUsername
 
-> User updateUsername(updateUsernameRequest)
+> updateUsername(updateUsernameRequest)
 
 
 
@@ -268,7 +268,7 @@ example().catch(console.error);
 
 ### Return type
 
-[**User**](User.md)
+`void` (Empty response body)
 
 ### Authorization
 
@@ -283,7 +283,7 @@ example().catch(console.error);
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** |  |  -  |
+| **204** |  |  -  |
 | **400** |  |  -  |
 | **401** |  |  -  |
 | **500** |  |  -  |

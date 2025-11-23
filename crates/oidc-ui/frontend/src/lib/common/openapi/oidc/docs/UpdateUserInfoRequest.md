@@ -13,7 +13,6 @@ Name | Type
 `givenName` | string
 `locale` | string
 `middleName` | string
-`name` | string
 `nickname` | string
 `profilePicture` | string
 `website` | string
@@ -33,7 +32,6 @@ const example = {
   "givenName": null,
   "locale": null,
   "middleName": null,
-  "name": null,
   "nickname": null,
   "profilePicture": null,
   "website": null,

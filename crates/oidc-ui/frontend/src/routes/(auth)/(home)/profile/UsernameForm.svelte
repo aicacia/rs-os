@@ -14,6 +14,7 @@
 	import { handleError } from '$lib/common/errors';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	let { user = $bindable() }: { user: User } = $props();
 
@@ -35,7 +36,9 @@
 		}
 
 		try {
-			user = await currentUserApi.updateUsername({ updateUsernameRequest: value });
+			await currentUserApi.updateUsername({ updateUsernameRequest: value });
+			user.username = value.username;
+			await invalidateAll();
 		} catch (e) {
 			handleError(e);
 		}

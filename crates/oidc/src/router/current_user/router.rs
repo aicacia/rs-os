@@ -1,5 +1,6 @@
-use crate::router::json::Json;
+use crate::router::{current_user::entity::UserInfo, json::Json};
 use axum::{extract::State, response::IntoResponse};
+use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
@@ -43,7 +44,7 @@ pub async fn current_user(
   tags = [TAG],
   request_body(content = UpdateUsernameRequest, content_type = "application/json"),
   responses(
-    (status = 200, content_type = "application/json", body = User),
+    (status = 204, content_type = "application/json"),
     (status = 400, content_type = "application/json", body = HttpError),
     (status = 401, content_type = "application/json", body = HttpError),
     (status = 500, content_type = "application/json", body = HttpError),
@@ -64,10 +65,7 @@ pub async fn update_username(
   )
   .await
   {
-    Ok(_) => match user_authorization.get_user(&state.pool).await {
-      Ok(user) => axum::Json(user).into_response(),
-      Err(e) => return e.into_response(),
-    },
+    Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
     Err(e) => {
       log::error!("error updating username: {}", e);
       return HttpError::internal_error().into_response();
@@ -81,7 +79,7 @@ pub async fn update_username(
   tags = [TAG],
   request_body(content = UpdateUserPassword, content_type = "application/json"),
   responses(
-    (status = 200, content_type = "application/json", body = User),
+    (status = 204, content_type = "application/json"),
     (status = 400, content_type = "application/json", body = HttpError),
     (status = 401, content_type = "application/json", body = HttpError),
     (status = 500, content_type = "application/json", body = HttpError),
@@ -103,10 +101,7 @@ pub async fn update_password(
   )
   .await
   {
-    Ok(_) => match user_authorization.get_user(&state.pool).await {
-      Ok(user) => axum::Json(user).into_response(),
-      Err(e) => return e.into_response(),
-    },
+    Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
     Err(e) => {
       log::error!("error updating user password: {}", e);
       return HttpError::internal_error().into_response();
@@ -120,7 +115,7 @@ pub async fn update_password(
   tags = [TAG],
   request_body(content = UpdateUserInfoRequest, content_type = "application/json"),
   responses(
-    (status = 200, content_type = "application/json", body = User),
+    (status = 200, content_type = "application/json", body = UserInfo),
     (status = 400, content_type = "application/json", body = HttpError),
     (status = 401, content_type = "application/json", body = HttpError),
     (status = 500, content_type = "application/json", body = HttpError),
@@ -141,10 +136,7 @@ pub async fn update_user_info(
   )
   .await
   {
-    Ok(_) => match user_authorization.get_user(&state.pool).await {
-      Ok(user) => axum::Json(user).into_response(),
-      Err(e) => return e.into_response(),
-    },
+    Ok(user_info) => axum::Json(Into::<UserInfo>::into(user_info)).into_response(),
     Err(e) => {
       log::error!("error updating user info: {}", e);
       return HttpError::internal_error().into_response();

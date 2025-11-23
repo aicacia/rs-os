@@ -29,7 +29,6 @@ impl UserSQLRow {
 #[derive(sqlx::FromRow, Default)]
 pub struct UserInfoSQLRow {
   pub user_id: i64,
-  pub name: Option<String>,
   pub given_name: Option<String>,
   pub family_name: Option<String>,
   pub middle_name: Option<String>,
@@ -175,7 +174,6 @@ pub async fn get_user_active_password_by_user_id(
 
 #[derive(Default)]
 pub struct UserInfoUpdate {
-  pub name: Option<String>,
   pub given_name: Option<String>,
   pub family_name: Option<String>,
   pub middle_name: Option<String>,
@@ -202,12 +200,11 @@ async fn create_user_internal(
       .await?;
 
   let user_info = sqlx::query_as(r#"INSERT INTO user_infos 
-      ("user_id", "name", "given_name", "family_name", "middle_name", "nickname", "profile_picture", "website", "gender", "birthdate", "zone_info", "locale", "address")
+      ("user_id", "given_name", "family_name", "middle_name", "nickname", "profile_picture", "website", "gender", "birthdate", "zone_info", "locale", "address")
       VALUES 
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *;"#)
     .bind(user.id)
-    .bind(user_info.name)
     .bind(user_info.given_name)
     .bind(user_info.family_name)
     .bind(user_info.middle_name)
@@ -378,23 +375,21 @@ pub async fn update_user_info(
   sqlx::query_as(
     r#"UPDATE user_infos
       SET
-        name = COALESCE($1, name),
-        given_name = COALESCE($2, given_name),
-        family_name = COALESCE($3, family_name),
-        middle_name = COALESCE($4, middle_name),
-        nickname = COALESCE($5, nickname),
-        profile_picture = COALESCE($6, profile_picture),
-        website = COALESCE($7, website),
-        gender = COALESCE($8, gender),
-        birthdate = COALESCE($9, birthdate),
-        zone_info = COALESCE($10, zone_info),
-        locale = COALESCE($11, locale),
-        address = COALESCE($12, address),
-        updated_at = $13
-      WHERE user_id = $14
+        given_name = COALESCE($1, given_name),
+        family_name = COALESCE($2, family_name),
+        middle_name = COALESCE($3, middle_name),
+        nickname = COALESCE($4, nickname),
+        profile_picture = COALESCE($5, profile_picture),
+        website = COALESCE($6, website),
+        gender = COALESCE($7, gender),
+        birthdate = COALESCE($8, birthdate),
+        zone_info = COALESCE($9, zone_info),
+        locale = COALESCE($10, locale),
+        address = COALESCE($11, address),
+        updated_at = $12
+      WHERE user_id = $13
       RETURNING *;"#,
   )
-  .bind(user_info.name)
   .bind(user_info.given_name)
   .bind(user_info.family_name)
   .bind(user_info.middle_name)

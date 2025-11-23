@@ -4,7 +4,6 @@
 
 	const InfoFormSchema = () =>
 		v.object({
-			name: v.optional(v.string()),
 			givenName: v.optional(v.string()),
 			middleName: v.optional(v.string()),
 			familyName: v.optional(v.string()),
@@ -25,6 +24,7 @@
 	import { handleError } from '$lib/common/errors';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	let { user = $bindable() }: { user: User } = $props();
 
@@ -37,7 +37,6 @@
 	);
 
 	const form = createForm(InfoFormSchema(), {
-		name: user.info?.name ?? user.username ?? '',
 		givenName: user.info?.givenName ?? undefined,
 		middleName: user.info?.middleName ?? undefined,
 		familyName: user.info?.familyName ?? undefined,
@@ -51,9 +50,6 @@
 		profilePicture: user.info?.profilePicture ?? undefined
 	});
 
-	$effect(() => {
-		form.fields.name.value = user.info?.name ?? user.username ?? '';
-	});
 	$effect(() => {
 		form.fields.givenName.value = user.info?.givenName ?? undefined;
 	});
@@ -98,7 +94,8 @@
 		}
 
 		try {
-			user = await currentUserApi.updateUserInfo({ updateUserInfoRequest: value });
+			user.info = await currentUserApi.updateUserInfo({ updateUserInfoRequest: value });
+			await invalidateAll();
 		} catch (e) {
 			handleError(e);
 		}
@@ -108,17 +105,6 @@
 <form onsubmit={submit} class="card">
 	<h3 class="text-lg font-medium">{m.profile_info_title()}</h3>
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-		<label class="block">
-			<span class="text-sm font-medium">{m.profile_full_name_label()}</span>
-			<input
-				id="profile-full-name"
-				class="mt-1 block w-full px-3 py-2"
-				bind:value={form.fields.name.value}
-				placeholder={m.profile_full_name_placeholder()}
-				aria-label={m.profile_full_name_label()}
-			/>
-			<Issues issues={form.fields.name.issues} />
-		</label>
 		<label class="block">
 			<span class="text-sm font-medium">{m.profile_given_name_label()}</span>
 			<input

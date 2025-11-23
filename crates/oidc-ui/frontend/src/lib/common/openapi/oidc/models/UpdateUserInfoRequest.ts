@@ -66,12 +66,6 @@ export interface UpdateUserInfoRequest {
      * @type {string}
      * @memberof UpdateUserInfoRequest
      */
-    name?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UpdateUserInfoRequest
-     */
     nickname?: string | null;
     /**
      * 
@@ -117,7 +111,6 @@ export function UpdateUserInfoRequestFromJSONTyped(json: any, ignoreDiscriminato
         'givenName': json['given_name'] == null ? undefined : json['given_name'],
         'locale': json['locale'] == null ? undefined : json['locale'],
         'middleName': json['middle_name'] == null ? undefined : json['middle_name'],
-        'name': json['name'] == null ? undefined : json['name'],
         'nickname': json['nickname'] == null ? undefined : json['nickname'],
         'profilePicture': json['profile_picture'] == null ? undefined : json['profile_picture'],
         'website': json['website'] == null ? undefined : json['website'],
@@ -143,7 +136,6 @@ export function UpdateUserInfoRequestToJSONTyped(value?: UpdateUserInfoRequest |
         'given_name': value['givenName'],
         'locale': value['locale'],
         'middle_name': value['middleName'],
-        'name': value['name'],
         'nickname': value['nickname'],
         'profile_picture': value['profilePicture'],
         'website': value['website'],

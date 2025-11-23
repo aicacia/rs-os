@@ -20,6 +20,7 @@ import type {
   UpdateUserPassword,
   UpdateUsernameRequest,
   User,
+  UserInfo,
 } from '../models/index';
 import {
     HttpErrorFromJSON,
@@ -32,6 +33,8 @@ import {
     UpdateUsernameRequestToJSON,
     UserFromJSON,
     UserToJSON,
+    UserInfoFromJSON,
+    UserInfoToJSON,
 } from '../models/index';
 
 export interface UpdatePasswordRequest {
@@ -72,11 +75,11 @@ export interface CurrentUserApiInterface {
      * @throws {RequiredError}
      * @memberof CurrentUserApiInterface
      */
-    updatePasswordRaw(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>>;
+    updatePasswordRaw(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
 
     /**
      */
-    updatePassword(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
+    updatePassword(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
     /**
      * 
@@ -85,11 +88,11 @@ export interface CurrentUserApiInterface {
      * @throws {RequiredError}
      * @memberof CurrentUserApiInterface
      */
-    updateUserInfoRaw(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>>;
+    updateUserInfoRaw(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserInfo>>;
 
     /**
      */
-    updateUserInfo(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
+    updateUserInfo(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserInfo>;
 
     /**
      * 
@@ -98,11 +101,11 @@ export interface CurrentUserApiInterface {
      * @throws {RequiredError}
      * @memberof CurrentUserApiInterface
      */
-    updateUsernameRaw(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>>;
+    updateUsernameRaw(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
 
     /**
      */
-    updateUsername(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
+    updateUsername(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
 }
 
@@ -148,7 +151,7 @@ export class CurrentUserApi extends runtime.BaseAPI implements CurrentUserApiInt
 
     /**
      */
-    async updatePasswordRaw(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>> {
+    async updatePasswordRaw(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['updateUserPassword'] == null) {
             throw new runtime.RequiredError(
                 'updateUserPassword',
@@ -181,19 +184,18 @@ export class CurrentUserApi extends runtime.BaseAPI implements CurrentUserApiInt
             body: UpdateUserPasswordToJSON(requestParameters['updateUserPassword']),
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => UserFromJSON(jsonValue));
+        return new runtime.VoidApiResponse(response);
     }
 
     /**
      */
-    async updatePassword(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
-        const response = await this.updatePasswordRaw(requestParameters, initOverrides);
-        return await response.value();
+    async updatePassword(requestParameters: UpdatePasswordRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.updatePasswordRaw(requestParameters, initOverrides);
     }
 
     /**
      */
-    async updateUserInfoRaw(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>> {
+    async updateUserInfoRaw(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserInfo>> {
         if (requestParameters['updateUserInfoRequest'] == null) {
             throw new runtime.RequiredError(
                 'updateUserInfoRequest',
@@ -226,19 +228,19 @@ export class CurrentUserApi extends runtime.BaseAPI implements CurrentUserApiInt
             body: UpdateUserInfoRequestToJSON(requestParameters['updateUserInfoRequest']),
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => UserFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => UserInfoFromJSON(jsonValue));
     }
 
     /**
      */
-    async updateUserInfo(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
+    async updateUserInfo(requestParameters: UpdateUserInfoOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserInfo> {
         const response = await this.updateUserInfoRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async updateUsernameRaw(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>> {
+    async updateUsernameRaw(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['updateUsernameRequest'] == null) {
             throw new runtime.RequiredError(
                 'updateUsernameRequest',
@@ -271,14 +273,13 @@ export class CurrentUserApi extends runtime.BaseAPI implements CurrentUserApiInt
             body: UpdateUsernameRequestToJSON(requestParameters['updateUsernameRequest']),
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => UserFromJSON(jsonValue));
+        return new runtime.VoidApiResponse(response);
     }
 
     /**
      */
-    async updateUsername(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
-        const response = await this.updateUsernameRaw(requestParameters, initOverrides);
-        return await response.value();
+    async updateUsername(requestParameters: UpdateUsernameOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.updateUsernameRaw(requestParameters, initOverrides);
     }
 
 }
