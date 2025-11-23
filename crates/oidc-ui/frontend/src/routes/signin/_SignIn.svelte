@@ -16,6 +16,7 @@
 <script lang="ts">
 	import { signInUsernamePassword } from '$lib/common/state/currentUser.svelte';
 	import { createForm } from '$lib/common/util/form.svelte';
+	import Issues from '$lib/common/components/Issues.svelte';
 
 	const form = createForm(SignInSchema(), {
 		email: '',
@@ -45,6 +46,7 @@
 			placeholder={m.signin_username_placeholder()}
 			bind:value={form.fields.email.value}
 		/>
+		<Issues issues={form.fields.email.issues} />
 	</label>
 	<label class="flex flex-col">
 		{m.signin_password_label()}
@@ -55,6 +57,7 @@
 			placeholder={m.signin_password_placeholder()}
 			bind:value={form.fields.password.value}
 		/>
-		<input class="btn primary mt-4" type="submit" value={m.sign_in()} />
+		<Issues issues={form.fields.password.issues} />
 	</label>
+	<input class="btn primary mt-4" type="submit" value={m.sign_in()} />
 </form>

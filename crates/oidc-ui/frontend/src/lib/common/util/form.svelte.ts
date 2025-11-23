@@ -1,33 +1,31 @@
 import * as v from 'valibot';
+import { debounce } from '@aicacia/debounce';
 import { ok, err, type Result } from '@aicacia/trycatch';
 
 export type FieldState = 'validating' | 'valid' | 'invalid' | 'unset' | 'set';
 
-export type BaseField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>> = {
-	value: v.InferOutput<V> | undefined;
-	errors: v.InferIssue<V>[];
-	state: FieldState;
-	validate: () => Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
-	reset: () => void;
-};
+export interface PrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>> {
+	value: v.InferInput<V> | undefined;
+	issues: v.InferIssue<V>[];
+	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
+}
 
-export type PrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>> =
-	BaseField<V>;
-
-export type ArrayField<
+export interface ArrayField<
 	V extends v.ArraySchema<
 		v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 		v.ErrorMessage<v.ArrayIssue> | undefined
 	>
-> = BaseField<V> & {
-	items: BaseField<V['item']>[];
-};
+> {
+	items: Field<V['item']>[];
+	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
+}
 
-export type ObjectField<
+export interface ObjectField<
 	V extends v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
-> = BaseField<V> & {
-	fields: { [K in keyof V['entries']]: BaseField<V['entries'][K]> };
-};
+> {
+	fields: { [K in keyof V['entries']]: Field<V['entries'][K]> };
+	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
+}
 
 export type Field<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>> =
 	V extends v.ArraySchema<
@@ -39,229 +37,216 @@ export type Field<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
 			? ObjectField<V>
 			: PrimitiveField<V>;
 
-export function createPrimitiveField<
-	V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
->(schema: V, intialValue?: v.InferOutput<V>): PrimitiveField<V> {
-	let value = $state<v.InferOutput<V>>(intialValue);
-	let error = $state<v.ValiError<V>>();
-	let state = $state<FieldState>('unset');
+function createObjectField<
+	V extends v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
+>(schema: V, intialValue: v.InferInput<V> = {}): ObjectField<V> {
+	const objectField: ObjectField<V> = {
+		fields: {} as { [K in keyof V['entries']]: Field<V['entries'][K]> },
+		validate
+	};
+
+	for (const [fieldName, fieldSchema] of Object.entries(schema.entries) as [
+		keyof V['entries'],
+		V['entries'][keyof V['entries']]
+	][]) {
+		objectField.fields[fieldName] = createField(
+			fieldSchema,
+			intialValue[fieldName as keyof v.InferInput<V>]
+		) as Field<V['entries'][typeof fieldName]>;
+	}
 
 	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
-		state = 'validating';
+		const output = {} as v.InferOutput<V>;
+		const issues: v.InferIssue<V>[] = [];
+
+		await Promise.all(
+			Object.entries(objectField.fields).map(async ([fieldName, field]) => {
+				const [fieldOutput, fieldError] = await field.validate();
+
+				if (fieldError) {
+					for (const fieldIssue of fieldError.issues) {
+						if (fieldIssue.path) {
+							fieldIssue.path.unshift(fieldName);
+						}
+						issues.push(fieldIssue as v.InferIssue<V>);
+					}
+				} else {
+					output[fieldName as keyof v.InferOutput<V>] = fieldOutput;
+				}
+			})
+		);
+
+		if (issues.length > 0) {
+			const issueError = new v.ValiError(issues as [v.InferIssue<V>, ...v.InferIssue<V>[]]);
+			return err(issueError);
+		}
+
+		return ok(output);
+	}
+
+	return objectField;
+}
+
+function createArrayField<
+	V extends v.ArraySchema<
+		v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
+		v.ErrorMessage<v.ArrayIssue> | undefined
+	>
+>(schema: V, intialValue: v.InferInput<V> = []): ArrayField<V> {
+	const arrayField: ArrayField<V> = {
+		items: intialValue.map((itemValue) => createField(schema.item, itemValue)) as Field<
+			V['item']
+		>[],
+		validate
+	};
+
+	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
+		const output: v.InferOutput<V> = [] as unknown as v.InferOutput<V>;
+		const issues: v.InferIssue<V>[] = [];
+
+		await Promise.all(
+			arrayField.items.map(async (itemField, index) => {
+				const [itemOutput, itemError] = await itemField.validate();
+
+				if (itemError) {
+					for (const itemIssue of itemError.issues) {
+						if (itemIssue.path) {
+							itemIssue.path.unshift(index as never);
+						}
+						issues.push(itemIssue as v.InferIssue<V>);
+					}
+				} else {
+					(output as unknown as v.InferOutput<V>)[index] = itemOutput;
+				}
+			})
+		);
+
+		if (issues.length > 0) {
+			const issueError = new v.ValiError(issues as [v.InferIssue<V>, ...v.InferIssue<V>[]]);
+			return err(issueError);
+		}
+
+		return ok(output);
+	}
+
+	return arrayField;
+}
+
+function createPrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
+	schema: V,
+	intialValue: v.InferInput<V> = undefined
+): PrimitiveField<V> {
+	let value = $state(intialValue);
+	const issues = $state<v.InferIssue<V>[]>([]);
+
+	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
 		try {
-			value = await v.parseAsync(schema, value);
-			state = 'valid';
-			return ok(value);
+			const output = await v.parseAsync(schema, value);
+			issues.length = 0;
+			return ok(output);
 		} catch (e) {
-			state = 'invalid';
-			error = e as v.ValiError<V>;
-			return err(error);
+			issues.length = 0;
+
+			if (e instanceof v.ValiError) {
+				issues.push(...e.issues);
+				return err(new v.ValiError<V>(e.issues));
+			} else {
+				throw e;
+			}
 		}
 	}
 
-	function reset() {
-		state = 'unset';
-		value = intialValue;
-	}
+	const debounceValidate = debounce(validate, 300);
 
 	return {
 		get value() {
 			return value;
 		},
-		set value(newValue: v.InferOutput<V> | undefined) {
-			state = 'set';
+		set value(newValue: v.InferInput<V> | undefined) {
 			value = newValue;
+			void debounceValidate();
 		},
-		get errors() {
-			return error?.issues ?? [];
+		get issues() {
+			return issues;
 		},
-		get state() {
-			return state;
-		},
-		validate,
-		reset
+		validate
 	};
 }
 
-export function createArrayField<
-	V extends v.ArraySchema<
-		v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
-		v.ErrorMessage<v.ArrayIssue> | undefined
-	>
->(schema: V, intialValue: v.InferOutput<V> = []): ArrayField<V> {
-	const itemSchema = schema.item;
-	const items: Field<V['item']>[] = intialValue.map(
-		(itemValue) => createField(itemSchema, itemValue) as Field<V['item']>
-	);
-	let arrayValue = $state<v.InferOutput<V>>(intialValue);
-	let arrayError = $state<v.ValiError<V>>();
-	let arrayState = $state<FieldState>('unset');
-
-	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
-		arrayState = 'validating';
-
-		const output: v.InferOutput<V> = [];
-		const issues: v.InferIssue<V>[] = [];
-
-		await Promise.all(
-			items.map(async (item, index) => {
-				const [value, error] = await item.validate();
-
-				if (error) {
-					for (const issue of error.issues) {
-						if (issue.path) {
-							issue.path.unshift(index as never);
-						}
-						issues.push(issue);
-					}
-				} else {
-					output.push(value);
-					arrayValue[index] = value;
-				}
-			})
-		);
-
-		if (issues.length > 0) {
-			const issueError = new v.ValiError(issues as [v.InferIssue<V>, ...v.InferIssue<V>[]]);
-			arrayError = issueError;
-			arrayState = 'invalid';
-			return err(issueError);
-		}
-
-		arrayValue = output;
-		arrayError = undefined;
-		arrayState = 'valid';
-		return ok(output);
-	}
-
-	function reset() {
-		for (const item of items) {
-			item.reset();
-		}
-		arrayValue = intialValue;
-		arrayError = undefined;
-		arrayState = 'unset';
-	}
-
-	return {
-		get value() {
-			return arrayValue;
-		},
-		set value(newValue: v.InferOutput<V>) {
-			arrayState = 'set';
-			arrayValue = newValue;
-		},
-		get errors() {
-			return arrayError?.issues ?? [];
-		},
-		get state() {
-			return arrayState;
-		},
-		items,
-		validate,
-		reset
-	};
-}
-
-export function createObjectField<
-	V extends v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
->(schema: V, intialValue: v.InferOutput<V> = {}): ObjectField<V> {
-	const fieldNames = Object.keys(schema.entries) as (keyof v.InferOutput<V>)[];
-	const fields = {} as { [K in keyof V['entries']]: Field<V['entries'][K]> };
-
-	for (const fieldName of fieldNames) {
-		const entryName = fieldName as keyof V['entries'];
-		const entry = schema.entries[entryName as keyof v.ObjectEntries];
-		const entryIntialValue = intialValue[fieldName];
-
-		fields[fieldName] = createField(entry, entryIntialValue) as never;
-	}
-
-	let objectValue = $state<v.InferOutput<V>>(intialValue);
-	let objectError = $state<v.ValiError<V>>();
-	let objectState = $state<FieldState>('unset');
-
-	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
-		objectState = 'validating';
-
-		const output = {} as v.InferOutput<V>;
-		const issues: v.InferIssue<V>[] = [];
-
-		await Promise.all(
-			fieldNames.map(async (fieldName) => {
-				const field = fields[fieldName];
-
-				const [value, error] = await field.validate();
-
-				if (error) {
-					for (const issue of error.issues) {
-						if (issue.path) {
-							issue.path.unshift(fieldName as never);
-						}
-						issues.push(issue);
-					}
-				} else {
-					output[fieldName] = value as never;
-					objectValue[fieldName] = value as never;
-				}
-			})
-		);
-		if (issues.length > 0) {
-			const issueError = new v.ValiError(issues as [v.InferIssue<V>, ...v.InferIssue<V>[]]);
-			objectError = issueError;
-			objectState = 'invalid';
-			return err(issueError);
-		}
-		objectValue = output;
-		objectError = undefined;
-		objectState = 'valid';
-		return ok(output);
-	}
-
-	function reset() {
-		for (const fieldName of fieldNames) {
-			fields[fieldName].reset();
-		}
-		objectValue = intialValue;
-		objectError = undefined;
-		objectState = 'unset';
-	}
-
-	return {
-		get value() {
-			return objectValue;
-		},
-		set value(newValue: v.InferOutput<V>) {
-			objectState = 'set';
-			objectValue = newValue;
-		},
-		get errors() {
-			return objectError?.issues ?? [];
-		},
-		get state() {
-			return objectState;
-		},
-		fields,
-		validate,
-		reset
-	};
-}
-
-export function createField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
+function createField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
 	schema: V,
-	intialValue?: v.InferOutput<V>
+	intialValue: v.InferInput<V> = undefined
 ): Field<V> {
-	if ('item' in schema) {
-		return createArrayField(schema as never, intialValue as never) as never;
-	} else if ('entries' in schema) {
-		return createObjectField(schema as never, intialValue as never) as never;
+	if (schema.type === 'object') {
+		return createObjectField(
+			schema as V & v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>,
+			intialValue as v.InferInput<
+				V & v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
+			>
+		) as Field<V>;
+	} else if (schema.type === 'array') {
+		return createArrayField(
+			schema as V &
+				v.ArraySchema<
+					v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
+					v.ErrorMessage<v.ArrayIssue> | undefined
+				>,
+			intialValue as v.InferInput<
+				V &
+					v.ArraySchema<
+						v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
+						v.ErrorMessage<v.ArrayIssue> | undefined
+					>
+			>
+		) as Field<V>;
 	} else {
-		return createPrimitiveField(schema, intialValue) as never;
+		return createPrimitiveField(schema, intialValue) as Field<V>;
 	}
 }
 
 export function createForm<
 	V extends v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
->(schema: V, intialValue: v.InferOutput<V> = {}) {
-	return createObjectField(schema, intialValue);
+>(schema: V, initialValue: v.InferInput<V> = {}) {
+	const fields = $state({} as { [K in keyof V['entries']]: Field<V['entries'][K]> });
+
+	for (const [fieldName, fieldSchema] of Object.entries(schema.entries) as [
+		keyof V['entries'],
+		V['entries'][keyof V['entries']]
+	][]) {
+		fields[fieldName] = createField(fieldSchema, initialValue[fieldName as keyof v.InferInput<V>]);
+	}
+
+	async function validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>> {
+		const output = {} as v.InferOutput<V>;
+		const issues: v.InferIssue<V>[] = [];
+
+		await Promise.all(
+			Object.entries(fields).map(async ([fieldName, field]) => {
+				const [fieldOutput, fieldError] = await field.validate();
+
+				if (fieldError) {
+					for (const fieldIssue of fieldError.issues) {
+						if (fieldIssue.path) {
+							fieldIssue.path.unshift(fieldName);
+						}
+						issues.push(fieldIssue as v.InferIssue<V>);
+					}
+				} else {
+					output[fieldName as keyof v.InferOutput<V>] = fieldOutput;
+				}
+			})
+		);
+
+		if (issues.length > 0) {
+			const issueError = new v.ValiError(issues as [v.InferIssue<V>, ...v.InferIssue<V>[]]);
+			return err(issueError);
+		}
+
+		return ok(output);
+	}
+
+	return {
+		fields,
+		validate
+	};
 }
