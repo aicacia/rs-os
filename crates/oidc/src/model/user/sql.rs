@@ -313,7 +313,7 @@ pub async fn get_user_primary_email(
     r#"SELECT ue.*
     FROM user_emails ue
     JOIN users u ON u.id = ue.user_id
-    WHERE ue.user_id = $1 AND ue.primary != 0;"#,
+    WHERE ue.user_id = $1 AND ue."primary" != 0;"#,
   )
   .bind(user_id)
   .fetch_optional(pool)
@@ -343,7 +343,7 @@ pub async fn get_user_primary_phone_number(
     r#"SELECT upn.*
     FROM user_phone_numbers upn
     JOIN users u ON u.id = upn.user_id
-    WHERE upn.user_id = $1 AND upn.primary != 0;"#,
+    WHERE upn.user_id = $1 AND upn."primary" != 0;"#,
   )
   .bind(user_id)
   .fetch_optional(pool)

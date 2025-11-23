@@ -94,10 +94,10 @@ export async function signInUsernamePassword(username: string, password: string)
 		grantType: 'password',
 		username,
 		password,
-		scope: 'openid profile offline'
+		scope: 'openid profile address email phone_number offline'
 	});
 	const user = await currentUser;
-	afterSigninRedirect();
+	await afterSigninRedirect();
 	return user;
 }
 

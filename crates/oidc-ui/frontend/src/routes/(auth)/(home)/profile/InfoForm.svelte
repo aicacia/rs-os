@@ -6,9 +6,16 @@
 		v.object({
 			name: v.optional(v.string()),
 			givenName: v.optional(v.string()),
+			middleName: v.optional(v.string()),
 			familyName: v.optional(v.string()),
+			nickname: v.optional(v.string()),
 			website: v.optional(v.string()),
-			locale: v.optional(v.string())
+			locale: v.optional(v.string()),
+			address: v.optional(v.string()),
+			birthdate: v.optional(v.number()),
+			gender: v.optional(v.string()),
+			zoneInfo: v.optional(v.string()),
+			profilePicture: v.optional(v.string())
 		});
 </script>
 
@@ -24,9 +31,16 @@
 	const form = createForm(InfoFormSchema(), {
 		name: user.info?.name ?? user.username ?? '',
 		givenName: user.info?.givenName ?? undefined,
+		middleName: user.info?.middleName ?? undefined,
 		familyName: user.info?.familyName ?? undefined,
+		nickname: user.info?.nickname ?? undefined,
 		website: user.info?.website ?? undefined,
-		locale: user.info?.locale ?? undefined
+		locale: user.info?.locale ?? undefined,
+		address: user.info?.address ?? undefined,
+		birthdate: user.info?.birthdate ?? undefined,
+		gender: user.info?.gender ?? undefined,
+		zoneInfo: user.info?.zoneInfo ?? undefined,
+		profilePicture: user.info?.profilePicture ?? undefined
 	});
 
 	$effect(() => {
@@ -43,6 +57,27 @@
 	});
 	$effect(() => {
 		form.fields.locale.value = user.info?.locale ?? undefined;
+	});
+	$effect(() => {
+		form.fields.middleName.value = user.info?.middleName ?? undefined;
+	});
+	$effect(() => {
+		form.fields.nickname.value = user.info?.nickname ?? undefined;
+	});
+	$effect(() => {
+		form.fields.address.value = user.info?.address ?? undefined;
+	});
+	$effect(() => {
+		form.fields.birthdate.value = user.info?.birthdate ?? undefined;
+	});
+	$effect(() => {
+		form.fields.gender.value = user.info?.gender ?? undefined;
+	});
+	$effect(() => {
+		form.fields.zoneInfo.value = user.info?.zoneInfo ?? undefined;
+	});
+	$effect(() => {
+		form.fields.profilePicture.value = user.info?.profilePicture ?? undefined;
 	});
 
 	async function submit(e: SubmitEvent) {
@@ -88,6 +123,17 @@
 			<Issues issues={form.fields.givenName.issues} />
 		</label>
 		<label class="block">
+			<span class="text-sm font-medium">{m.profile_middle_name_label()}</span>
+			<input
+				id="profile-middle-name"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={form.fields.middleName.value}
+				placeholder={m.profile_middle_name_placeholder()}
+				aria-label={m.profile_middle_name_label()}
+			/>
+			<Issues issues={form.fields.middleName.issues} />
+		</label>
+		<label class="block">
 			<span class="text-sm font-medium">{m.profile_family_name_label()}</span>
 			<input
 				id="profile-family-name"
@@ -97,6 +143,17 @@
 				aria-label={m.profile_family_name_label()}
 			/>
 			<Issues issues={form.fields.familyName.issues} />
+		</label>
+		<label class="block">
+			<span class="text-sm font-medium">{m.profile_nickname_label()}</span>
+			<input
+				id="profile-nickname"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={form.fields.nickname.value}
+				placeholder={m.profile_nickname_placeholder()}
+				aria-label={m.profile_nickname_label()}
+			/>
+			<Issues issues={form.fields.nickname.issues} />
 		</label>
 		<label class="block">
 			<span class="text-sm font-medium">{m.profile_website_label()}</span>
@@ -109,7 +166,7 @@
 			/>
 			<Issues issues={form.fields.website.issues} />
 		</label>
-		<label class="block md:col-span-2">
+		<label class="block">
 			<span class="text-sm font-medium">{m.profile_locale_label()}</span>
 			<input
 				id="profile-locale"
@@ -119,6 +176,71 @@
 				aria-label={m.profile_locale_label()}
 			/>
 			<Issues issues={form.fields.locale.issues} />
+		</label>
+		<label class="block">
+			<span class="text-sm font-medium">{m.profile_zone_info_label()}</span>
+			<input
+				id="profile-zone-info"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={form.fields.zoneInfo.value}
+				placeholder={m.profile_zone_info_placeholder()}
+				aria-label={m.profile_zone_info_label()}
+			/>
+			<Issues issues={form.fields.zoneInfo.issues} />
+		</label>
+		<label class="block md:col-span-2">
+			<span class="text-sm font-medium">{m.profile_address_label()}</span>
+			<input
+				id="profile-address"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={form.fields.address.value}
+				placeholder={m.profile_address_placeholder()}
+				aria-label={m.profile_address_label()}
+			/>
+			<Issues issues={form.fields.address.issues} />
+		</label>
+		<label class="block">
+			<span class="text-sm font-medium">{m.profile_birthdate_label()}</span>
+			<input
+				id="profile-birthdate"
+				type="date"
+				class="mt-1 block w-full px-3 py-2"
+				value={form.fields.birthdate.value
+					? new Date(form.fields.birthdate.value * 1000).toISOString().split('T')[0]
+					: ''}
+				onchange={(e) => {
+					const value = e.currentTarget.value;
+					form.fields.birthdate.value = value
+						? Math.floor(new Date(value).getTime() / 1000)
+						: undefined;
+				}}
+				placeholder={m.profile_birthdate_placeholder()}
+				aria-label={m.profile_birthdate_label()}
+			/>
+			<Issues issues={form.fields.birthdate.issues} />
+		</label>
+		<label class="block">
+			<span class="text-sm font-medium">{m.profile_gender_label()}</span>
+			<input
+				id="profile-gender"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={form.fields.gender.value}
+				placeholder={m.profile_gender_placeholder()}
+				aria-label={m.profile_gender_label()}
+			/>
+			<Issues issues={form.fields.gender.issues} />
+		</label>
+		<label class="block md:col-span-2">
+			<span class="text-sm font-medium">{m.profile_profile_picture_label()}</span>
+			<input
+				id="profile-picture"
+				type="url"
+				class="mt-1 block w-full px-3 py-2"
+				bind:value={form.fields.profilePicture.value}
+				placeholder={m.profile_profile_picture_placeholder()}
+				aria-label={m.profile_profile_picture_label()}
+			/>
+			<Issues issues={form.fields.profilePicture.issues} />
 		</label>
 	</div>
 	<button type="submit" class="btn success mt-4">{m.profile_save_profile()}</button>

@@ -108,5 +108,19 @@
 	"validation_email_required": "Please enter your email.",
 	"validation_email_invalid": "The email address is badly formatted.",
 	"validation_password_required": "Please enter your password.",
-	"validation_password_min_length": "You password must have {characters} characters or more."
+	"validation_password_min_length": "You password must have {characters} characters or more.",
+	"profile_middle_name_label": "Middle name",
+	"profile_nickname_label": "Nickname",
+	"profile_address_label": "Address",
+	"profile_birthdate_label": "Birthdate",
+	"profile_gender_label": "Gender",
+	"profile_zone_info_label": "Time zone",
+	"profile_profile_picture_label": "Profile picture URL",
+	"profile_middle_name_placeholder": "Enter your middle name",
+	"profile_nickname_placeholder": "Enter your nickname",
+	"profile_address_placeholder": "123 Main St, City, Country",
+	"profile_birthdate_placeholder": "YYYY-MM-DD",
+	"profile_gender_placeholder": "e.g., Male, Female, Other",
+	"profile_zone_info_placeholder": "America/New_York",
+	"profile_profile_picture_placeholder": "https://example.com/photo.jpg"
 }

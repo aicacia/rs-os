@@ -14,9 +14,11 @@
 </script>
 
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { signInUsernamePassword } from '$lib/common/state/currentUser.svelte';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
+	import { goto } from '$app/navigation';
 
 	const form = createForm(SignInSchema(), {
 		email: '',
@@ -33,6 +35,7 @@
 		}
 
 		await signInUsernamePassword(value.email, value.password);
+		await goto(resolve('/'));
 	}
 </script>
 
