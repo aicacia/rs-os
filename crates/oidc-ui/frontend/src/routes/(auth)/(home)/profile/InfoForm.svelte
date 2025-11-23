@@ -28,6 +28,14 @@
 
 	let { user = $bindable() }: { user: User } = $props();
 
+	const supportedLocales = $derived(
+		typeof navigator !== 'undefined' ? Array.from(new Set(navigator.languages)) : []
+	);
+
+	const timeZones = $derived(
+		typeof Intl !== 'undefined' && Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : []
+	);
+
 	const form = createForm(InfoFormSchema(), {
 		name: user.info?.name ?? user.username ?? '',
 		givenName: user.info?.givenName ?? undefined,
@@ -168,24 +176,33 @@
 		</label>
 		<label class="block">
 			<span class="text-sm font-medium">{m.profile_locale_label()}</span>
-			<input
+			<select
 				id="profile-locale"
 				class="mt-1 block w-full px-3 py-2"
 				bind:value={form.fields.locale.value}
 				placeholder={m.profile_locale_placeholder()}
 				aria-label={m.profile_locale_label()}
-			/>
+			>
+				{#each supportedLocales as locale}
+					<option value={locale}>{locale}</option>
+				{/each}
+			</select>
 			<Issues issues={form.fields.locale.issues} />
 		</label>
 		<label class="block">
 			<span class="text-sm font-medium">{m.profile_zone_info_label()}</span>
-			<input
+			<select
 				id="profile-zone-info"
 				class="mt-1 block w-full px-3 py-2"
 				bind:value={form.fields.zoneInfo.value}
 				placeholder={m.profile_zone_info_placeholder()}
 				aria-label={m.profile_zone_info_label()}
-			/>
+			>
+				<option value="">{m.profile_zone_info_placeholder()}</option>
+				{#each timeZones as timeZone}
+					<option value={timeZone}>{timeZone}</option>
+				{/each}
+			</select>
 			<Issues issues={form.fields.zoneInfo.issues} />
 		</label>
 		<label class="block md:col-span-2">
