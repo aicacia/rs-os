@@ -85,7 +85,7 @@
 			</div>
 		</section>
 	{:else}
-		<section class="card hidden md:block">
+		<section class="card">
 			<div class="overflow-x-auto">
 				<table class="w-full">
 					<thead class="border-b border-gray-200 dark:border-gray-700">
