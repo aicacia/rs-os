@@ -7,6 +7,7 @@
 	import { handleError } from '$lib/common/errors';
 	import { createNotification } from '$lib/common/state/notifications.svelte';
 	import ClientForm, { type ClientFormData } from '../../_ClientForm.svelte';
+	import { m } from '$lib/paraglide/messages';
 
 	let { data }: PageProps = $props();
 
@@ -18,7 +19,7 @@
 				clientId: client.clientId,
 				clientRegisterRequest: formData
 			});
-			createNotification('Client updated successfully', 'success');
+			createNotification(m.clients_updated_success(), 'success');
 			await goto(resolve(`/clients/${updatedClient.clientId}`));
 		} catch (e) {
 			handleError(e);
@@ -27,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>Edit {client.name}</title>
+	<title>{m.clients_edit_title()}</title>
 </svelte:head>
 
 <div class="space-y-4">
@@ -40,20 +41,24 @@
 				<ArrowLeft class="h-5 w-5" />
 			</a>
 			<div>
-				<h2 class="m-0 text-2xl font-bold">Edit Client</h2>
+				<h2 class="m-0 text-2xl font-bold">{m.clients_edit_title()}</h2>
 				<p class="text-sm text-gray-600 dark:text-gray-400">{client.name}</p>
 			</div>
 		</div>
 	</section>
 
-	<ClientForm initialValues={client} onsubmit={handleSubmit} submitLabel="Update Client">
+	<ClientForm
+		initialValues={client}
+		onsubmit={handleSubmit}
+		submitLabel={m.clients_update_button()}
+	>
 		{#snippet actions()}
 			<button
 				type="button"
 				class="btn secondary"
 				onclick={() => goto(resolve('/(auth)/(home)/clients'))}
 			>
-				Cancel
+				{m.clients_cancel()}
 			</button>
 		{/snippet}
 	</ClientForm>

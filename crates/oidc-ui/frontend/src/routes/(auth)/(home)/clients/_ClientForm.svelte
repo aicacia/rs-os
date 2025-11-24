@@ -1,22 +1,32 @@
 <script lang="ts" context="module">
 	import * as v from 'valibot';
+	import { m } from '$lib/paraglide/messages';
 
 	export const ClientFormSchema = () =>
 		v.object({
-			clientId: v.pipe(v.string(), v.minLength(1, 'Client ID is required')),
-			name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+			clientId: v.pipe(v.string(), v.minLength(1, m.client_form_validation_client_id_required())),
+			name: v.pipe(v.string(), v.minLength(1, m.client_form_validation_name_required())),
 			clientSecret: v.optional(v.nullable(v.string())),
-			applicationType: v.pipe(v.string(), v.minLength(1, 'Application type is required')),
-			authMethod: v.pipe(v.string(), v.minLength(1, 'Auth method is required')),
+			applicationType: v.pipe(
+				v.string(),
+				v.minLength(1, m.client_form_validation_app_type_required())
+			),
+			authMethod: v.pipe(
+				v.string(),
+				v.minLength(1, m.client_form_validation_auth_method_required())
+			),
 			grantTypes: v.pipe(
 				v.array(v.string()),
-				v.minLength(1, 'At least one grant type is required')
+				v.minLength(1, m.client_form_validation_grant_types_required())
 			),
 			responseTypes: v.pipe(
 				v.array(v.string()),
-				v.minLength(1, 'At least one response type is required')
+				v.minLength(1, m.client_form_validation_response_types_required())
 			),
-			scopes: v.pipe(v.array(v.string()), v.minLength(1, 'At least one scope is required')),
+			scopes: v.pipe(
+				v.array(v.string()),
+				v.minLength(1, m.client_form_validation_scopes_required())
+			),
 			redirectUris: v.optional(v.nullable(v.array(v.string()))),
 			postLogoutRedirectUris: v.optional(v.nullable(v.array(v.string()))),
 			audience: v.optional(v.nullable(v.array(v.string()))),
@@ -24,9 +34,18 @@
 			clientUri: v.optional(v.nullable(v.string())),
 			policyUri: v.optional(v.nullable(v.string())),
 			termsOfServiceUri: v.optional(v.nullable(v.string())),
-			accessTokenExpiresInSeconds: v.pipe(v.number(), v.minValue(1, 'Must be at least 1 second')),
-			idTokenExpiresInSeconds: v.pipe(v.number(), v.minValue(1, 'Must be at least 1 second')),
-			refreshExpiresInSeconds: v.pipe(v.number(), v.minValue(1, 'Must be at least 1 second'))
+			accessTokenExpiresInSeconds: v.pipe(
+				v.number(),
+				v.minValue(1, m.client_form_validation_min_seconds())
+			),
+			idTokenExpiresInSeconds: v.pipe(
+				v.number(),
+				v.minValue(1, m.client_form_validation_min_seconds())
+			),
+			refreshExpiresInSeconds: v.pipe(
+				v.number(),
+				v.minValue(1, m.client_form_validation_min_seconds())
+			)
 		});
 
 	export type ClientFormData = v.InferOutput<ReturnType<typeof ClientFormSchema>>;
@@ -202,43 +221,43 @@
 <form onsubmit={handleSubmit} class="space-y-6">
 	<!-- Basic Information -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">Basic Information</h3>
+		<h3 class="mb-4 text-lg font-semibold">{m.client_form_basic_info()}</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<label class="block">
-				<span class="text-sm font-medium">Client ID *</span>
+				<span class="text-sm font-medium">{m.client_form_client_id()} *</span>
 				<input
 					type="text"
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.clientId.value}
-					placeholder="my-client-id"
+					placeholder={m.client_form_client_id_placeholder()}
 					{readonly}
-					aria-label="Client ID"
+					aria-label={m.client_form_client_id()}
 				/>
 				<Issues issues={form.fields.clientId.issues} />
 			</label>
 
 			<label class="block">
-				<span class="text-sm font-medium">Name *</span>
+				<span class="text-sm font-medium">{m.client_form_name()} *</span>
 				<input
 					type="text"
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.name.value}
-					placeholder="My Application"
+					placeholder={m.client_form_name_placeholder()}
 					{readonly}
-					aria-label="Client Name"
+					aria-label={m.client_form_name()}
 				/>
 				<Issues issues={form.fields.name.issues} />
 			</label>
 
 			<label class="block">
-				<span class="text-sm font-medium">Client Secret</span>
+				<span class="text-sm font-medium">{m.client_form_client_secret()}</span>
 				<input
 					type="text"
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.clientSecret.value}
-					placeholder="Leave empty for public clients"
+					placeholder={m.client_form_client_secret_placeholder()}
 					{readonly}
-					aria-label="Client Secret"
+					aria-label={m.client_form_client_secret()}
 				/>
 				<Issues issues={form.fields.clientSecret.issues} />
 			</label>
@@ -247,32 +266,32 @@
 
 	<!-- Application Configuration -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">Application Configuration</h3>
+		<h3 class="mb-4 text-lg font-semibold">{m.client_form_app_config()}</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<label class="block">
-				<span class="text-sm font-medium">Application Type *</span>
+				<span class="text-sm font-medium">{m.client_form_app_type()} *</span>
 				<select
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.applicationType.value}
 					disabled={readonly}
 				>
-					<option value="web">Web</option>
-					<option value="native">Native</option>
-					<option value="service">Service</option>
+					<option value="web">{m.client_form_app_type_web()}</option>
+					<option value="native">{m.client_form_app_type_native()}</option>
+					<option value="service">{m.client_form_app_type_service()}</option>
 				</select>
 				<Issues issues={form.fields.applicationType.issues} />
 			</label>
 
 			<label class="block">
-				<span class="text-sm font-medium">Authentication Method *</span>
+				<span class="text-sm font-medium">{m.client_form_auth_method()} *</span>
 				<select
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.authMethod.value}
 					disabled={readonly}
 				>
-					<option value="client_secret_basic">Client Secret Basic</option>
-					<option value="client_secret_post">Client Secret Post</option>
-					<option value="none">None (Public)</option>
+					<option value="client_secret_basic">{m.client_form_auth_method_basic()}</option>
+					<option value="client_secret_post">{m.client_form_auth_method_post()}</option>
+					<option value="none">{m.client_form_auth_method_none()}</option>
 				</select>
 				<Issues issues={form.fields.authMethod.issues} />
 			</label>
@@ -281,11 +300,11 @@
 
 	<!-- OAuth2 Configuration -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">OAuth2 Configuration</h3>
+		<h3 class="mb-4 text-lg font-semibold">{m.client_form_oauth2_config()}</h3>
 
 		<div class="space-y-4">
 			<div>
-				<span class="text-sm font-medium">Grant Types *</span>
+				<span class="text-sm font-medium">{m.client_form_grant_types()} *</span>
 				<div class="mt-2 flex flex-wrap gap-2">
 					{#each availableGrantTypes as grantType}
 						<label class="flex items-center gap-2">
@@ -302,7 +321,7 @@
 			</div>
 
 			<div>
-				<span class="text-sm font-medium">Response Types *</span>
+				<span class="text-sm font-medium">{m.client_form_response_types()} *</span>
 				<div class="mt-2 flex flex-wrap gap-2">
 					{#each availableResponseTypes as responseType}
 						<label class="flex items-center gap-2">
@@ -319,7 +338,7 @@
 			</div>
 
 			<div>
-				<span class="text-sm font-medium">Scopes *</span>
+				<span class="text-sm font-medium">{m.client_form_scopes()} *</span>
 				<div class="mt-2 flex flex-wrap gap-2">
 					{#each availableScopes as scope}
 						<label class="flex items-center gap-2">
@@ -339,18 +358,18 @@
 
 	<!-- URIs -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">URIs</h3>
+		<h3 class="mb-4 text-lg font-semibold">{m.client_form_uris()}</h3>
 		<div class="space-y-4">
 			<!-- Redirect URIs -->
 			<div>
-				<span class="text-sm font-medium">Redirect URIs</span>
+				<span class="text-sm font-medium">{m.client_form_redirect_uris()}</span>
 				{#if !readonly}
 					<div class="mt-2 flex gap-2">
 						<input
 							type="url"
 							class="block flex-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 							bind:value={redirectUriInput}
-							placeholder="https://example.com/callback"
+							placeholder={m.client_form_redirect_uri_placeholder()}
 							onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addRedirectUri())}
 						/>
 						<button type="button" class="btn primary" onclick={addRedirectUri}>
@@ -380,14 +399,14 @@
 
 			<!-- Post Logout Redirect URIs -->
 			<div>
-				<span class="text-sm font-medium">Post Logout Redirect URIs</span>
+				<span class="text-sm font-medium">{m.client_form_post_logout_redirect_uris()}</span>
 				{#if !readonly}
 					<div class="mt-2 flex gap-2">
 						<input
 							type="url"
 							class="block flex-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 							bind:value={postLogoutRedirectUriInput}
-							placeholder="https://example.com/logout"
+							placeholder={m.client_form_post_logout_redirect_uri_placeholder()}
 							onkeydown={(e) =>
 								e.key === 'Enter' && (e.preventDefault(), addPostLogoutRedirectUri())}
 						/>
@@ -419,45 +438,45 @@
 			<!-- Additional URIs -->
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 				<label class="block">
-					<span class="text-sm font-medium">Logo URI</span>
+					<span class="text-sm font-medium">{m.client_form_logo_uri()}</span>
 					<input
 						type="url"
 						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 						bind:value={form.fields.logoUri.value}
-						placeholder="https://example.com/logo.png"
+						placeholder={m.client_form_logo_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
 
 				<label class="block">
-					<span class="text-sm font-medium">Client URI</span>
+					<span class="text-sm font-medium">{m.client_form_client_uri()}</span>
 					<input
 						type="url"
 						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 						bind:value={form.fields.clientUri.value}
-						placeholder="https://example.com"
+						placeholder={m.client_form_client_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
 
 				<label class="block">
-					<span class="text-sm font-medium">Policy URI</span>
+					<span class="text-sm font-medium">{m.client_form_policy_uri()}</span>
 					<input
 						type="url"
 						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 						bind:value={form.fields.policyUri.value}
-						placeholder="https://example.com/policy"
+						placeholder={m.client_form_policy_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
 
 				<label class="block">
-					<span class="text-sm font-medium">Terms of Service URI</span>
+					<span class="text-sm font-medium">{m.client_form_terms_uri()}</span>
 					<input
 						type="url"
 						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 						bind:value={form.fields.termsOfServiceUri.value}
-						placeholder="https://example.com/terms"
+						placeholder={m.client_form_terms_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
@@ -467,14 +486,14 @@
 
 	<!-- Audience -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">Audience</h3>
+		<h3 class="mb-4 text-lg font-semibold">{m.client_form_audience()}</h3>
 		{#if !readonly}
 			<div class="flex gap-2">
 				<input
 					type="text"
 					class="block flex-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={audienceInput}
-					placeholder="https://api.example.com"
+					placeholder={m.client_form_audience_placeholder()}
 					onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addAudience())}
 				/>
 				<button type="button" class="btn primary" onclick={addAudience}>
@@ -504,10 +523,10 @@
 
 	<!-- Token Expiration -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">Token Expiration (seconds)</h3>
+		<h3 class="mb-4 text-lg font-semibold">{m.client_form_token_expiration()}</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 			<label class="block">
-				<span class="text-sm font-medium">Access Token *</span>
+				<span class="text-sm font-medium">{m.client_form_access_token()} *</span>
 				<input
 					type="number"
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
@@ -519,7 +538,7 @@
 			</label>
 
 			<label class="block">
-				<span class="text-sm font-medium">ID Token *</span>
+				<span class="text-sm font-medium">{m.client_form_id_token()} *</span>
 				<input
 					type="number"
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
@@ -531,7 +550,7 @@
 			</label>
 
 			<label class="block">
-				<span class="text-sm font-medium">Refresh Token *</span>
+				<span class="text-sm font-medium">{m.client_form_refresh_token()} *</span>
 				<input
 					type="number"
 					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"

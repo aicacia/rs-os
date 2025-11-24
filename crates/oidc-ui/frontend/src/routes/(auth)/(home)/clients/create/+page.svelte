@@ -6,13 +6,14 @@
 	import { handleError } from '$lib/common/errors';
 	import { createNotification } from '$lib/common/state/notifications.svelte';
 	import ClientForm, { type ClientFormData } from '../_ClientForm.svelte';
+	import { m } from '$lib/paraglide/messages';
 
 	async function handleSubmit(data: ClientFormData) {
 		try {
 			const client = await clientApi.clientCreate({
 				clientRegisterRequest: data
 			});
-			createNotification('Client created successfully', 'success');
+			createNotification(m.clients_created_success(), 'success');
 			await goto(resolve('/(auth)/(home)/clients'));
 		} catch (e) {
 			handleError(e);
@@ -21,7 +22,7 @@
 </script>
 
 <svelte:head>
-	<title>Create Client</title>
+	<title>{m.clients_create_title()}</title>
 </svelte:head>
 
 <div class="space-y-4">
@@ -33,13 +34,15 @@
 			>
 				<ArrowLeft class="h-5 w-5" />
 			</a>
-			<h2 class="m-0 text-2xl font-bold">Create New Client</h2>
+			<h2 class="m-0 text-2xl font-bold">{m.clients_create_title()}</h2>
 		</div>
 	</section>
 
-	<ClientForm initialValues={{}} onsubmit={handleSubmit} submitLabel="Create Client">
+	<ClientForm initialValues={{}} onsubmit={handleSubmit} submitLabel={m.clients_create_button()}>
 		{#snippet actions()}
-			<a type="button" class="btn secondary" href={resolve('/(auth)/(home)/clients')}> Cancel </a>
+			<a type="button" class="btn secondary" href={resolve('/(auth)/(home)/clients')}>
+				{m.clients_cancel()}
+			</a>
 		{/snippet}
 	</ClientForm>
 </div>
