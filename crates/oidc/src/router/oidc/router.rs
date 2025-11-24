@@ -497,7 +497,7 @@ pub async fn post_authorize(
 }
 
 async fn authorize_internal(
-  pool: sqlx::AnyPool,
+  _pool: sqlx::AnyPool,
   config: Arc<AppConfig>,
   authorize_request: AuthorizeRequest,
 ) -> impl IntoResponse {
@@ -519,49 +519,6 @@ async fn authorize_internal(
     }
   };
 
-  let client_sql_row = match get_client_by_client_id(&pool, &authorize_request.client_id).await {
-    Ok(Some(client_sql_row)) => client_sql_row,
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("client", NOT_FOUND_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("failed to fetch client: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
-
-  let redirect_uri = match Url::parse(&authorize_request.redirect_uri) {
-    Ok(redirect_uri) => redirect_uri,
-    Err(e) => {
-      log::error!("invalid redirect_uri: {}", e);
-      return HttpError::bad_request()
-        .with_error("redirect_uri", INVALID_ERROR)
-        .into_response();
-    }
-  };
-
-  if let Some(redirect_uris) = client_sql_row
-    .redirect_uris
-    .as_ref()
-    .map(json_to_string_vec)
-  {
-    let redirect_uri_string = redirect_uri.origin().ascii_serialization() + redirect_uri.path();
-    if !redirect_uris.contains(&redirect_uri_string) {
-      return HttpError::bad_request()
-        .with_error("redirect_uri", NOT_ALLOWED_ERROR)
-        .into_response();
-    }
-    redirect_uri_string
-  } else {
-    return HttpError::bad_request()
-      .with_error("client", INVALID_ERROR)
-      .into_response();
-  };
-
   {
     let mut ui_url_params: form_urlencoded::Serializer<'_, url::UrlQuery<'_>> =
       ui_url.query_pairs_mut();
@@ -576,6 +533,9 @@ async fn authorize_internal(
     }
     if let Some(nonce) = &authorize_request.nonce {
       ui_url_params.append_pair("nonce", nonce);
+    }
+    if let Some(registration) = &authorize_request.registration {
+      ui_url_params.append_pair("registration", registration);
     }
   }
 

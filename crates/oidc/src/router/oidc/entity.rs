@@ -163,6 +163,8 @@ pub struct AuthorizeRequest {
   pub state: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub nonce: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub registration: Option<String>,
 }
 
 pub type Client = crate::router::client::entity::Client;

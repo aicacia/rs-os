@@ -17,7 +17,7 @@ All URIs are relative to *http://localhost:3000*
 
 ## authorize
 
-> authorize(clientId, responseType, responseMode, scope, redirectUri, state, nonce)
+> authorize(clientId, responseType, responseMode, scope, redirectUri, state, nonce, registration)
 
 
 
@@ -49,6 +49,8 @@ async function example() {
     state: state_example,
     // string (optional)
     nonce: nonce_example,
+    // string (optional)
+    registration: registration_example,
   } satisfies AuthorizeRequest;
 
   try {
@@ -75,6 +77,7 @@ example().catch(console.error);
 | **redirectUri** | `string` |  | [Defaults to `undefined`] |
 | **state** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **nonce** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **registration** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 

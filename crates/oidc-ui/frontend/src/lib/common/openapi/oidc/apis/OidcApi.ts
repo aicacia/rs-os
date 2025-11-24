@@ -57,6 +57,7 @@ export interface AuthorizeRequest {
     redirectUri: string;
     state?: string | null;
     nonce?: string | null;
+    registration?: string | null;
 }
 
 export interface EndSessionRequest {
@@ -102,6 +103,7 @@ export interface OidcApiInterface {
      * @param {string} redirectUri 
      * @param {string} [state] 
      * @param {string} [nonce] 
+     * @param {string} [registration] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OidcApiInterface
@@ -281,6 +283,10 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
         if (requestParameters['nonce'] != null) {
             queryParameters['nonce'] = requestParameters['nonce'];
+        }
+
+        if (requestParameters['registration'] != null) {
+            queryParameters['registration'] = requestParameters['registration'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

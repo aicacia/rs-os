@@ -54,6 +54,12 @@ export interface AuthorizeRequest {
     redirectUri: string;
     /**
      * 
+     * @type {string}
+     * @memberof AuthorizeRequest
+     */
+    registration?: string | null;
+    /**
+     * 
      * @type {ResponseMode}
      * @memberof AuthorizeRequest
      */
@@ -105,6 +111,7 @@ export function AuthorizeRequestFromJSONTyped(json: any, ignoreDiscriminator: bo
         'clientId': json['client_id'],
         'nonce': json['nonce'] == null ? undefined : json['nonce'],
         'redirectUri': json['redirect_uri'],
+        'registration': json['registration'] == null ? undefined : json['registration'],
         'responseMode': ResponseModeFromJSON(json['response_mode']),
         'responseType': ResponseTypeFromJSON(json['response_type']),
         'scope': json['scope'],
@@ -126,6 +133,7 @@ export function AuthorizeRequestToJSONTyped(value?: AuthorizeRequest | null, ign
         'client_id': value['clientId'],
         'nonce': value['nonce'],
         'redirect_uri': value['redirectUri'],
+        'registration': value['registration'],
         'response_mode': ResponseModeToJSON(value['responseMode']),
         'response_type': ResponseTypeToJSON(value['responseType']),
         'scope': value['scope'],

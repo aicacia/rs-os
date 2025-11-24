@@ -9,6 +9,7 @@ Name | Type
 `clientId` | string
 `nonce` | string
 `redirectUri` | string
+`registration` | string
 `responseMode` | [ResponseMode](ResponseMode.md)
 `responseType` | [ResponseType](ResponseType.md)
 `scope` | string
@@ -24,6 +25,7 @@ const example = {
   "clientId": null,
   "nonce": null,
   "redirectUri": null,
+  "registration": null,
   "responseMode": null,
   "responseType": null,
   "scope": null,
