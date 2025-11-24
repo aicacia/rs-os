@@ -42,10 +42,6 @@
 </script>
 
 <svelte:head>
-	<title>Clients</title>
-</svelte:head>
-
-<svelte:head>
 	<title>{m.clients_title()}</title>
 </svelte:head>
 
@@ -73,8 +69,7 @@
 				/>
 			</div>
 		</div>
-	</section>ss="py-12 text-center">
-				<p class="text-gray-500">
+	</section>
 	{#if filteredClients.length === 0}
 		<section class="card">
 			<div class="py-12 text-center">
@@ -95,8 +90,12 @@
 							<th class="px-4 py-3 text-left text-sm font-semibold">{m.clients_status()}</th>
 							<th class="px-4 py-3 text-right text-sm font-semibold">{m.clients_actions()}</th>
 						</tr>
-					</thead>="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800"
-							>
+					</thead>
+					<tbody
+						class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800"
+					>
+						{#each filteredClients as client}
+							<tr>
 								<td class="px-4 py-3 font-medium">{client.name}</td>
 								<td class="px-4 py-3 font-mono text-sm text-gray-600 dark:text-gray-400">
 									{client.clientId}
@@ -108,8 +107,6 @@
 										{client.applicationType}
 									</span>
 								</td>
-								<td class="px-4 py-3 text-sm">
-									{#if client.active}
 								<td class="px-4 py-3 text-sm">
 									{#if client.active}
 										<span
@@ -145,6 +142,8 @@
 										</button>
 									</div>
 								</td>
+							</tr>
+						{/each}
 					</tbody>
 				</table>
 			</div>
