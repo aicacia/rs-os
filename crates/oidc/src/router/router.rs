@@ -10,7 +10,7 @@ use crate::router::{
   entity::RouterState,
   jwk, oidc,
   openapi::{self, utoipa::SecurityAddon},
-  register, util,
+  register, user, user_email, user_oauth2_provider, user_phone_number, user_role, util,
 };
 
 #[derive(OpenApi)]
@@ -23,7 +23,12 @@ use crate::router::{
     (name = jwk::constants::TAG, description = jwk::constants::DESCRIPTION),
     (name = oidc::constants::TAG, description = oidc::constants::DESCRIPTION),
     (name = crate::router::openapi::constants::TAG, description = crate::router::openapi::constants::DESCRIPTION),
-    (name = current_user::constants::TAG, description = current_user::constants::DESCRIPTION)
+    (name = current_user::constants::TAG, description = current_user::constants::DESCRIPTION),
+    (name = user::constants::TAG, description = user::constants::DESCRIPTION),
+    (name = user_email::constants::TAG, description = user_email::constants::DESCRIPTION),
+    (name = user_phone_number::constants::TAG, description = user_phone_number::constants::DESCRIPTION),
+    (name = user_oauth2_provider::constants::TAG, description = user_oauth2_provider::constants::DESCRIPTION),
+    (name = user_role::constants::TAG, description = user_role::constants::DESCRIPTION)
   ),
   components(
     schemas(
@@ -43,7 +48,12 @@ pub fn create_router(state: RouterState, prefix_optional: Option<&str>) -> Route
     .merge(register::router::create_router(state.clone()))
     .merge(jwk::router::create_router(state.clone()))
     .merge(oidc::router::create_router(state.clone()))
-    .merge(current_user::router::create_router(state.clone()));
+    .merge(current_user::router::create_router(state.clone()))
+    .merge(user::router::create_router(state.clone()))
+    .merge(user_email::router::create_router(state.clone()))
+    .merge(user_phone_number::router::create_router(state.clone()))
+    .merge(user_oauth2_provider::router::create_router(state.clone()))
+    .merge(user_role::router::create_router(state.clone()));
 
   if let Some(prefix) = prefix_optional {
     open_api_router = open_api_router.nest(prefix, open_api_routes);

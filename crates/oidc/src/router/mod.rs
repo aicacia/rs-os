@@ -11,6 +11,11 @@ pub mod oidc;
 pub mod openapi;
 pub mod register;
 mod router;
+pub mod user;
+pub mod user_email;
+pub mod user_oauth2_provider;
+pub mod user_phone_number;
+pub mod user_role;
 pub mod util;
 
 pub use router::{ApiDoc, create_router};
