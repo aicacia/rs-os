@@ -61,7 +61,10 @@ pub enum TokenRequest {
   RefreshToken { refresh_token: String },
   #[serde(rename = "authorization_code")]
   #[schema(title = "TokenRequestAuthorizationCode")]
-  AuthorizationCode { code: String },
+  AuthorizationCode {
+    code: String,
+    code_verifier: Option<String>,
+  },
 }
 
 #[derive(Serialize, ToSchema)]
@@ -165,6 +168,10 @@ pub struct AuthorizeRequest {
   pub nonce: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub registration: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub code_challenge: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub code_challenge_method: Option<String>,
 }
 
 pub type Client = crate::router::client::entity::Client;

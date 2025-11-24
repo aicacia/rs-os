@@ -7,6 +7,8 @@
 Name | Type
 ------------ | -------------
 `clientId` | string
+`codeChallenge` | string
+`codeChallengeMethod` | string
 `nonce` | string
 `redirectUri` | string
 `registration` | string
@@ -23,6 +25,8 @@ import type { AuthorizeRequest } from ''
 // TODO: Update the object below with actual values
 const example = {
   "clientId": null,
+  "codeChallenge": null,
+  "codeChallengeMethod": null,
   "nonce": null,
   "redirectUri": null,
   "registration": null,

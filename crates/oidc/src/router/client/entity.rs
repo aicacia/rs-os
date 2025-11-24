@@ -76,6 +76,8 @@ pub struct ClientAuthorizeRequest {
   pub scope: String,
   pub redirect_uri: String,
   pub response_type: ResponseType,
+  pub code_challenge: Option<String>,
+  pub code_challenge_method: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]

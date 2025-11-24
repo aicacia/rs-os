@@ -20,6 +20,8 @@
 	let urlState = $derived(page.url.searchParams.get('state'));
 	let urlNonce = $derived(page.url.searchParams.get('nonce'));
 	let urlRegistration = $derived(page.url.searchParams.get('registration'));
+	let urlCodeChallenge = $derived(page.url.searchParams.get('code_challenge'));
+	let urlCodeChallengeMethod = $derived(page.url.searchParams.get('code_challenge_method'));
 
 	let clientIdInfo = $state<ClientInfo | null>(null);
 
@@ -86,7 +88,9 @@
 			redirectUri: urlRedirectUri!,
 			scope: urlScope!,
 			state: urlState,
-			nonce: urlNonce
+			nonce: urlNonce,
+			codeChallenge: urlCodeChallenge,
+			codeChallengeMethod: urlCodeChallengeMethod
 		};
 	});
 

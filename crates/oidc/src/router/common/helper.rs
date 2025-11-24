@@ -18,7 +18,7 @@ use crate::{
         SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE_NUMBER, SCOPE_PROFILE,
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
       },
-      entity::{BasicClaims, Claims, OpenIdClaims, OpenIdProfile, Token},
+      entity::{AuthorizationCodeClaims, BasicClaims, Claims, OpenIdClaims, OpenIdProfile, Token},
     },
     error::{HttpError, INTERNAL_ERROR},
   },
@@ -104,14 +104,14 @@ pub(crate) async fn create_user_token(
   let mut id_token = None;
   if show_profile || show_email || show_phone_number {
     let mut id_claims = OpenIdClaims {
-      claims: claims.clone(),
+      basic_claims: claims.clone(),
       profile: OpenIdProfile {
         preferred_username: Some(user.username.clone()),
         ..Default::default()
       },
       ..Default::default()
     };
-    id_claims.claims.r#type = TOKEN_TYPE_ID.to_owned();
+    id_claims.basic_claims.r#type = TOKEN_TYPE_ID.to_owned();
 
     let user_info = match get_user_info_by_user_id(pool, user.id).await {
       Ok(Some(user_info)) => user_info,
@@ -184,12 +184,14 @@ pub(crate) async fn create_user_token(
   })
 }
 
-pub(crate) async fn create_user_auhorization_code_token(
+pub(crate) async fn create_user_authorization_code_token(
   pool: &sqlx::AnyPool,
   app_config: &AppConfig,
   user_id: i64,
   client_id: String,
   scope: String,
+  code_challenge: Option<String>,
+  code_challenge_method: Option<String>,
 ) -> Result<String, HttpError> {
   let jwk_sql_row = match get_jwk_for_sign_and_verify(pool).await {
     Ok(Some(jwk_sql_row)) => jwk_sql_row,
@@ -206,15 +208,19 @@ pub(crate) async fn create_user_auhorization_code_token(
   let now = chrono::Utc::now();
 
   let issuer = app_config.api_url();
-  let claims = BasicClaims {
-    r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
-    sub: user_id,
-    aud: client_id,
-    iat: now.timestamp(),
-    nbf: now.timestamp(),
-    exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
-    iss: issuer.clone(),
-    scope: scope,
+  let claims = AuthorizationCodeClaims {
+    basic_claims: BasicClaims {
+      r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
+      sub: user_id,
+      aud: client_id,
+      iat: now.timestamp(),
+      nbf: now.timestamp(),
+      exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
+      iss: issuer.clone(),
+      scope: scope,
+    },
+    code_challenge,
+    code_challenge_method,
   };
 
   let encoding_key = match to_encoding_key(&jwk_sql_row) {
@@ -236,7 +242,7 @@ pub(crate) async fn create_user_auhorization_code_token(
     }
   };
 
-  let auhorization_code_token = match claims.encode(&issuer, &jwk, &encoding_key) {
+  let authorization_code_token = match claims.encode(&issuer, &jwk, &encoding_key) {
     Ok(token) => token,
     Err(e) => {
       log::error!("error encoding access token: {}", e);
@@ -246,7 +252,7 @@ pub(crate) async fn create_user_auhorization_code_token(
     }
   };
 
-  Ok(auhorization_code_token)
+  Ok(authorization_code_token)
 }
 
 pub fn parse_jwt<T>(

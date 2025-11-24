@@ -6,6 +6,8 @@
 
 Name | Type
 ------------ | -------------
+`codeChallenge` | string
+`codeChallengeMethod` | string
 `redirectUri` | string
 `responseType` | [ResponseType](ResponseType.md)
 `scope` | string
@@ -17,6 +19,8 @@ import type { ClientAuthorizeRequest } from ''
 
 // TODO: Update the object below with actual values
 const example = {
+  "codeChallenge": null,
+  "codeChallengeMethod": null,
   "redirectUri": null,
   "responseType": null,
   "scope": null,

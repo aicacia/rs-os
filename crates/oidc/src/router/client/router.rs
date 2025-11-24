@@ -17,7 +17,7 @@ use crate::{
       constants::TAG,
       entity::{Client, ClientAllowed, ClientAuthorization, ClientAuthorizeRequest},
     },
-    common::{helper::create_user_auhorization_code_token, permissions::Permission},
+    common::{helper::create_user_authorization_code_token, permissions::Permission},
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR},
     middleware::user_authorization::UserAuthorization,
@@ -426,12 +426,14 @@ pub async fn client_authorize(
 
   let authorization_response = match authorization_request.response_type {
     ResponseType::None => todo!(),
-    ResponseType::Code => match create_user_auhorization_code_token(
+    ResponseType::Code => match create_user_authorization_code_token(
       &state.pool,
       &state.config,
       user_authorization.user_sql_row.id,
       client_id,
       authorization_request.scope,
+      authorization_request.code_challenge,
+      authorization_request.code_challenge_method,
     )
     .await
     {

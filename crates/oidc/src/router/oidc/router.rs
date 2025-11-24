@@ -5,7 +5,9 @@ use axum::{
   extract::{Query, State},
   response::{IntoResponse, Response},
 };
+use base64::Engine;
 use http::{StatusCode, header};
+use sha2::{Digest, Sha256};
 use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
@@ -29,12 +31,13 @@ use crate::{
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
         TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
       },
-      entity::{BasicClaims, OpenIdClaims, Token},
+      entity::{AuthorizationCodeClaims, BasicClaims, OpenIdClaims, Token},
       helper::create_user_token,
     },
     entity::RouterState,
     error::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
+      REQUIRED_ERROR,
     },
     form::Form,
     json::Json,
@@ -196,7 +199,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
       "phone_number".to_owned(),
       "phone_number_verified".to_owned(),
     ],
-    code_challenge_methods_supported: vec!["plain".to_owned(), "S256".to_owned()],
+    code_challenge_methods_supported: vec!["S256".to_owned()],
     grant_types_supported: vec![
       "password".to_owned(),
       "authorization_code".to_owned(),
@@ -326,7 +329,10 @@ pub async fn token(
       password,
     } => password_grant(state, scope, username, password).await,
     TokenRequest::RefreshToken { refresh_token } => refresh_token_grant(state, refresh_token).await,
-    TokenRequest::AuthorizationCode { code } => authorization_code_grant(state, code).await,
+    TokenRequest::AuthorizationCode {
+      code,
+      code_verifier,
+    } => authorization_code_grant(state, code, code_verifier).await,
   };
   match token_result {
     Ok(token) => axum::Json(token).into_response(),
@@ -427,15 +433,50 @@ async fn refresh_token_grant(
   .await
 }
 
-async fn authorization_code_grant(state: RouterState, code: String) -> Result<Token, HttpError> {
+async fn authorization_code_grant(
+  state: RouterState,
+  code: String,
+  code_verifier: Option<String>,
+) -> Result<Token, HttpError> {
   let (token_data, jwk_sql_row) =
-    parse_authorization::<BasicClaims>(&state.pool, &state.config, &code).await?;
+    parse_authorization::<AuthorizationCodeClaims>(&state.pool, &state.config, &code).await?;
 
-  if token_data.claims.r#type != TOKEN_TYPE_AUTHORIZATION_CODE {
+  if token_data.claims.basic_claims.r#type != TOKEN_TYPE_AUTHORIZATION_CODE {
     return Err(HttpError::unauthorized());
   }
 
-  let user = match get_user_by_id(&state.pool, token_data.claims.sub).await {
+  if let Some(code_challenge) = &token_data.claims.code_challenge {
+    let code_verifier = match code_verifier {
+      Some(verifier) => verifier,
+      None => {
+        return Err(HttpError::bad_request().with_error("code_verifier", REQUIRED_ERROR));
+      }
+    };
+
+    let code_challenge_method = token_data
+      .claims
+      .code_challenge_method
+      .as_deref()
+      .unwrap_or("S256");
+
+    let computed_challenge = match code_challenge_method {
+      "S256" => {
+        let mut hasher = Sha256::new();
+        hasher.update(code_verifier.as_bytes());
+        let hash = hasher.finalize();
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hash)
+      }
+      _ => {
+        return Err(HttpError::bad_request().with_error("code_challenge_method", INVALID_ERROR));
+      }
+    };
+
+    if computed_challenge != *code_challenge {
+      return Err(HttpError::unauthorized().with_error("code_verifier", INVALID_ERROR));
+    }
+  }
+
+  let user = match get_user_by_id(&state.pool, token_data.claims.basic_claims.sub).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -449,8 +490,8 @@ async fn authorization_code_grant(state: RouterState, code: String) -> Result<To
     &state.config,
     jwk_sql_row,
     user,
-    token_data.claims.aud,
-    token_data.claims.scope,
+    token_data.claims.basic_claims.aud,
+    token_data.claims.basic_claims.scope,
     TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
   )
   .await
@@ -536,6 +577,12 @@ async fn authorize_internal(
     }
     if let Some(registration) = &authorize_request.registration {
       ui_url_params.append_pair("registration", registration);
+    }
+    if let Some(code_challenge) = &authorize_request.code_challenge {
+      ui_url_params.append_pair("code_challenge", code_challenge);
+    }
+    if let Some(code_challenge_method) = &authorize_request.code_challenge_method {
+      ui_url_params.append_pair("code_challenge_method", code_challenge_method);
     }
   }
 
@@ -631,6 +678,57 @@ pub async fn user_info(
   axum::Json(authorization.claims).into_response()
 }
 
+#[utoipa::path(
+  post,
+  path = "/revoke",
+  tags = [TAG],
+  request_body(content = String, content_type = "application/x-www-form-urlencoded"),
+  responses(
+    (status = 200, description = "Token revoked"),
+    (status = 400, description = "Invalid request", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  )
+)]
+pub async fn revoke(State(_state): State<RouterState>) -> impl IntoResponse {
+  // TODO: Implement RFC 7009 token revocation
+  (StatusCode::NOT_IMPLEMENTED, "Not implemented").into_response()
+}
+
+#[utoipa::path(
+  post,
+  path = "/introspect",
+  tags = [TAG],
+  request_body(content = String, content_type = "application/x-www-form-urlencoded"),
+  responses(
+    (status = 200, description = "Token introspection result"),
+    (status = 400, description = "Invalid request", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  )
+)]
+pub async fn introspect(State(_state): State<RouterState>) -> impl IntoResponse {
+  // TODO: Implement RFC 7662 token introspection
+  (StatusCode::NOT_IMPLEMENTED, "Not implemented").into_response()
+}
+
+#[utoipa::path(
+  post,
+  path = "/device-authorize",
+  tags = [TAG],
+  request_body(content = String, content_type = "application/x-www-form-urlencoded"),
+  responses(
+    (status = 200, description = "Device authorization response"),
+    (status = 400, description = "Invalid request", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  )
+)]
+pub async fn device_authorize(State(_state): State<RouterState>) -> impl IntoResponse {
+  // TODO: Implement RFC 8628 device authorization
+  (StatusCode::NOT_IMPLEMENTED, "Not implemented").into_response()
+}
+
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(jwks))
@@ -641,5 +739,8 @@ pub fn create_router(state: RouterState) -> OpenApiRouter {
     .routes(routes!(post_authorize))
     .routes(routes!(authorize))
     .routes(routes!(register_client))
+    .routes(routes!(revoke))
+    .routes(routes!(introspect))
+    .routes(routes!(device_authorize))
     .with_state(state)
 }

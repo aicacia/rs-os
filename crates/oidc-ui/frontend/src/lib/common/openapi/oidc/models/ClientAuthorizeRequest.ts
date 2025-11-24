@@ -32,6 +32,18 @@ export interface ClientAuthorizeRequest {
      * @type {string}
      * @memberof ClientAuthorizeRequest
      */
+    codeChallenge?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ClientAuthorizeRequest
+     */
+    codeChallengeMethod?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ClientAuthorizeRequest
+     */
     redirectUri: string;
     /**
      * 
@@ -69,6 +81,8 @@ export function ClientAuthorizeRequestFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
+        'codeChallenge': json['code_challenge'] == null ? undefined : json['code_challenge'],
+        'codeChallengeMethod': json['code_challenge_method'] == null ? undefined : json['code_challenge_method'],
         'redirectUri': json['redirect_uri'],
         'responseType': ResponseTypeFromJSON(json['response_type']),
         'scope': json['scope'],
@@ -86,6 +100,8 @@ export function ClientAuthorizeRequestToJSONTyped(value?: ClientAuthorizeRequest
 
     return {
         
+        'code_challenge': value['codeChallenge'],
+        'code_challenge_method': value['codeChallengeMethod'],
         'redirect_uri': value['redirectUri'],
         'response_type': ResponseTypeToJSON(value['responseType']),
         'scope': value['scope'],

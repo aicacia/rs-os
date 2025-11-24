@@ -45,6 +45,18 @@ export interface AuthorizeRequest {
      * @type {string}
      * @memberof AuthorizeRequest
      */
+    codeChallenge?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeRequest
+     */
+    codeChallengeMethod?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeRequest
+     */
     nonce?: string | null;
     /**
      * 
@@ -109,6 +121,8 @@ export function AuthorizeRequestFromJSONTyped(json: any, ignoreDiscriminator: bo
     return {
         
         'clientId': json['client_id'],
+        'codeChallenge': json['code_challenge'] == null ? undefined : json['code_challenge'],
+        'codeChallengeMethod': json['code_challenge_method'] == null ? undefined : json['code_challenge_method'],
         'nonce': json['nonce'] == null ? undefined : json['nonce'],
         'redirectUri': json['redirect_uri'],
         'registration': json['registration'] == null ? undefined : json['registration'],
@@ -131,6 +145,8 @@ export function AuthorizeRequestToJSONTyped(value?: AuthorizeRequest | null, ign
     return {
         
         'client_id': value['clientId'],
+        'code_challenge': value['codeChallenge'],
+        'code_challenge_method': value['codeChallengeMethod'],
         'nonce': value['nonce'],
         'redirect_uri': value['redirectUri'],
         'registration': value['registration'],

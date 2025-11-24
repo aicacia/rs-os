@@ -58,6 +58,8 @@ export interface AuthorizeRequest {
     state?: string | null;
     nonce?: string | null;
     registration?: string | null;
+    codeChallenge?: string | null;
+    codeChallengeMethod?: string | null;
 }
 
 export interface EndSessionRequest {
@@ -81,6 +83,7 @@ export interface TokenRequest {
     username?: string;
     refreshToken?: string;
     code?: string;
+    codeVerifier?: string | null;
 }
 
 export interface UserInfoRequest {
@@ -104,6 +107,8 @@ export interface OidcApiInterface {
      * @param {string} [state] 
      * @param {string} [nonce] 
      * @param {string} [registration] 
+     * @param {string} [codeChallenge] 
+     * @param {string} [codeChallengeMethod] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OidcApiInterface
@@ -113,6 +118,18 @@ export interface OidcApiInterface {
     /**
      */
     authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
+    /**
+     * 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    deviceAuthorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+
+    /**
+     */
+    deviceAuthorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
     /**
      * 
@@ -128,6 +145,18 @@ export interface OidcApiInterface {
     /**
      */
     endSession(requestParameters: EndSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
+    /**
+     * 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    introspectRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+
+    /**
+     */
+    introspect(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
     /**
      * 
@@ -181,12 +210,25 @@ export interface OidcApiInterface {
 
     /**
      * 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    revokeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+
+    /**
+     */
+    revoke(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
+    /**
+     * 
      * @param {string} [grantType] 
      * @param {string} [password] 
      * @param {string} [scope] 
      * @param {string} [username] 
      * @param {string} [refreshToken] 
      * @param {string} [code] 
+     * @param {string} [codeVerifier] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OidcApiInterface
@@ -289,6 +331,14 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             queryParameters['registration'] = requestParameters['registration'];
         }
 
+        if (requestParameters['codeChallenge'] != null) {
+            queryParameters['code_challenge'] = requestParameters['codeChallenge'];
+        }
+
+        if (requestParameters['codeChallengeMethod'] != null) {
+            queryParameters['code_challenge_method'] = requestParameters['codeChallengeMethod'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
 
@@ -308,6 +358,32 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
      */
     async authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.authorizeRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     */
+    async deviceAuthorizeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/oidc/api/device-authorize`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     */
+    async deviceAuthorize(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.deviceAuthorizeRaw(initOverrides);
     }
 
     /**
@@ -353,6 +429,32 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
      */
     async endSession(requestParameters: EndSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.endSessionRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     */
+    async introspectRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/oidc/api/introspect`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     */
+    async introspect(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.introspectRaw(initOverrides);
     }
 
     /**
@@ -492,6 +594,32 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
+    async revokeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/oidc/api/revoke`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     */
+    async revoke(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.revokeRaw(initOverrides);
+    }
+
+    /**
+     */
     async tokenRaw(requestParameters: TokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Token>> {
         const queryParameters: any = {};
 
@@ -533,6 +661,10 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
         if (requestParameters['code'] != null) {
             formParams.append('code', requestParameters['code'] as any);
+        }
+
+        if (requestParameters['codeVerifier'] != null) {
+            formParams.append('code_verifier', requestParameters['codeVerifier'] as any);
         }
 
 

@@ -117,6 +117,43 @@ impl Claims for BasicClaims {
   }
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, Clone, ToSchema)]
+pub struct AuthorizationCodeClaims {
+  #[serde(flatten)]
+  pub basic_claims: BasicClaims,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub code_challenge: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub code_challenge_method: Option<String>,
+}
+
+impl Claims for AuthorizationCodeClaims {
+  fn r#type(&self) -> &str {
+    &self.basic_claims.r#type
+  }
+  fn exp(&self) -> i64 {
+    self.basic_claims.exp
+  }
+  fn iat(&self) -> i64 {
+    self.basic_claims.iat
+  }
+  fn nbf(&self) -> i64 {
+    self.basic_claims.nbf
+  }
+  fn iss(&self) -> &str {
+    &self.basic_claims.iss
+  }
+  fn aud(&self) -> &str {
+    &self.basic_claims.aud
+  }
+  fn sub(&self) -> i64 {
+    self.basic_claims.sub
+  }
+  fn scope(&self) -> &str {
+    &self.basic_claims.scope
+  }
+}
+
 #[derive(Serialize, Deserialize, Default, Clone, ToSchema)]
 pub struct OpenIdProfile {
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -196,7 +233,7 @@ impl From<UserInfoSQLRow> for OpenIdProfile {
 #[derive(Serialize, Deserialize, Default, Clone, ToSchema)]
 pub struct OpenIdClaims {
   #[serde(flatten)]
-  pub claims: BasicClaims,
+  pub basic_claims: BasicClaims,
   #[serde(flatten)]
   pub profile: OpenIdProfile,
 }
@@ -205,27 +242,27 @@ unsafe impl Send for OpenIdClaims {}
 
 impl Claims for OpenIdClaims {
   fn r#type(&self) -> &str {
-    &self.claims.r#type
+    &self.basic_claims.r#type
   }
   fn exp(&self) -> i64 {
-    self.claims.exp
+    self.basic_claims.exp
   }
   fn iat(&self) -> i64 {
-    self.claims.iat
+    self.basic_claims.iat
   }
   fn nbf(&self) -> i64 {
-    self.claims.nbf
+    self.basic_claims.nbf
   }
   fn iss(&self) -> &str {
-    &self.claims.iss
+    &self.basic_claims.iss
   }
   fn aud(&self) -> &str {
-    &self.claims.aud
+    &self.basic_claims.aud
   }
   fn sub(&self) -> i64 {
-    self.claims.sub
+    self.basic_claims.sub
   }
   fn scope(&self) -> &str {
-    &self.claims.scope
+    &self.basic_claims.scope
   }
 }
