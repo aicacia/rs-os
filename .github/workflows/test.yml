@@ -42,6 +42,10 @@ jobs:
             ${{ runner.os }}-node-
       - name: Install frontend dependencies
         working-directory: crates/oidc-ui/frontend
+        env:
+          PUBLIC_OS_OIDC_API_URL: "http://localhost:3000/oidc/api"
+          PUBLIC_URL: "http://localhost:5173/oidc"
+          VITE_BASE_PATH: "/"
         run: pnpm install --frozen-lockfile
       - name: Build frontend
         working-directory: crates/oidc-ui/frontend
