@@ -45,7 +45,7 @@ jobs:
         env:
           PUBLIC_OS_OIDC_API_URL: "http://localhost:3000/oidc/api"
           PUBLIC_URL: "http://localhost:5173/oidc"
-          VITE_BASE_PATH: "/"
+          VITE_BASE_PATH: "/oidc"
         run: |
           echo "PUBLIC_OS_OIDC_API_URL=${PUBLIC_OS_OIDC_API_URL}" > .env
           echo "PUBLIC_URL=${PUBLIC_URL}" >> .env
