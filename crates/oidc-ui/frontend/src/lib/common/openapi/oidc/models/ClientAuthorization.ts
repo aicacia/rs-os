@@ -12,27 +12,45 @@
  * Do not edit the class manually.
  */
 
-import type { AuthorizationCode } from './AuthorizationCode';
-import {
-    instanceOfAuthorizationCode,
-    AuthorizationCodeFromJSON,
-    AuthorizationCodeFromJSONTyped,
-    AuthorizationCodeToJSON,
-} from './AuthorizationCode';
-import type { ClientAuthorizationOneOf } from './ClientAuthorizationOneOf';
-import {
-    instanceOfClientAuthorizationOneOf,
-    ClientAuthorizationOneOfFromJSON,
-    ClientAuthorizationOneOfFromJSONTyped,
-    ClientAuthorizationOneOfToJSON,
-} from './ClientAuthorizationOneOf';
-
+import { mapValues } from '../runtime';
 /**
- * @type ClientAuthorization
  * 
  * @export
+ * @interface ClientAuthorization
  */
-export type ClientAuthorization = AuthorizationCode | ClientAuthorizationOneOf;
+export interface ClientAuthorization {
+    /**
+     * 
+     * @type {string}
+     * @memberof ClientAuthorization
+     */
+    code: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ClientAuthorization
+     */
+    type: ClientAuthorizationTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const ClientAuthorizationTypeEnum = {
+    AuthorizationCode: 'authorization_code'
+} as const;
+export type ClientAuthorizationTypeEnum = typeof ClientAuthorizationTypeEnum[keyof typeof ClientAuthorizationTypeEnum];
+
+
+/**
+ * Check if a given object implements the ClientAuthorization interface.
+ */
+export function instanceOfClientAuthorization(value: object): value is ClientAuthorization {
+    if (!('code' in value) || value['code'] === undefined) return false;
+    if (!('type' in value) || value['type'] === undefined) return false;
+    return true;
+}
 
 export function ClientAuthorizationFromJSON(json: any): ClientAuthorization {
     return ClientAuthorizationFromJSONTyped(json, false);
@@ -42,19 +60,14 @@ export function ClientAuthorizationFromJSONTyped(json: any, ignoreDiscriminator:
     if (json == null) {
         return json;
     }
-    if (typeof json !== 'object') {
-        return json;
-    }
-    if (instanceOfAuthorizationCode(json)) {
-        return AuthorizationCodeFromJSONTyped(json, true);
-    }
-    if (instanceOfClientAuthorizationOneOf(json)) {
-        return ClientAuthorizationOneOfFromJSONTyped(json, true);
-    }
-    return {} as any;
+    return {
+        
+        'code': json['code'],
+        'type': json['type'],
+    };
 }
 
-export function ClientAuthorizationToJSON(json: any): any {
+export function ClientAuthorizationToJSON(json: any): ClientAuthorization {
     return ClientAuthorizationToJSONTyped(json, false);
 }
 
@@ -62,15 +75,11 @@ export function ClientAuthorizationToJSONTyped(value?: ClientAuthorization | nul
     if (value == null) {
         return value;
     }
-    if (typeof value !== 'object') {
-        return value;
-    }
-    if (instanceOfAuthorizationCode(value)) {
-        return AuthorizationCodeToJSON(value as AuthorizationCode);
-    }
-    if (instanceOfClientAuthorizationOneOf(value)) {
-        return ClientAuthorizationOneOfToJSON(value as ClientAuthorizationOneOf);
-    }
-    return {};
+
+    return {
+        
+        'code': value['code'],
+        'type': value['type'],
+    };
 }
 

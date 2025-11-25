@@ -35,7 +35,6 @@
 		}
 
 		await signInUsernamePassword(value.email, value.password);
-		await goto(resolve('/'));
 	}
 </script>
 

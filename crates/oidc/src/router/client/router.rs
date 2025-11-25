@@ -424,9 +424,8 @@ pub async fn client_authorize(
       .into_response();
   }
 
-  let authorization_response = match authorization_request.response_type {
-    ResponseType::None => todo!(),
-    ResponseType::Code => match create_user_authorization_code_token(
+  let authorization_code_token = if authorization_request.response_type.needs_code() {
+    match create_user_authorization_code_token(
       &state.pool,
       &state.config,
       user_authorization.user_sql_row.id,
@@ -437,20 +436,25 @@ pub async fn client_authorize(
     )
     .await
     {
-      Ok(code) => ClientAuthorization::AuthorizationCode { code },
+      Ok(code) => Some(code),
       Err(e) => {
         return e.into_response();
       }
-    },
-    ResponseType::Token => todo!(),
-    ResponseType::IdToken => todo!(),
-    ResponseType::CodeToken => todo!(),
-    ResponseType::CodeIdToken => todo!(),
-    ResponseType::IdTokenToken => todo!(),
-    ResponseType::CodeIdTokenToken => todo!(),
+    }
+  } else {
+    None
   };
 
-  axum::Json(authorization_response).into_response()
+  if let Some(authorization_code_token) = authorization_code_token {
+    axum::Json(ClientAuthorization::AuthorizationCode {
+      code: authorization_code_token,
+    })
+    .into_response()
+  } else {
+    HttpError::bad_request()
+      .with_error("response_type", INVALID_ERROR)
+      .into_response()
+  }
 }
 
 pub fn create_router(state: RouterState) -> OpenApiRouter {

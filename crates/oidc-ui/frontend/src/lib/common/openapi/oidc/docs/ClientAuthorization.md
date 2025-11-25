@@ -8,15 +8,6 @@ Name | Type
 ------------ | -------------
 `code` | string
 `type` | string
-`accessToken` | string
-`expiresIn` | number
-`idToken` | string
-`issuedAt` | Date
-`issuedTokenType` | string
-`refreshToken` | string
-`refreshTokenExpiresIn` | number
-`scope` | string
-`tokenType` | string
 
 ## Example
 
@@ -27,15 +18,6 @@ import type { ClientAuthorization } from ''
 const example = {
   "code": null,
   "type": null,
-  "accessToken": null,
-  "expiresIn": null,
-  "idToken": null,
-  "issuedAt": null,
-  "issuedTokenType": null,
-  "refreshToken": null,
-  "refreshTokenExpiresIn": null,
-  "scope": null,
-  "tokenType": null,
 } satisfies ClientAuthorization
 
 console.log(example)

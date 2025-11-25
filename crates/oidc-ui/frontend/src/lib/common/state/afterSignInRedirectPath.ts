@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { localStorageState } from '../util/localStorageState.svelte';
 
 const afterSigninRedirectPath = localStorageState<string | null>(
@@ -11,9 +12,12 @@ export function setAfterSigninRedirectPathFromURL(url: URL) {
 }
 
 export async function afterSigninRedirect() {
-	if (afterSigninRedirectPath.value) {
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(afterSigninRedirectPath.value);
+	const path = afterSigninRedirectPath.value;
+	if (path) {
 		afterSigninRedirectPath.value = null;
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		await goto(path);
+	} else {
+		await goto(resolve('/'));
 	}
 }

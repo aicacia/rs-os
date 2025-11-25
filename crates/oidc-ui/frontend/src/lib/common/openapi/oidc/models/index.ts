@@ -1,13 +1,11 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from './AssignUserRoleRequest';
-export * from './AuthorizationCode';
 export * from './AuthorizeRequest';
 export * from './BasicClaims';
 export * from './Client';
 export * from './ClientAllowed';
 export * from './ClientAuthorization';
-export * from './ClientAuthorizationOneOf';
 export * from './ClientAuthorizeRequest';
 export * from './ClientRegisterRequest';
 export * from './CreateUserEmailRequest';

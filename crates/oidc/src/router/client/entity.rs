@@ -86,10 +86,4 @@ pub enum ClientAuthorization {
   #[serde(rename = "authorization_code")]
   #[schema(title = "AuthorizationCode")]
   AuthorizationCode { code: String },
-  #[serde(rename = "authorization_code")]
-  #[schema(title = "AuthorizationImplicit")]
-  Implicit {
-    #[serde(flatten)]
-    token: Token,
-  },
 }

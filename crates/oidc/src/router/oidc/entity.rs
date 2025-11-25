@@ -146,6 +146,36 @@ impl ResponseType {
       ResponseType::CodeIdTokenToken => "code id_token token",
     }
   }
+
+  pub fn needs_code(&self) -> bool {
+    matches!(
+      self,
+      ResponseType::Code
+        | ResponseType::CodeToken
+        | ResponseType::CodeIdToken
+        | ResponseType::CodeIdTokenToken
+    )
+  }
+
+  pub fn needs_id_token(&self) -> bool {
+    matches!(
+      self,
+      ResponseType::IdToken
+        | ResponseType::CodeIdToken
+        | ResponseType::IdTokenToken
+        | ResponseType::CodeIdTokenToken
+    )
+  }
+
+  pub fn needs_token(&self) -> bool {
+    matches!(
+      self,
+      ResponseType::Token
+        | ResponseType::CodeToken
+        | ResponseType::IdTokenToken
+        | ResponseType::CodeIdTokenToken
+    )
+  }
 }
 
 #[derive(Deserialize, ToSchema, IntoParams)]
