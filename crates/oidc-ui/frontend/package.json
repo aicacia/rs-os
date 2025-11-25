@@ -12,7 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"openapi-oidc": "rm -rf src/lib/common/openapi/oidc && openapi-generator-cli generate -i http://localhost:3000/oidc/api/openapi.json -g typescript-fetch -o src/lib/common/openapi/oidc --type-mappings=DateTime=Date --additional-properties=supportsES6=true,withInterfaces=true,useSingleRequestParameter=true"
+		"openapi-oidc": "rm -rf src/lib/common/openapi/oidc && openapi-generator-cli generate -i http://localhost:3000/oidc/api/openapi.json -g typescript-fetch -o src/lib/common/openapi/oidc --type-mappings=DateTime=Date --additional-properties=supportsES6=true,withInterfaces=true,useSingleRequestParameter=true",
+		"postinstall": "svelte-kit sync"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.1",
