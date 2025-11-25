@@ -15,7 +15,7 @@ use crate::{
   router::{
     common::{
       constants::{
-        SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE_NUMBER, SCOPE_PROFILE,
+        SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE, SCOPE_PROFILE,
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
       },
       entity::{AuthorizationCodeClaims, BasicClaims, Claims, OpenIdClaims, OpenIdProfile, Token},
@@ -99,7 +99,7 @@ pub(crate) async fn create_user_token(
 
   let show_profile = claims.has_scope(SCOPE_PROFILE);
   let show_email = claims.has_scope(SCOPE_EMAIL);
-  let show_phone_number = claims.has_scope(SCOPE_PHONE_NUMBER);
+  let show_phone_number = claims.has_scope(SCOPE_PHONE);
 
   let mut id_token = None;
   if show_profile || show_email || show_phone_number {
@@ -146,8 +146,8 @@ pub(crate) async fn create_user_token(
     if show_phone_number {
       match get_user_primary_phone_number(pool, user.id).await {
         Ok(Some(phone_number)) => {
-          id_claims.profile.phone_number_verified = Some(phone_number.is_verified());
-          id_claims.profile.phone_number = Some(phone_number.phone_number);
+          id_claims.profile.phone_verified = Some(phone_number.is_verified());
+          id_claims.profile.phone = Some(phone_number.phone_number);
         }
         Ok(None) => {}
         Err(e) => {

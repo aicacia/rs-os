@@ -19,20 +19,21 @@ use crate::{
     jwk::sql::{get_jwk_for_sign_and_verify, list_jwks},
   },
   model::{
-    client::sql::{get_client_by_client_id, upsert_client},
+    client::sql::{ClientSQLRow, get_client_by_client_id, upsert_client},
     user::sql::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
     },
   },
   router::{
-    common::permissions::Permission,
     common::{
       constants::{
+        SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_OPENID, SCOPE_PHONE, SCOPE_PROFILE,
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
         TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
       },
       entity::{AuthorizationCodeClaims, BasicClaims, OpenIdClaims, Token},
       helper::create_user_token,
+      permissions::Permission,
     },
     entity::RouterState,
     error::{
@@ -48,8 +49,8 @@ use crate::{
     oidc::{
       constants::TAG,
       entity::{
-        AuthorizeRequest, Client, ClientRegisterRequest, EndSessionRequest, JWK, JWKs,
-        OpenIdConfiguration, TokenRequest,
+        AuthorizeRequest, Client, ClientAuthentication, ClientRegisterRequest, EndSessionRequest,
+        JWK, JWKs, OpenIdConfiguration, TokenRequest,
       },
     },
   },
@@ -164,16 +165,18 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     subject_types_supported: vec!["public".to_owned(), "pairwise".to_owned()],
     id_token_signing_alg_values_supported: signing_algs.into_iter().collect(),
     scopes_supported: vec![
-      "openid".to_owned(),
-      "profile".to_owned(),
-      "address".to_owned(),
-      "offline".to_owned(),
-      "email".to_owned(),
-      "phone_number".to_owned(),
+      SCOPE_OPENID.to_owned(),
+      SCOPE_PROFILE.to_owned(),
+      SCOPE_ADDRESS.to_owned(),
+      SCOPE_OFFLINE.to_owned(),
+      SCOPE_EMAIL.to_owned(),
+      SCOPE_PHONE.to_owned(),
     ],
     token_endpoint_auth_methods_supported: vec![
       "client_secret_post".to_owned(),
       "client_secret_basic".to_owned(),
+      "client_secret_jwt".to_owned(),
+      "private_key_jwt".to_owned(),
       "none".to_owned(),
     ],
     claims_supported: vec![
@@ -187,8 +190,8 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
       "given_name".to_owned(),
       "email".to_owned(),
       "email_verified".to_owned(),
-      "phone_number".to_owned(),
-      "phone_number_verified".to_owned(),
+      "phone".to_owned(),
+      "phone_verified".to_owned(),
     ],
     code_challenge_methods_supported: vec!["S256".to_owned()],
     grant_types_supported: vec![
@@ -318,12 +321,17 @@ pub async fn token(
       scope,
       username,
       password,
-    } => password_grant(state, scope, username, password).await,
-    TokenRequest::RefreshToken { refresh_token } => refresh_token_grant(state, refresh_token).await,
+      client_auth,
+    } => password_grant(state, scope, username, password, client_auth).await,
+    TokenRequest::RefreshToken {
+      refresh_token,
+      client_auth,
+    } => refresh_token_grant(state, refresh_token, client_auth).await,
     TokenRequest::AuthorizationCode {
       code,
       code_verifier,
-    } => authorization_code_grant(state, code, code_verifier).await,
+      client_auth,
+    } => authorization_code_grant(state, code, code_verifier, client_auth).await,
   };
   match token_result {
     Ok(token) => axum::Json(token).into_response(),
@@ -336,6 +344,7 @@ async fn password_grant(
   scope: String,
   username: String,
   password: String,
+  _client_auth: crate::router::oidc::entity::ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let user = match get_user_by_username_or_primary_email(&state.pool, &username).await {
     Ok(Some(user)) => user,
@@ -395,6 +404,7 @@ async fn password_grant(
 async fn refresh_token_grant(
   state: RouterState,
   refresh_token: String,
+  _client_auth: crate::router::oidc::entity::ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let (token_data, jwk_sql_row) =
     parse_authorization::<BasicClaims>(&state.pool, &state.config, &refresh_token).await?;
@@ -428,6 +438,7 @@ async fn authorization_code_grant(
   state: RouterState,
   code: String,
   code_verifier: Option<String>,
+  client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let (token_data, jwk_sql_row) =
     parse_authorization::<AuthorizationCodeClaims>(&state.pool, &state.config, &code).await?;
@@ -435,6 +446,10 @@ async fn authorization_code_grant(
   if token_data.claims.basic_claims.r#type != TOKEN_TYPE_AUTHORIZATION_CODE {
     return Err(HttpError::unauthorized());
   }
+
+  let client_id = token_data.claims.basic_claims.aud;
+  let _client_sql_row =
+    validate_client_authentication(&state.pool, &client_id, &client_auth).await?;
 
   if let Some(code_challenge) = &token_data.claims.code_challenge {
     let code_verifier = match code_verifier {
@@ -481,11 +496,64 @@ async fn authorization_code_grant(
     &state.config,
     jwk_sql_row,
     user,
-    token_data.claims.basic_claims.aud,
+    client_id,
     token_data.claims.basic_claims.scope,
     TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
   )
   .await
+}
+
+pub(crate) async fn validate_client_authentication(
+  pool: &sqlx::AnyPool,
+  client_id: &str,
+  client_auth: &ClientAuthentication,
+) -> Result<ClientSQLRow, HttpError> {
+  let client_sql_row = match get_client_by_client_id(pool, client_id).await {
+    Ok(Some(client)) => client,
+    Ok(None) => {
+      return Err(HttpError::not_found().with_error("client", NOT_FOUND_ERROR));
+    }
+    Err(e) => {
+      log::error!("failed to fetch client: {}", e);
+      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+    }
+  };
+
+  if !client_sql_row.is_active() {
+    return Err(HttpError::forbidden().with_error("client", NOT_ALLOWED_ERROR));
+  }
+
+  match client_sql_row.auth_method.as_str() {
+    "client_secret_post" | "client_secret_basic" => {
+      if let Some(auth_client_id) = &client_auth.client_id {
+        if auth_client_id != client_id {
+          return Err(HttpError::unauthorized().with_error("client_id", INVALID_ERROR));
+        }
+      }
+
+      match &client_auth.client_secret {
+        Some(provided_secret) => {
+          if provided_secret != &client_sql_row.client_secret {
+            return Err(HttpError::unauthorized().with_error("client_secret", INVALID_ERROR));
+          }
+        }
+        None => {
+          return Err(HttpError::bad_request().with_error("client_secret", REQUIRED_ERROR));
+        }
+      }
+    }
+    "none" => {}
+    "client_secret_jwt" | "private_key_jwt" => {
+      log::warn!("JWT-based client authentication not yet implemented");
+      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+    }
+    _ => {
+      log::error!("unsupported auth_method: {}", client_sql_row.auth_method);
+      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+    }
+  }
+
+  Ok(client_sql_row)
 }
 
 #[utoipa::path(

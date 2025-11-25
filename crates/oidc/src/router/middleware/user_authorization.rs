@@ -16,7 +16,7 @@ use crate::{
   router::{
     common::{
       constants::{
-        AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE_NUMBER, SCOPE_PROFILE,
+        AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE, SCOPE_PROFILE,
         TOKEN_TYPE_BEARER,
       },
       entity::{BasicClaims, Claims},
@@ -42,7 +42,7 @@ impl UserAuthorization {
 
     let has_profile = self.claims.has_scope(SCOPE_PROFILE);
     let has_email = self.claims.has_scope(SCOPE_EMAIL);
-    let has_phone_number = self.claims.has_scope(SCOPE_PHONE_NUMBER);
+    let has_phone_number = self.claims.has_scope(SCOPE_PHONE);
     let has_address = self.claims.has_scope(SCOPE_ADDRESS);
 
     if has_profile {

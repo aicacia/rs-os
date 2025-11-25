@@ -25,8 +25,8 @@ Name | Type
 `middleName` | string
 `name` | string
 `nickname` | string
-`phoneNumber` | string
-`phoneNumberVerified` | boolean
+`phone` | string
+`phoneVerified` | boolean
 `preferredUsername` | string
 `profilePicture` | string
 `website` | string
@@ -58,8 +58,8 @@ const example = {
   "middleName": null,
   "name": null,
   "nickname": null,
-  "phoneNumber": null,
-  "phoneNumberVerified": null,
+  "phone": null,
+  "phoneVerified": null,
   "preferredUsername": null,
   "profilePicture": null,
   "website": null,

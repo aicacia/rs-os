@@ -77,10 +77,14 @@ export interface RegisterClientRequest {
 }
 
 export interface TokenRequest {
-    grantType?: TokenGrantTypeEnum;
+    clientAssertion?: string | null;
+    clientAssertionType?: string | null;
+    clientId?: string | null;
+    clientSecret?: string | null;
     password?: string;
     scope?: string;
     username?: string;
+    grantType?: TokenGrantTypeEnum;
     refreshToken?: string;
     code?: string;
     codeVerifier?: string | null;
@@ -222,10 +226,14 @@ export interface OidcApiInterface {
 
     /**
      * 
-     * @param {string} [grantType] 
+     * @param {string} [clientAssertion] 
+     * @param {string} [clientAssertionType] 
+     * @param {string} [clientId] 
+     * @param {string} [clientSecret] 
      * @param {string} [password] 
      * @param {string} [scope] 
      * @param {string} [username] 
+     * @param {string} [grantType] 
      * @param {string} [refreshToken] 
      * @param {string} [code] 
      * @param {string} [codeVerifier] 
@@ -639,8 +647,20 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             formParams = new URLSearchParams();
         }
 
-        if (requestParameters['grantType'] != null) {
-            formParams.append('grant_type', requestParameters['grantType'] as any);
+        if (requestParameters['clientAssertion'] != null) {
+            formParams.append('client_assertion', requestParameters['clientAssertion'] as any);
+        }
+
+        if (requestParameters['clientAssertionType'] != null) {
+            formParams.append('client_assertion_type', requestParameters['clientAssertionType'] as any);
+        }
+
+        if (requestParameters['clientId'] != null) {
+            formParams.append('client_id', requestParameters['clientId'] as any);
+        }
+
+        if (requestParameters['clientSecret'] != null) {
+            formParams.append('client_secret', requestParameters['clientSecret'] as any);
         }
 
         if (requestParameters['password'] != null) {
@@ -653,6 +673,10 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
         if (requestParameters['username'] != null) {
             formParams.append('username', requestParameters['username'] as any);
+        }
+
+        if (requestParameters['grantType'] != null) {
+            formParams.append('grant_type', requestParameters['grantType'] as any);
         }
 
         if (requestParameters['refreshToken'] != null) {

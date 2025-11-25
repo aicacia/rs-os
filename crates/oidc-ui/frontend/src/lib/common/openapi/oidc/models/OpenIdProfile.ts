@@ -90,13 +90,13 @@ export interface OpenIdProfile {
      * @type {string}
      * @memberof OpenIdProfile
      */
-    phoneNumber?: string | null;
+    phone?: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof OpenIdProfile
      */
-    phoneNumberVerified?: boolean | null;
+    phoneVerified?: boolean | null;
     /**
      * 
      * @type {string}
@@ -151,8 +151,8 @@ export function OpenIdProfileFromJSONTyped(json: any, ignoreDiscriminator: boole
         'middleName': json['middle_name'] == null ? undefined : json['middle_name'],
         'name': json['name'] == null ? undefined : json['name'],
         'nickname': json['nickname'] == null ? undefined : json['nickname'],
-        'phoneNumber': json['phone_number'] == null ? undefined : json['phone_number'],
-        'phoneNumberVerified': json['phone_number_verified'] == null ? undefined : json['phone_number_verified'],
+        'phone': json['phone'] == null ? undefined : json['phone'],
+        'phoneVerified': json['phone_verified'] == null ? undefined : json['phone_verified'],
         'preferredUsername': json['preferred_username'] == null ? undefined : json['preferred_username'],
         'profilePicture': json['profile_picture'] == null ? undefined : json['profile_picture'],
         'website': json['website'] == null ? undefined : json['website'],
@@ -182,8 +182,8 @@ export function OpenIdProfileToJSONTyped(value?: OpenIdProfile | null, ignoreDis
         'middle_name': value['middleName'],
         'name': value['name'],
         'nickname': value['nickname'],
-        'phone_number': value['phoneNumber'],
-        'phone_number_verified': value['phoneNumberVerified'],
+        'phone': value['phone'],
+        'phone_verified': value['phoneVerified'],
         'preferred_username': value['preferredUsername'],
         'profile_picture': value['profilePicture'],
         'website': value['website'],

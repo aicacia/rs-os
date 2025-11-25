@@ -12,6 +12,6 @@ pub const AUTHORIZATION_HEADER: &str = "Authorization";
 pub const SCOPE_OPENID: &str = "openid";
 pub const SCOPE_PROFILE: &str = "profile";
 pub const SCOPE_EMAIL: &str = "email";
-pub const SCOPE_PHONE_NUMBER: &str = "phone_number";
+pub const SCOPE_PHONE: &str = "phone";
 pub const SCOPE_ADDRESS: &str = "address";
 pub const SCOPE_OFFLINE: &str = "offline";

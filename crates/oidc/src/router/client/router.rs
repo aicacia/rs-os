@@ -21,7 +21,6 @@ use crate::{
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR},
     middleware::user_authorization::UserAuthorization,
-    oidc::entity::ResponseType,
   },
 };
 

@@ -185,9 +185,9 @@ pub struct OpenIdProfile {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub locale: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub phone_number: Option<String>,
+  pub phone: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub phone_number_verified: Option<bool>,
+  pub phone_verified: Option<bool>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub address: Option<String>,
 }
@@ -224,8 +224,8 @@ impl From<UserInfoSQLRow> for OpenIdProfile {
       address: user_info_sql_row.address,
       email: None,
       email_verified: None,
-      phone_number: None,
-      phone_number_verified: None,
+      phone: None,
+      phone_verified: None,
     }
   }
 }

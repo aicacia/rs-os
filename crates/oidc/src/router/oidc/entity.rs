@@ -44,6 +44,18 @@ pub struct JWKs {
 }
 
 #[derive(Deserialize, ToSchema)]
+pub struct ClientAuthentication {
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub client_id: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub client_secret: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub client_assertion: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub client_assertion_type: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
 #[serde(tag = "grant_type")]
 pub enum TokenRequest {
   #[serde(rename = "password")]
@@ -55,15 +67,26 @@ pub enum TokenRequest {
     username: String,
     #[schema(example = "admin")]
     password: String,
+    #[serde(flatten)]
+    #[schema(inline)]
+    client_auth: ClientAuthentication,
   },
   #[serde(rename = "refresh_token")]
   #[schema(title = "TokenRequestRefreshToken")]
-  RefreshToken { refresh_token: String },
+  RefreshToken {
+    refresh_token: String,
+    #[serde(flatten)]
+    #[schema(inline)]
+    client_auth: ClientAuthentication,
+  },
   #[serde(rename = "authorization_code")]
   #[schema(title = "TokenRequestAuthorizationCode")]
   AuthorizationCode {
     code: String,
     code_verifier: Option<String>,
+    #[serde(flatten)]
+    #[schema(inline)]
+    client_auth: ClientAuthentication,
   },
 }
 

@@ -3,9 +3,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{
-  core::helper::json_to_string_vec,
-  model::client::sql::ClientSQLRow,
-  router::{common::entity::Token, oidc::entity::ResponseType},
+  core::helper::json_to_string_vec, model::client::sql::ClientSQLRow,
+  router::oidc::entity::ResponseType,
 };
 
 #[derive(Serialize, ToSchema, Default)]

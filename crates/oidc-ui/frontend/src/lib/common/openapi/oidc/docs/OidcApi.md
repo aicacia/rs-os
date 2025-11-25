@@ -628,7 +628,7 @@ No authorization required
 
 ## token
 
-> Token token(grantType, password, scope, username, refreshToken, code, codeVerifier)
+> Token token(clientAssertion, clientAssertionType, clientId, clientSecret, password, scope, username, grantType, refreshToken, code, codeVerifier)
 
 
 
@@ -647,13 +647,21 @@ async function example() {
 
   const body = {
     // string (optional)
-    grantType: grantType_example,
+    clientAssertion: clientAssertion_example,
+    // string (optional)
+    clientAssertionType: clientAssertionType_example,
+    // string (optional)
+    clientId: clientId_example,
+    // string (optional)
+    clientSecret: clientSecret_example,
     // string (optional)
     password: password_example,
     // string (optional)
     scope: scope_example,
     // string (optional)
     username: username_example,
+    // string (optional)
+    grantType: grantType_example,
     // string (optional)
     refreshToken: refreshToken_example,
     // string (optional)
@@ -679,10 +687,14 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **grantType** | `authorization_code` |  | [Optional] [Defaults to `undefined`] [Enum: authorization_code] |
+| **clientAssertion** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **clientAssertionType** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **clientId** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **clientSecret** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **password** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **scope** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **username** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **grantType** | `authorization_code` |  | [Optional] [Defaults to `undefined`] [Enum: authorization_code] |
 | **refreshToken** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **code** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **codeVerifier** | `string` |  | [Optional] [Defaults to `undefined`] |
