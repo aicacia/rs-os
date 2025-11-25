@@ -36,16 +36,22 @@ jobs:
       - name: Cache node modules (frontend only)
         uses: actions/cache@v3
         with:
-          path: crates/oidc-ui/frontend/node_modules
+          path: crates/oidc-ui/frontend/node_modulesf
           key: ${{ runner.os }}-node-${{ hashFiles('crates/oidc-ui/frontend/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
-      - name: Install frontend dependencies
+      - name: Create .env file for frontend
         working-directory: crates/oidc-ui/frontend
         env:
           PUBLIC_OS_OIDC_API_URL: "http://localhost:3000/oidc/api"
           PUBLIC_URL: "http://localhost:5173/oidc"
           VITE_BASE_PATH: "/"
+        run: |
+          echo "PUBLIC_OS_OIDC_API_URL=${PUBLIC_OS_OIDC_API_URL}" > .env
+          echo "PUBLIC_URL=${PUBLIC_URL}" >> .env
+          echo "VITE_BASE_PATH=${VITE_BASE_PATH}" >> .env
+      - name: Install frontend dependencies
+        working-directory: crates/oidc-ui/frontend
         run: pnpm install --frozen-lockfile
       - name: Build frontend
         working-directory: crates/oidc-ui/frontend
