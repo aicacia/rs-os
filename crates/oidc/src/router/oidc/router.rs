@@ -38,7 +38,7 @@ use crate::{
     entity::RouterState,
     error::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
-      REQUIRED_ERROR,
+      NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
     },
     form::Form,
     json::Json,
@@ -47,7 +47,9 @@ use crate::{
       user_authorization::UserAuthorization,
     },
     oidc::{
-      constants::TAG,
+      constants::{
+        GRANT_TYPE_AUTHORIZATION_CODE, GRANT_TYPE_PASSWORD, GRANT_TYPE_REFRESH_TOKEN, TAG,
+      },
       entity::{
         AuthorizeRequest, Client, ClientAuthentication, ClientRegisterRequest, EndSessionRequest,
         JWK, JWKs, OpenIdConfiguration, TokenRequest,
@@ -348,7 +350,8 @@ async fn password_grant(
 ) -> Result<Token, HttpError> {
   let client_id = if let Some(client_id) = &client_auth.client_id {
     let _client_sql_row =
-      validate_client_authentication(&state.pool, client_id, &client_auth).await?;
+      validate_client_authentication(&state.pool, client_id, &client_auth, GRANT_TYPE_PASSWORD)
+        .await?;
     client_id.to_owned()
   } else {
     state.config.api_url()
@@ -429,8 +432,13 @@ async fn refresh_token_grant(
   } else {
     token_data.claims.aud.to_owned()
   };
-  let _client_sql_row =
-    validate_client_authentication(&state.pool, &client_id, &client_auth).await?;
+  let _client_sql_row = validate_client_authentication(
+    &state.pool,
+    &client_id,
+    &client_auth,
+    GRANT_TYPE_REFRESH_TOKEN,
+  )
+  .await?;
 
   let user = match get_user_by_id(&state.pool, token_data.claims.sub).await {
     Ok(Some(user)) => user,
@@ -467,8 +475,13 @@ async fn authorization_code_grant(
   }
 
   let client_id = token_data.claims.basic_claims.aud;
-  let _client_sql_row =
-    validate_client_authentication(&state.pool, &client_id, &client_auth).await?;
+  let _client_sql_row = validate_client_authentication(
+    &state.pool,
+    &client_id,
+    &client_auth,
+    GRANT_TYPE_AUTHORIZATION_CODE,
+  )
+  .await?;
 
   if let Some(code_challenge) = &token_data.claims.code_challenge {
     let code_verifier = match code_verifier {
@@ -526,6 +539,7 @@ pub(crate) async fn validate_client_authentication(
   pool: &sqlx::AnyPool,
   client_id: &str,
   client_auth: &ClientAuthentication,
+  grant_type: &str,
 ) -> Result<ClientSQLRow, HttpError> {
   let client_sql_row = match get_client_by_client_id(pool, client_id).await {
     Ok(Some(client)) => client,
@@ -537,6 +551,11 @@ pub(crate) async fn validate_client_authentication(
       return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
     }
   };
+
+  let grant_types_vec: Vec<String> = json_to_string_vec(&client_sql_row.grant_types);
+  if !grant_types_vec.contains(&grant_type.to_string()) {
+    return Err(HttpError::bad_request().with_error("grant_type", NOT_ALLOWED_ERROR));
+  }
 
   if !client_sql_row.is_active() {
     return Err(HttpError::forbidden().with_error("client", NOT_ALLOWED_ERROR));
@@ -564,11 +583,11 @@ pub(crate) async fn validate_client_authentication(
     "none" => {}
     "client_secret_jwt" | "private_key_jwt" => {
       log::warn!("JWT-based client authentication not yet implemented");
-      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+      return Err(HttpError::bad_request().with_error("auth_method", NOT_SUPPORTED_ERROR));
     }
     _ => {
       log::error!("unsupported auth_method: {}", client_sql_row.auth_method);
-      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+      return Err(HttpError::bad_request().with_error("auth_method", NOT_ALLOWED_ERROR));
     }
   }
 
