@@ -344,8 +344,16 @@ async fn password_grant(
   scope: String,
   username: String,
   password: String,
-  _client_auth: crate::router::oidc::entity::ClientAuthentication,
+  client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
+  let client_id = if let Some(client_id) = &client_auth.client_id {
+    let _client_sql_row =
+      validate_client_authentication(&state.pool, client_id, &client_auth).await?;
+    client_id.to_owned()
+  } else {
+    state.config.api_url()
+  };
+
   let user = match get_user_by_username_or_primary_email(&state.pool, &username).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR)),
@@ -394,7 +402,7 @@ async fn password_grant(
     &state.config,
     jwk,
     user,
-    state.config.api_url(),
+    client_id,
     scope,
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
   )
@@ -404,7 +412,7 @@ async fn password_grant(
 async fn refresh_token_grant(
   state: RouterState,
   refresh_token: String,
-  _client_auth: crate::router::oidc::entity::ClientAuthentication,
+  client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let (token_data, jwk_sql_row) =
     parse_authorization::<BasicClaims>(&state.pool, &state.config, &refresh_token).await?;
@@ -412,6 +420,17 @@ async fn refresh_token_grant(
   if token_data.claims.r#type != TOKEN_TYPE_REFRESH {
     return Err(HttpError::unauthorized());
   }
+
+  let client_id = if let Some(client_id) = &client_auth.client_id {
+    if client_id != &token_data.claims.aud {
+      return Err(HttpError::unauthorized().with_error("client_id", INVALID_ERROR));
+    }
+    client_id.to_owned()
+  } else {
+    token_data.claims.aud.to_owned()
+  };
+  let _client_sql_row =
+    validate_client_authentication(&state.pool, &client_id, &client_auth).await?;
 
   let user = match get_user_by_id(&state.pool, token_data.claims.sub).await {
     Ok(Some(user)) => user,
@@ -427,7 +446,7 @@ async fn refresh_token_grant(
     &state.config,
     jwk_sql_row,
     user,
-    token_data.claims.aud,
+    client_id,
     token_data.claims.scope,
     TOKEN_ISSUE_TYPE_REFRESH_TOKEN.to_owned(),
   )
