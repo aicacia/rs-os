@@ -169,7 +169,7 @@ pub async fn create_user_handler(
 pub async fn update_user_handler(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(id): Path<String>,
+  Path(user_id): Path<i64>,
   Json(request): Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
   match user_authorization.has_permission(Permission::UserWrite) {
@@ -177,27 +177,11 @@ pub async fn update_user_handler(
     Err(e) => return e.into_response(),
   }
 
-  let user_id = match id.parse::<i64>() {
-    Ok(id) => id,
-    Err(_) => {
-      return HttpError::bad_request()
-        .with_error("id", "invalid_id")
-        .into_response();
-    }
-  };
-
-  let user_sql_row = match update_user(&state.pool, user_id, request.username.as_deref()).await {
-    Ok(Some(user)) => user,
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("user", NOT_FOUND_ERROR)
-        .into_response();
-    }
+  let user_sql_row = match update_user(&state.pool, user_id, &request.username).await {
+    Ok(user) => user,
     Err(e) => {
       log::error!("error updating user: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
+      return HttpError::not_found().into_response();
     }
   };
 

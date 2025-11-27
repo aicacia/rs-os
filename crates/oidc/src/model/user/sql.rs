@@ -148,25 +148,21 @@ pub async fn create_user(pool: &sqlx::AnyPool, username: &str) -> sqlx::Result<U
 pub async fn update_user(
   pool: &sqlx::AnyPool,
   user_id: i64,
-  username: Option<&str>,
-) -> sqlx::Result<Option<UserSQLRow>> {
-  if let Some(username) = username {
-    sqlx::query_as::<_, UserSQLRow>(
-      r#"UPDATE users
-        SET
-          username = $1,
+  username: &str,
+) -> sqlx::Result<UserSQLRow> {
+  sqlx::query_as::<_, UserSQLRow>(
+    r#"UPDATE users
+      SET
+        username = $1,
           updated_at = $2
         WHERE id = $3 AND active != 0
         RETURNING *;"#,
-    )
-    .bind(username)
-    .bind(chrono::Utc::now().timestamp())
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await
-  } else {
-    get_user_by_id(pool, user_id).await
-  }
+  )
+  .bind(username)
+  .bind(chrono::Utc::now().timestamp())
+  .bind(user_id)
+  .fetch_one(pool)
+  .await
 }
 
 pub async fn delete_user(pool: &sqlx::AnyPool, user_id: i64) -> sqlx::Result<Option<UserSQLRow>> {

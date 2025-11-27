@@ -42,7 +42,9 @@ pub(crate) async fn create_user_token(
     aud: client_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
-    exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
+    exp: now
+      .timestamp()
+      .saturating_add(app_config.token.expires_in_seconds as i64),
     iss: issuer.clone(),
     scope: scope.clone(),
   };
@@ -215,7 +217,9 @@ pub(crate) async fn create_user_authorization_code_token(
       aud: client_id,
       iat: now.timestamp(),
       nbf: now.timestamp(),
-      exp: now.timestamp() + app_config.token.expires_in_seconds as i64,
+      exp: now
+        .timestamp()
+        .saturating_add(app_config.token.expires_in_seconds as i64),
       iss: issuer.clone(),
       scope: scope,
     },

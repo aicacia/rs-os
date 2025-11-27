@@ -14,7 +14,7 @@ pub struct CreateUserRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateUserRequest {
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub username: Option<String>,
+  pub username: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

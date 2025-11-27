@@ -25,7 +25,7 @@ impl Default for Version {
     Version {
       version: env!("CARGO_PKG_VERSION").to_string(),
       build: DateTime::parse_from_rfc3339(build_time_utc!())
-        .expect("invalid build time")
+        .unwrap_or_else(|_| Utc::now().fixed_offset())
         .with_timezone(&Utc),
     }
   }

@@ -236,8 +236,6 @@ pub struct OpenIdClaims {
   pub profile: OpenIdProfile,
 }
 
-unsafe impl Send for OpenIdClaims {}
-
 impl Claims for OpenIdClaims {
   fn r#type(&self) -> &str {
     &self.basic_claims.r#type

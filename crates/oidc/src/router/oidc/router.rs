@@ -482,16 +482,6 @@ async fn authorization_code_grant(
     return Err(HttpError::unauthorized());
   }
 
-  let client_id = token_data.claims.basic_claims.aud;
-  let _client_sql_row = validate_client_authentication(
-    &state.pool,
-    &client_id,
-    &client_auth,
-    GRANT_TYPE_AUTHORIZATION_CODE,
-    &token_data.claims.basic_claims.scope,
-  )
-  .await?;
-
   let code_verifier = match code_verifier {
     Some(verifier) => verifier,
     None => {
@@ -516,6 +506,16 @@ async fn authorization_code_grant(
   if computed_challenge != token_data.claims.code_challenge {
     return Err(HttpError::unauthorized().with_error("code_verifier", INVALID_ERROR));
   }
+
+  let client_id = token_data.claims.basic_claims.aud;
+  let _client_sql_row = validate_client_authentication(
+    &state.pool,
+    &client_id,
+    &client_auth,
+    GRANT_TYPE_AUTHORIZATION_CODE,
+    &token_data.claims.basic_claims.scope,
+  )
+  .await?;
 
   let user = match get_user_by_id(&state.pool, token_data.claims.basic_claims.sub).await {
     Ok(Some(user)) => user,
