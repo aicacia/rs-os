@@ -74,21 +74,12 @@ pub async fn user_list(
 pub async fn get_user(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(id): Path<String>,
+  Path(user_id): Path<i64>,
 ) -> impl IntoResponse {
   match user_authorization.has_permission(Permission::UserRead) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
-
-  let user_id = match id.parse::<i64>() {
-    Ok(id) => id,
-    Err(_) => {
-      return HttpError::bad_request()
-        .with_error("id", "invalid_id")
-        .into_response();
-    }
-  };
 
   let user_sql_row = match get_user_by_id(&state.pool, user_id).await {
     Ok(Some(user)) => user,
@@ -207,21 +198,12 @@ pub async fn update_user_handler(
 pub async fn delete_user_handler(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(id): Path<String>,
+  Path(user_id): Path<i64>,
 ) -> impl IntoResponse {
   match user_authorization.has_permission(Permission::UserDelete) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
-
-  let user_id = match id.parse::<i64>() {
-    Ok(id) => id,
-    Err(_) => {
-      return HttpError::bad_request()
-        .with_error("id", "invalid_id")
-        .into_response();
-    }
-  };
 
   match delete_user(&state.pool, user_id).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
