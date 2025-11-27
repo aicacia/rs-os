@@ -14,6 +14,13 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  HttpError,
+} from '../models/index';
+import {
+    HttpErrorFromJSON,
+    HttpErrorToJSON,
+} from '../models/index';
 
 /**
  * OpenapiApi - interface

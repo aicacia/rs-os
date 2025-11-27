@@ -1,11 +1,13 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use validator::Validate;
 
 use crate::model::user::sql::UserSQLRow;
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct CreateUserRequest {
+  #[validate(length(min = 1))]
   pub username: String,
 }
 

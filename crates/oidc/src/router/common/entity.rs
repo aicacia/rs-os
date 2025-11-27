@@ -121,10 +121,8 @@ impl Claims for BasicClaims {
 pub struct AuthorizationCodeClaims {
   #[serde(flatten)]
   pub basic_claims: BasicClaims,
-  #[serde(skip_serializing_if = "Option::is_none", default)]
-  pub code_challenge: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none", default)]
-  pub code_challenge_method: Option<String>,
+  pub code_challenge: String,
+  pub code_challenge_method: String,
 }
 
 impl Claims for AuthorizationCodeClaims {

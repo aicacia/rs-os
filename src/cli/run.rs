@@ -104,7 +104,7 @@ async fn init_oidc(
     Err(e) => return Err(io::Error::other(e)),
   };
 
-  match os_oidc::core::jwk::helper::init_jwk(&oidc_pool).await {
+  match os_oidc::core::jwk::helper::init_jwk(&oidc_pool, &app_config).await {
     Ok(_) => {}
     Err(e) => return Err(io::Error::other(e.to_string())),
   }

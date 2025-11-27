@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 
 use crate::core::jwk::helper::is_public_key_op;
 
@@ -123,9 +123,12 @@ impl TryInto<jsonwebtoken::jwk::Jwk> for JwkSQLRow {
         }
         serde_json::Value::Object(map)
       }
-      _ => unimplemented!(),
+      _ => {
+        return Err(serde_json::Error::custom(
+          "expected a JSON object but got a different type",
+        ));
+      }
     };
-    log::info!("value: {:?}", value);
     Ok(serde_json::from_value(value)?)
   }
 }

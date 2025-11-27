@@ -6,7 +6,7 @@ use utoipa::{
   },
 };
 
-use crate::{core::config::app_config::AppConfig, router::common::constants::AUTHORIZATION_HEADER};
+use crate::router::common::constants::AUTHORIZATION_HEADER;
 
 pub struct SecurityAddon;
 
@@ -28,21 +28,21 @@ impl Modify for SecurityAddon {
   }
 }
 
-pub struct ServersAddon<'a> {
-  app_config: &'a AppConfig,
+pub struct ServersAddon {
+  base_api_url: String,
 }
 
-impl<'a> ServersAddon<'a> {
-  pub fn new(app_config: &'a AppConfig) -> Self {
-    Self { app_config }
+impl ServersAddon {
+  pub fn new(base_api_url: String) -> Self {
+    Self { base_api_url }
   }
 }
 
-impl<'a> Modify for ServersAddon<'a> {
+impl Modify for ServersAddon {
   fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
     openapi
       .servers
       .get_or_insert(Vec::default())
-      .push(Server::new(self.app_config.base_api_url()));
+      .push(Server::new(self.base_api_url.clone()));
   }
 }

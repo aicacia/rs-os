@@ -60,9 +60,9 @@ impl Default for PasswordConfig {
     Self {
       salt_length: 16,
       hash_length: 32,
-      memory_mib: 19,
-      iterations: 2,
-      parallelism: 1,
+      memory_mib: 47,
+      iterations: 3,
+      parallelism: 4,
       history: 24,
       expire_days: 60,
     }
@@ -104,6 +104,7 @@ impl Default for OAuth2 {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct TokenConfig {
+  pub default_jwt_algorithm: jsonwebtoken::Algorithm,
   pub expires_in_seconds: u64,
   pub refresh_expires_in_seconds: u64,
 }
@@ -111,6 +112,7 @@ pub struct TokenConfig {
 impl Default for TokenConfig {
   fn default() -> Self {
     Self {
+      default_jwt_algorithm: jsonwebtoken::Algorithm::EdDSA,
       expires_in_seconds: 86400,          // 1 day
       refresh_expires_in_seconds: 604800, // 1 week
     }
@@ -157,11 +159,9 @@ impl AppConfig {
       .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
   }
 
-  pub fn base_api_url(&self) -> String {
-    match url::Url::parse(&self.api_url()) {
-      Ok(url) => url.origin().unicode_serialization(),
-      Err(e) => panic!("invalid public url: {}", e),
-    }
+  pub fn base_api_url(&self) -> Result<String, url::ParseError> {
+    let url = url::Url::parse(&self.api_url())?;
+    Ok(url.origin().unicode_serialization())
   }
 }
 

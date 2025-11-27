@@ -39,7 +39,7 @@ pub async fn setup()
 
   let pool = os_db::pool::create(&config.database, &SQLITE_MIGRATOR, &POSTGRESQL_MIGRATOR).await?;
 
-  let _ = init_jwk(&pool).await?;
+  let _ = init_jwk(&pool, &config).await?;
 
   let cancellation_token = CancellationToken::new();
   let router = create_router(

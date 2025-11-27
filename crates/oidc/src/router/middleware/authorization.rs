@@ -7,6 +7,7 @@ use crate::{
     config::app_config::AppConfig,
     jwk::sql::{JwkSQLRow, get_jwk_by_kid},
   },
+  model::revoked_token::sql::is_token_revoked,
   router::{
     common::{
       constants::{AUTHORIZATION_HEADER, TOKEN_TYPE_BEARER},
@@ -127,11 +128,27 @@ where
     }
   };
   let token_data = match parse_jwt::<T>(authorization_string, app_config, decoding_key, alg) {
-    Ok(token_data) => (token_data, jwk_sql_row),
+    Ok(token_data) => token_data,
     Err(e) => {
       log::error!("invalid authorization failed to parse claims: {}", e);
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
   };
-  Ok(token_data)
+
+  // Check if token is revoked
+  match is_token_revoked(pool, authorization_string).await {
+    Ok(true) => {
+      log::error!("token has been revoked");
+      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+    }
+    Ok(false) => {
+      // Token is not revoked, continue
+    }
+    Err(e) => {
+      log::error!("failed to check token revocation status: {}", e);
+      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+    }
+  }
+
+  Ok((token_data, jwk_sql_row))
 }

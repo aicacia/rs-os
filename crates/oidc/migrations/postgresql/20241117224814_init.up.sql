@@ -183,12 +183,12 @@ CREATE INDEX "user_oauth2_providers_user_id_idx" ON "user_oauth2_providers" ("us
 CREATE INDEX "user_oauth2_providers_oauth2_provider_id_idx" ON "user_oauth2_providers" ("oauth2_provider_id");
 
 
-CREATE TABLE user_clients (
-  'user_id' INTEGER NOT NULL,
+CREATE TABLE "user_clients" (
+  "user_id" INTEGER NOT NULL,
   "client_id" TEXT NOT NULL,
   "allowed_scopes" TEXT NOT NULL,
-  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updated_at" BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::BIGINT,
+  "created_at" BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::BIGINT,
   PRIMARY KEY ("user_id", "client_id"),
   FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE,
   FOREIGN KEY ("client_id") REFERENCES "clients" ("client_id") ON DELETE CASCADE
@@ -255,6 +255,15 @@ CREATE TABLE "key_values" (
   "created_at" BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::BIGINT
 );
 CREATE UNIQUE INDEX "key_values_key_unique_idx" ON "key_values" ("key");
+
+
+CREATE TABLE "revoked_tokens" (
+  "token" TEXT NOT NULL PRIMARY KEY,
+  "expires_at" BIGINT NOT NULL,
+  "created_at" BIGINT NOT NULL DEFAULT FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))::BIGINT
+);
+CREATE UNIQUE INDEX "revoked_tokens_token_unique_idx" ON "revoked_tokens" ("token");
+CREATE INDEX "revoked_tokens_expires_at_idx" ON "revoked_tokens" ("expires_at");
 
 
 INSERT INTO "roles" ("uri", "description") VALUES ('admin', 'Administrator role');

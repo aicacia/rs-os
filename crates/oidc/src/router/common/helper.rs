@@ -190,8 +190,8 @@ pub(crate) async fn create_user_authorization_code_token(
   user_id: i64,
   client_id: String,
   scope: String,
-  code_challenge: Option<String>,
-  code_challenge_method: Option<String>,
+  code_challenge: String,
+  code_challenge_method: String,
 ) -> Result<String, HttpError> {
   let jwk_sql_row = match get_jwk_for_sign_and_verify(pool).await {
     Ok(Some(jwk_sql_row)) => jwk_sql_row,

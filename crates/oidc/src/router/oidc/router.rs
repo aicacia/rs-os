@@ -20,6 +20,7 @@ use crate::{
   },
   model::{
     client::sql::{ClientSQLRow, get_client_by_client_id, upsert_client},
+    revoked_token::sql::revoke_token,
     user::sql::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
     },
@@ -48,11 +49,12 @@ use crate::{
     },
     oidc::{
       constants::{
-        GRANT_TYPE_AUTHORIZATION_CODE, GRANT_TYPE_PASSWORD, GRANT_TYPE_REFRESH_TOKEN, TAG,
+        ALWAYS_ALLOWED_GRANT_TYPES, GRANT_TYPE_AUTHORIZATION_CODE, GRANT_TYPE_PASSWORD,
+        GRANT_TYPE_REFRESH_TOKEN, GRANT_TYPE_REVOKE, TAG,
       },
       entity::{
         AuthorizeRequest, Client, ClientAuthentication, ClientRegisterRequest, EndSessionRequest,
-        JWK, JWKs, OpenIdConfiguration, TokenRequest,
+        JWK, JWKs, OpenIdConfiguration, RevokeRequest, TokenRequest,
       },
     },
   },
@@ -349,9 +351,14 @@ async fn password_grant(
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let client_id = if let Some(client_id) = &client_auth.client_id {
-    let _client_sql_row =
-      validate_client_authentication(&state.pool, client_id, &client_auth, GRANT_TYPE_PASSWORD)
-        .await?;
+    let _client_sql_row = validate_client_authentication(
+      &state.pool,
+      client_id,
+      &client_auth,
+      GRANT_TYPE_PASSWORD,
+      &scope,
+    )
+    .await?;
     client_id.to_owned()
   } else {
     state.config.api_url()
@@ -437,6 +444,7 @@ async fn refresh_token_grant(
     &client_id,
     &client_auth,
     GRANT_TYPE_REFRESH_TOKEN,
+    &token_data.claims.scope,
   )
   .await?;
 
@@ -480,38 +488,33 @@ async fn authorization_code_grant(
     &client_id,
     &client_auth,
     GRANT_TYPE_AUTHORIZATION_CODE,
+    &token_data.claims.basic_claims.scope,
   )
   .await?;
 
-  if let Some(code_challenge) = &token_data.claims.code_challenge {
-    let code_verifier = match code_verifier {
-      Some(verifier) => verifier,
-      None => {
-        return Err(HttpError::bad_request().with_error("code_verifier", REQUIRED_ERROR));
-      }
-    };
-
-    let code_challenge_method = token_data
-      .claims
-      .code_challenge_method
-      .as_deref()
-      .unwrap_or("S256");
-
-    let computed_challenge = match code_challenge_method {
-      "S256" => {
-        let mut hasher = Sha256::new();
-        hasher.update(code_verifier.as_bytes());
-        let hash = hasher.finalize();
-        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hash)
-      }
-      _ => {
-        return Err(HttpError::bad_request().with_error("code_challenge_method", INVALID_ERROR));
-      }
-    };
-
-    if computed_challenge != *code_challenge {
-      return Err(HttpError::unauthorized().with_error("code_verifier", INVALID_ERROR));
+  let code_verifier = match code_verifier {
+    Some(verifier) => verifier,
+    None => {
+      return Err(HttpError::bad_request().with_error("code_verifier", REQUIRED_ERROR));
     }
+  };
+
+  let computed_challenge = match token_data.claims.code_challenge_method.as_str() {
+    "S256" => {
+      let mut hasher = Sha256::new();
+      hasher.update(code_verifier.as_bytes());
+      let hash = hasher.finalize();
+      base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hash)
+    }
+    _ => {
+      return Err(
+        HttpError::bad_request().with_error("code_challenge_method", NOT_SUPPORTED_ERROR),
+      );
+    }
+  };
+
+  if computed_challenge != token_data.claims.code_challenge {
+    return Err(HttpError::unauthorized().with_error("code_verifier", INVALID_ERROR));
   }
 
   let user = match get_user_by_id(&state.pool, token_data.claims.basic_claims.sub).await {
@@ -540,6 +543,7 @@ pub(crate) async fn validate_client_authentication(
   client_id: &str,
   client_auth: &ClientAuthentication,
   grant_type: &str,
+  scope: &str,
 ) -> Result<ClientSQLRow, HttpError> {
   let client_sql_row = match get_client_by_client_id(pool, client_id).await {
     Ok(Some(client)) => client,
@@ -552,13 +556,25 @@ pub(crate) async fn validate_client_authentication(
     }
   };
 
-  let grant_types_vec: Vec<String> = json_to_string_vec(&client_sql_row.grant_types);
-  if !grant_types_vec.contains(&grant_type.to_string()) {
-    return Err(HttpError::bad_request().with_error("grant_type", NOT_ALLOWED_ERROR));
+  if !ALWAYS_ALLOWED_GRANT_TYPES.contains(&grant_type) {
+    let grant_types_vec: Vec<String> = json_to_string_vec(&client_sql_row.grant_types);
+    if !grant_types_vec.contains(&grant_type.to_string()) {
+      return Err(HttpError::bad_request().with_error("grant_type", NOT_ALLOWED_ERROR));
+    }
   }
 
   if !client_sql_row.is_active() {
     return Err(HttpError::forbidden().with_error("client", NOT_ALLOWED_ERROR));
+  }
+
+  let requested_scopes: HashSet<&str> = scope.split_whitespace().collect();
+  let allowed_scopes_vec: Vec<String> = json_to_string_vec(&client_sql_row.scopes);
+  let allowed_scopes: HashSet<&str> = allowed_scopes_vec.iter().map(|s| s.as_str()).collect();
+
+  for requested_scope in &requested_scopes {
+    if !allowed_scopes.contains(requested_scope) {
+      return Err(HttpError::bad_request().with_error("scope", NOT_ALLOWED_ERROR));
+    }
   }
 
   match client_sql_row.auth_method.as_str() {
@@ -779,17 +795,66 @@ pub async fn user_info(
   post,
   path = "/revoke",
   tags = [TAG],
-  request_body(content = String, content_type = "application/x-www-form-urlencoded"),
+  request_body(content = RevokeRequest, content_type = "application/x-www-form-urlencoded"),
   responses(
-    (status = 200, description = "Token revoked"),
+    (status = 204, description = "Token revoked"),
     (status = 400, description = "Invalid request", body = HttpError),
     (status = 401, description = "Unauthorized", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
   )
 )]
-pub async fn revoke(State(_state): State<RouterState>) -> impl IntoResponse {
-  // TODO: Implement RFC 7009 token revocation
-  (StatusCode::NOT_IMPLEMENTED, "Not implemented").into_response()
+pub async fn revoke(
+  State(state): State<RouterState>,
+  Form(revoke_request): Form<RevokeRequest>,
+) -> impl IntoResponse {
+  let (token_data, _jwk_sql_row) =
+    match parse_authorization::<BasicClaims>(&state.pool, &state.config, &revoke_request.token)
+      .await
+    {
+      Ok(result) => result,
+      Err(e) => {
+        log::error!("failed to parse token for revocation: {}", e);
+        return StatusCode::OK.into_response();
+      }
+    };
+
+  if let Some(client_id) = &revoke_request.client_auth.client_id {
+    if &token_data.claims.aud != client_id {
+      log::error!("client_id mismatch: token belongs to different client");
+      return HttpError::unauthorized()
+        .with_error("client_id", INVALID_ERROR)
+        .into_response();
+    }
+
+    match validate_client_authentication(
+      &state.pool,
+      client_id,
+      &revoke_request.client_auth,
+      GRANT_TYPE_REVOKE,
+      &token_data.claims.scope,
+    )
+    .await
+    {
+      Ok(_) => {}
+      Err(e) => {
+        log::error!("client authentication failed: {}", e);
+        return e.into_response();
+      }
+    }
+  }
+
+  match revoke_token(&state.pool, &revoke_request.token, token_data.claims.exp).await {
+    Ok(_) => {
+      log::info!("token successfully revoked");
+      StatusCode::NO_CONTENT.into_response()
+    }
+    Err(e) => {
+      log::error!("failed to revoke token: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
+  }
 }
 
 #[utoipa::path(

@@ -12,13 +12,19 @@ use rsa::{
   traits::{PrivateKeyParts, PublicKeyParts},
 };
 
-use crate::core::jwk::sql::{JwkSQLRow, create_jwk, list_jwks};
+use crate::core::{
+  config::app_config,
+  jwk::sql::{JwkSQLRow, create_jwk, list_jwks},
+};
 
-pub async fn init_jwk(pool: &sqlx::AnyPool) -> Result<(), Box<dyn Error>> {
+pub async fn init_jwk(
+  pool: &sqlx::AnyPool,
+  app_config: &app_config::AppConfig,
+) -> Result<(), Box<dyn Error>> {
   let jwks = list_jwks(pool).await?;
 
   if jwks.is_empty() {
-    let _ = create_jwk(pool, generate_jwk(Algorithm::EdDSA)?).await?;
+    let _ = create_jwk(pool, generate_jwk(app_config.token.default_jwt_algorithm)?).await?;
   }
 
   Ok(())

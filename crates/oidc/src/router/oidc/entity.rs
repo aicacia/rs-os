@@ -208,6 +208,15 @@ pub struct EndSessionRequest {
   pub post_logout_redirect_uri: String,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct RevokeRequest {
+  pub token: String,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub token_type_hint: Option<String>,
+  #[serde(flatten)]
+  pub client_auth: ClientAuthentication,
+}
+
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct AuthorizeRequest {
   pub client_id: String,

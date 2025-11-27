@@ -424,14 +424,26 @@ pub async fn client_authorize(
   }
 
   let authorization_code_token = if authorization_request.response_type.needs_code() {
+    let (code_challenge, code_challenge_method) = match (
+      &authorization_request.code_challenge,
+      &authorization_request.code_challenge_method,
+    ) {
+      (Some(challenge), Some(method)) => (challenge.clone(), method.clone()),
+      _ => {
+        return HttpError::bad_request()
+          .with_error("code_challenge", INVALID_ERROR)
+          .into_response();
+      }
+    };
+
     match create_user_authorization_code_token(
       &state.pool,
       &state.config,
       user_authorization.user_sql_row.id,
       client_id,
       authorization_request.scope,
-      authorization_request.code_challenge,
-      authorization_request.code_challenge_method,
+      code_challenge,
+      code_challenge_method,
     )
     .await
     {

@@ -7,6 +7,3 @@ pub struct RouterState {
   pub pool: sqlx::AnyPool,
   pub config: Arc<AppConfig>,
 }
-
-unsafe impl Send for RouterState {}
-unsafe impl Sync for RouterState {}

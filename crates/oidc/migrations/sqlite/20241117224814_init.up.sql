@@ -255,6 +255,15 @@ CREATE TABLE "key_values" (
 CREATE UNIQUE INDEX "key_values_key_unique_idx" ON "key_values" ("key");
 
 
+CREATE TABLE "revoked_tokens" (
+  "token" TEXT NOT NULL PRIMARY KEY,
+  "expires_at" INTEGER NOT NULL,
+  "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+) STRICT;
+CREATE UNIQUE INDEX "revoked_tokens_token_unique_idx" ON "revoked_tokens" ("token");
+CREATE INDEX "revoked_tokens_expires_at_idx" ON "revoked_tokens" ("expires_at");
+
+
 INSERT INTO "roles" ("uri", "description") VALUES ('admin', 'Administrator role');
 INSERT INTO "permissions" ("uri", "description") VALUES ('admin:*', 'Administer all resources');
 INSERT INTO "roles_permissions" ("role_id", "permission_id") VALUES (1, 1);

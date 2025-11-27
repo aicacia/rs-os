@@ -2,6 +2,11 @@
 DROP INDEX IF EXISTS "key_values_key_unique_idx";
 DROP TABLE IF EXISTS "key_values";
 
+-- revoked_tokens
+DROP INDEX IF EXISTS "revoked_tokens_expires_at_idx";
+DROP INDEX IF EXISTS "revoked_tokens_token_unique_idx";
+DROP TABLE IF EXISTS "revoked_tokens";
+
 -- user_roles
 DROP INDEX IF EXISTS "user_roles_role_id_idx";
 DROP INDEX IF EXISTS "user_roles_user_id_idx";
