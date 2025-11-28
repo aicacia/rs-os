@@ -568,7 +568,7 @@ example().catch(console.error);
 
 ## revoke
 
-> revoke()
+> revoke(token, clientAssertion, clientAssertionType, clientId, clientSecret, tokenTypeHint)
 
 
 
@@ -585,8 +585,23 @@ async function example() {
   console.log("🚀 Testing  SDK...");
   const api = new OidcApi();
 
+  const body = {
+    // string
+    token: token_example,
+    // string (optional)
+    clientAssertion: clientAssertion_example,
+    // string (optional)
+    clientAssertionType: clientAssertionType_example,
+    // string (optional)
+    clientId: clientId_example,
+    // string (optional)
+    clientSecret: clientSecret_example,
+    // string (optional)
+    tokenTypeHint: tokenTypeHint_example,
+  } satisfies RevokeRequest;
+
   try {
-    const data = await api.revoke();
+    const data = await api.revoke(body);
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -599,7 +614,15 @@ example().catch(console.error);
 
 ### Parameters
 
-This endpoint does not need any parameter.
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **token** | `string` |  | [Defaults to `undefined`] |
+| **clientAssertion** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **clientAssertionType** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **clientId** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **clientSecret** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **tokenTypeHint** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 
@@ -618,7 +641,7 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | Token revoked |  -  |
+| **204** | Token revoked |  -  |
 | **400** | Invalid request |  -  |
 | **401** | Unauthorized |  -  |
 | **500** | Application Error |  -  |

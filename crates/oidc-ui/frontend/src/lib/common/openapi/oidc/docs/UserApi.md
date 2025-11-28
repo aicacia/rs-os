@@ -109,8 +109,8 @@ async function example() {
   const api = new UserApi(config);
 
   const body = {
-    // string
-    id: id_example,
+    // number
+    id: 789,
   } satisfies DeleteUserHandlerRequest;
 
   try {
@@ -130,7 +130,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **id** | `string` |  | [Defaults to `undefined`] |
+| **id** | `number` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -182,8 +182,8 @@ async function example() {
   const api = new UserApi(config);
 
   const body = {
-    // string
-    id: id_example,
+    // number
+    id: 789,
   } satisfies GetUserRequest;
 
   try {
@@ -203,7 +203,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **id** | `string` |  | [Defaults to `undefined`] |
+| **id** | `number` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -255,8 +255,8 @@ async function example() {
   const api = new UserApi(config);
 
   const body = {
-    // string
-    id: id_example,
+    // number
+    id: 789,
     // UpdateUserRequest
     updateUserRequest: ...,
   } satisfies UpdateUserHandlerRequest;
@@ -278,7 +278,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **id** | `string` |  | [Defaults to `undefined`] |
+| **id** | `number` |  | [Defaults to `undefined`] |
 | **updateUserRequest** | [UpdateUserRequest](UpdateUserRequest.md) |  | |
 
 ### Return type

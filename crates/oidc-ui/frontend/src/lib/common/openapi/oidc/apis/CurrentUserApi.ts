@@ -15,14 +15,16 @@
 
 import * as runtime from '../runtime';
 import type {
+  CurrentUser,
   HttpError,
   UpdateUserInfoRequest,
   UpdateUserPassword,
   UpdateUsernameRequest,
-  User,
   UserInfo,
 } from '../models/index';
 import {
+    CurrentUserFromJSON,
+    CurrentUserToJSON,
     HttpErrorFromJSON,
     HttpErrorToJSON,
     UpdateUserInfoRequestFromJSON,
@@ -31,8 +33,6 @@ import {
     UpdateUserPasswordToJSON,
     UpdateUsernameRequestFromJSON,
     UpdateUsernameRequestToJSON,
-    UserFromJSON,
-    UserToJSON,
     UserInfoFromJSON,
     UserInfoToJSON,
 } from '../models/index';
@@ -62,11 +62,11 @@ export interface CurrentUserApiInterface {
      * @throws {RequiredError}
      * @memberof CurrentUserApiInterface
      */
-    currentUserRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>>;
+    currentUserRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUser>>;
 
     /**
      */
-    currentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User>;
+    currentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CurrentUser>;
 
     /**
      * 
@@ -116,7 +116,7 @@ export class CurrentUserApi extends runtime.BaseAPI implements CurrentUserApiInt
 
     /**
      */
-    async currentUserRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<User>> {
+    async currentUserRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUser>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -139,12 +139,12 @@ export class CurrentUserApi extends runtime.BaseAPI implements CurrentUserApiInt
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => UserFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => CurrentUserFromJSON(jsonValue));
     }
 
     /**
      */
-    async currentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<User> {
+    async currentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CurrentUser> {
         const response = await this.currentUserRaw(initOverrides);
         return await response.value();
     }

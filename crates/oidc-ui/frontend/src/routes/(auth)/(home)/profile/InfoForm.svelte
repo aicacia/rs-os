@@ -19,14 +19,14 @@
 </script>
 
 <script lang="ts">
-	import type { User } from '$lib/common/openapi/oidc/models/index';
+	import type { CurrentUser } from '$lib/common/openapi/oidc/models/index';
 	import { currentUserApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
 	import { invalidateAll } from '$app/navigation';
 
-	let { user = $bindable() }: { user: User } = $props();
+	let { user = $bindable() }: { user: CurrentUser } = $props();
 
 	const supportedLocales = $derived(
 		typeof navigator !== 'undefined' ? Array.from(new Set(navigator.languages)) : []

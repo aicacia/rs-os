@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import type { User } from '$lib/common/openapi/oidc/models/index';
+	import type { CurrentUser } from '$lib/common/openapi/oidc';
 	import UsernameForm from './UsernameForm.svelte';
 	import PasswordForm from './PasswordForm.svelte';
 	import InfoForm from './InfoForm.svelte';
@@ -11,7 +11,7 @@
 
 	let { data }: PageProps = $props();
 
-	let user = $derived(data.user) as User;
+	let user = $derived(data.user) as CurrentUser;
 </script>
 
 <svelte:head>

@@ -1,13 +1,13 @@
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { Permission, type User } from '../openapi/oidc';
+	import { Permission } from '../openapi/oidc';
 	import { hasPermission, logout } from '../state/currentUser.svelte';
 	import { ChevronLeft, LogOut } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	export interface SidebarProps {
-		user: User;
+		user: CurrentUser;
 		children: Snippet<[]>;
 	}
 </script>

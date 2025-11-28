@@ -13,7 +13,7 @@ All URIs are relative to *http://localhost:3000*
 
 ## currentUser
 
-> User currentUser()
+> CurrentUser currentUser()
 
 
 
@@ -52,7 +52,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**User**](User.md)
+[**CurrentUser**](CurrentUser.md)
 
 ### Authorization
 

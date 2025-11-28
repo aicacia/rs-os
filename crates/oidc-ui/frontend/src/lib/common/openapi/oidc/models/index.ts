@@ -11,6 +11,7 @@ export * from './ClientRegisterRequest';
 export * from './CreateUserEmailRequest';
 export * from './CreateUserPhoneNumberRequest';
 export * from './CreateUserRequest';
+export * from './CurrentUser';
 export * from './Health';
 export * from './HttpError';
 export * from './HttpErrorMessage';

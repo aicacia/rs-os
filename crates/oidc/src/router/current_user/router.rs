@@ -4,7 +4,7 @@ use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  current_user::{constants::TAG, entity::User},
+  current_user::{constants::TAG, entity::CurrentUser},
   entity::RouterState,
   error::HttpError,
   middleware::user_authorization::UserAuthorization,
@@ -19,7 +19,7 @@ use crate::router::current_user::entity::{UpdateUserPassword, UpdateUsernameRequ
   path = "/current-user",
   tags = [TAG],
   responses(
-    (status = 200, content_type = "application/json", body = User),
+    (status = 200, content_type = "application/json", body = CurrentUser),
     (status = 400, content_type = "application/json", body = HttpError),
     (status = 401, content_type = "application/json", body = HttpError),
     (status = 500, content_type = "application/json", body = HttpError),

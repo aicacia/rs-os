@@ -4,7 +4,8 @@ import {
 	CurrentUserApi,
 	ClientApi,
 	OidcApi,
-	PasswordApi
+	PasswordApi,
+	UserApi
 } from './oidc';
 import { PUBLIC_OS_OIDC_API_URL } from '$env/static/public';
 
@@ -35,6 +36,7 @@ export const currentUserApi = new CurrentUserApi(oidcConfiguration);
 export const clientApi = new ClientApi(oidcConfiguration);
 export const oidcApi = new OidcApi(oidcConfiguration);
 export const passwordApi = new PasswordApi(oidcConfiguration);
+export const userApi = new UserApi(oidcConfiguration);
 
 export function setAuthToken(newAuthToken?: string) {
 	authToken = newAuthToken;

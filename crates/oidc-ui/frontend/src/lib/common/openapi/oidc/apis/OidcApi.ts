@@ -76,6 +76,15 @@ export interface RegisterClientRequest {
     clientRegisterRequest: ClientRegisterRequest;
 }
 
+export interface RevokeRequest {
+    token: string;
+    clientAssertion?: string | null;
+    clientAssertionType?: string | null;
+    clientId?: string | null;
+    clientSecret?: string | null;
+    tokenTypeHint?: string | null;
+}
+
 export interface TokenRequest {
     clientAssertion?: string | null;
     clientAssertionType?: string | null;
@@ -214,15 +223,21 @@ export interface OidcApiInterface {
 
     /**
      * 
+     * @param {string} token 
+     * @param {string} [clientAssertion] 
+     * @param {string} [clientAssertionType] 
+     * @param {string} [clientId] 
+     * @param {string} [clientSecret] 
+     * @param {string} [tokenTypeHint] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OidcApiInterface
      */
-    revokeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
+    revokeRaw(requestParameters: RevokeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
 
     /**
      */
-    revoke(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+    revoke(requestParameters: RevokeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
 
     /**
      * 
@@ -602,10 +617,55 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async revokeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async revokeRaw(requestParameters: RevokeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['token'] == null) {
+            throw new runtime.RequiredError(
+                'token',
+                'Required parameter "token" was null or undefined when calling revoke().'
+            );
+        }
+
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        const consumes: runtime.Consume[] = [
+            { contentType: 'application/x-www-form-urlencoded' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['clientAssertion'] != null) {
+            formParams.append('client_assertion', requestParameters['clientAssertion'] as any);
+        }
+
+        if (requestParameters['clientAssertionType'] != null) {
+            formParams.append('client_assertion_type', requestParameters['clientAssertionType'] as any);
+        }
+
+        if (requestParameters['clientId'] != null) {
+            formParams.append('client_id', requestParameters['clientId'] as any);
+        }
+
+        if (requestParameters['clientSecret'] != null) {
+            formParams.append('client_secret', requestParameters['clientSecret'] as any);
+        }
+
+        if (requestParameters['token'] != null) {
+            formParams.append('token', requestParameters['token'] as any);
+        }
+
+        if (requestParameters['tokenTypeHint'] != null) {
+            formParams.append('token_type_hint', requestParameters['tokenTypeHint'] as any);
+        }
 
 
         let urlPath = `/oidc/api/revoke`;
@@ -615,6 +675,7 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
+            body: formParams,
         }, initOverrides);
 
         return new runtime.VoidApiResponse(response);
@@ -622,8 +683,8 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async revoke(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.revokeRaw(initOverrides);
+    async revoke(requestParameters: RevokeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.revokeRaw(requestParameters, initOverrides);
     }
 
     /**

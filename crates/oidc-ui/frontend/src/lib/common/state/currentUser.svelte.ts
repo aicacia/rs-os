@@ -3,20 +3,20 @@ import {
 	Permission,
 	TokenFromJSON,
 	TokenToJSON,
-	UserFromJSON,
-	UserToJSON,
 	type Token,
-	type User
+	type CurrentUser,
+	CurrentUserFromJSON,
+	CurrentUserToJSON
 } from '../openapi/oidc';
 import { localStorageState } from '../util/localStorageState.svelte';
 import { afterSigninRedirect } from './afterSignInRedirectPath';
 import { isOnline } from './online.svelte';
 import { handleError } from '../errors';
 
-const user = localStorageState<User | null>('user', null, {
+const user = localStorageState<CurrentUser | null>('user', null, {
 	serializer: {
-		parse: (text) => UserFromJSON(JSON.parse(text)),
-		stringify: (value) => JSON.stringify(UserToJSON(value))
+		parse: (text) => CurrentUserFromJSON(JSON.parse(text)),
+		stringify: (value) => JSON.stringify(CurrentUserToJSON(value))
 	}
 });
 const token = localStorageState<Token | null>('token', null, {
@@ -67,25 +67,25 @@ export async function getCurrentUser() {
 	return await currentUser;
 }
 
-export function hasPermission(user: User, permission: string): boolean {
+export function hasPermission(user: CurrentUser, permission: string): boolean {
 	if (hasAdminAll(user)) {
 		return true;
 	}
 	return hasPermissionInternal(user, permission);
 }
 
-export function hasPermissions(user: User, permissions: string[]): boolean {
+export function hasPermissions(user: CurrentUser, permissions: string[]): boolean {
 	if (hasAdminAll(user)) {
 		return true;
 	}
 	return permissions.every((p) => hasPermissionInternal(user, p));
 }
 
-function hasAdminAll(user: User): boolean {
+function hasAdminAll(user: CurrentUser): boolean {
 	return hasPermissionInternal(user, Permission.Admin);
 }
 
-function hasPermissionInternal(user: User, permission: string): boolean {
+function hasPermissionInternal(user: CurrentUser, permission: string): boolean {
 	return user.roles.some((r) => r.permissions.includes(permission));
 }
 

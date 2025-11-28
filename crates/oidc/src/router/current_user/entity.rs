@@ -6,12 +6,13 @@ use validator::Validate;
 use crate::model::{
   rbac::sql::RoleSQLRow,
   user::sql::{
-    UserEmailSQLRow, UserInfoSQLRow, UserOAuth2ProviderSQLRow, UserPhoneNumberSQLRow, UserSQLRow,
+    UserEmailSQLRow, UserInfoSQLRow, UserInfoUpdate, UserOAuth2ProviderSQLRow,
+    UserPhoneNumberSQLRow, UserSQLRow,
   },
 };
 
 #[derive(Serialize, ToSchema, Default)]
-pub struct User {
+pub struct CurrentUser {
   pub id: i64,
   pub username: String,
   pub active: bool,
@@ -28,7 +29,7 @@ pub struct User {
   pub created_at: DateTime<Utc>,
 }
 
-impl From<UserSQLRow> for User {
+impl From<UserSQLRow> for CurrentUser {
   fn from(user_sql_row: UserSQLRow) -> Self {
     Self {
       active: user_sql_row.is_active(),
@@ -232,9 +233,9 @@ pub struct UpdateUserInfoRequest {
   pub address: Option<String>,
 }
 
-impl Into<crate::model::user::sql::UserInfoUpdate> for UpdateUserInfoRequest {
-  fn into(self) -> crate::model::user::sql::UserInfoUpdate {
-    crate::model::user::sql::UserInfoUpdate {
+impl Into<UserInfoUpdate> for UpdateUserInfoRequest {
+  fn into(self) -> UserInfoUpdate {
+    UserInfoUpdate {
       given_name: self.given_name,
       family_name: self.family_name,
       middle_name: self.middle_name,

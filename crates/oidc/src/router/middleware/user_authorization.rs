@@ -22,7 +22,7 @@ use crate::{
       entity::{BasicClaims, Claims},
       permissions::Permission,
     },
-    current_user::entity::{User, UserOAuth2Provider, UserRole},
+    current_user::entity::{CurrentUser, UserOAuth2Provider, UserRole},
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
     middleware::authorization::Authorization,
@@ -37,8 +37,8 @@ pub struct UserAuthorization {
 }
 
 impl UserAuthorization {
-  pub async fn get_user(&self, pool: &sqlx::AnyPool) -> Result<User, HttpError> {
-    let mut user: User = self.user_sql_row.clone().into();
+  pub async fn get_user(&self, pool: &sqlx::AnyPool) -> Result<CurrentUser, HttpError> {
+    let mut user: CurrentUser = self.user_sql_row.clone().into();
 
     let has_profile = self.claims.has_scope(SCOPE_PROFILE);
     let has_email = self.claims.has_scope(SCOPE_EMAIL);

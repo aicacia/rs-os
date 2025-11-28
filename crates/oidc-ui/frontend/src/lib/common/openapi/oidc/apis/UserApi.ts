@@ -36,15 +36,15 @@ export interface CreateUserHandlerRequest {
 }
 
 export interface DeleteUserHandlerRequest {
-    id: string;
+    id: number;
 }
 
 export interface GetUserRequest {
-    id: string;
+    id: number;
 }
 
 export interface UpdateUserHandlerRequest {
-    id: string;
+    id: number;
     updateUserRequest: UpdateUserRequest;
 }
 
@@ -70,7 +70,7 @@ export interface UserApiInterface {
 
     /**
      * 
-     * @param {string} id 
+     * @param {number} id 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof UserApiInterface
@@ -83,7 +83,7 @@ export interface UserApiInterface {
 
     /**
      * 
-     * @param {string} id 
+     * @param {number} id 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof UserApiInterface
@@ -96,7 +96,7 @@ export interface UserApiInterface {
 
     /**
      * 
-     * @param {string} id 
+     * @param {number} id 
      * @param {UpdateUserRequest} updateUserRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}

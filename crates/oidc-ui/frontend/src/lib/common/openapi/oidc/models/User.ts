@@ -13,42 +13,6 @@
  */
 
 import { mapValues } from '../runtime';
-import type { UserRole } from './UserRole';
-import {
-    UserRoleFromJSON,
-    UserRoleFromJSONTyped,
-    UserRoleToJSON,
-    UserRoleToJSONTyped,
-} from './UserRole';
-import type { UserInfo } from './UserInfo';
-import {
-    UserInfoFromJSON,
-    UserInfoFromJSONTyped,
-    UserInfoToJSON,
-    UserInfoToJSONTyped,
-} from './UserInfo';
-import type { UserPhoneNumber } from './UserPhoneNumber';
-import {
-    UserPhoneNumberFromJSON,
-    UserPhoneNumberFromJSONTyped,
-    UserPhoneNumberToJSON,
-    UserPhoneNumberToJSONTyped,
-} from './UserPhoneNumber';
-import type { UserEmail } from './UserEmail';
-import {
-    UserEmailFromJSON,
-    UserEmailFromJSONTyped,
-    UserEmailToJSON,
-    UserEmailToJSONTyped,
-} from './UserEmail';
-import type { UserOAuth2Provider } from './UserOAuth2Provider';
-import {
-    UserOAuth2ProviderFromJSON,
-    UserOAuth2ProviderFromJSONTyped,
-    UserOAuth2ProviderToJSON,
-    UserOAuth2ProviderToJSONTyped,
-} from './UserOAuth2Provider';
-
 /**
  * 
  * @export
@@ -57,64 +21,16 @@ import {
 export interface User {
     /**
      * 
-     * @type {boolean}
-     * @memberof User
-     */
-    active: boolean;
-    /**
-     * 
      * @type {Date}
      * @memberof User
      */
     createdAt: Date;
     /**
      * 
-     * @type {UserEmail}
+     * @type {string}
      * @memberof User
      */
-    email?: UserEmail | null;
-    /**
-     * 
-     * @type {Array<UserEmail>}
-     * @memberof User
-     */
-    emails: Array<UserEmail>;
-    /**
-     * 
-     * @type {number}
-     * @memberof User
-     */
-    id: number;
-    /**
-     * 
-     * @type {UserInfo}
-     * @memberof User
-     */
-    info?: UserInfo | null;
-    /**
-     * 
-     * @type {Array<UserOAuth2Provider>}
-     * @memberof User
-     */
-    oauth2Providers: Array<UserOAuth2Provider>;
-    /**
-     * 
-     * @type {UserPhoneNumber}
-     * @memberof User
-     */
-    phoneNumber?: UserPhoneNumber | null;
-    /**
-     * 
-     * @type {Array<UserPhoneNumber>}
-     * @memberof User
-     */
-    phoneNumbers: Array<UserPhoneNumber>;
-    /**
-     * 
-     * @type {Array<UserRole>}
-     * @memberof User
-     */
-    roles: Array<UserRole>;
+    id: string;
     /**
      * 
      * @type {Date}
@@ -133,13 +49,8 @@ export interface User {
  * Check if a given object implements the User interface.
  */
 export function instanceOfUser(value: object): value is User {
-    if (!('active' in value) || value['active'] === undefined) return false;
     if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
-    if (!('emails' in value) || value['emails'] === undefined) return false;
     if (!('id' in value) || value['id'] === undefined) return false;
-    if (!('oauth2Providers' in value) || value['oauth2Providers'] === undefined) return false;
-    if (!('phoneNumbers' in value) || value['phoneNumbers'] === undefined) return false;
-    if (!('roles' in value) || value['roles'] === undefined) return false;
     if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
     if (!('username' in value) || value['username'] === undefined) return false;
     return true;
@@ -155,16 +66,8 @@ export function UserFromJSONTyped(json: any, ignoreDiscriminator: boolean): User
     }
     return {
         
-        'active': json['active'],
         'createdAt': (new Date(json['created_at'])),
-        'email': json['email'] == null ? undefined : UserEmailFromJSON(json['email']),
-        'emails': ((json['emails'] as Array<any>).map(UserEmailFromJSON)),
         'id': json['id'],
-        'info': json['info'] == null ? undefined : UserInfoFromJSON(json['info']),
-        'oauth2Providers': ((json['oauth2_providers'] as Array<any>).map(UserOAuth2ProviderFromJSON)),
-        'phoneNumber': json['phone_number'] == null ? undefined : UserPhoneNumberFromJSON(json['phone_number']),
-        'phoneNumbers': ((json['phone_numbers'] as Array<any>).map(UserPhoneNumberFromJSON)),
-        'roles': ((json['roles'] as Array<any>).map(UserRoleFromJSON)),
         'updatedAt': (new Date(json['updated_at'])),
         'username': json['username'],
     };
@@ -181,16 +84,8 @@ export function UserToJSONTyped(value?: User | null, ignoreDiscriminator: boolea
 
     return {
         
-        'active': value['active'],
         'created_at': value['createdAt'].toISOString(),
-        'email': UserEmailToJSON(value['email']),
-        'emails': ((value['emails'] as Array<any>).map(UserEmailToJSON)),
         'id': value['id'],
-        'info': UserInfoToJSON(value['info']),
-        'oauth2_providers': ((value['oauth2Providers'] as Array<any>).map(UserOAuth2ProviderToJSON)),
-        'phone_number': UserPhoneNumberToJSON(value['phoneNumber']),
-        'phone_numbers': ((value['phoneNumbers'] as Array<any>).map(UserPhoneNumberToJSON)),
-        'roles': ((value['roles'] as Array<any>).map(UserRoleToJSON)),
         'updated_at': value['updatedAt'].toISOString(),
         'username': value['username'],
     };
