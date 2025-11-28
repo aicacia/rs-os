@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { AlertCircle } from '@lucide/svelte';
-	import * as m from '$lib/paraglide/messages/_index.js';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		username: string;
@@ -42,16 +42,16 @@
 				<AlertCircle class="mt-1 h-6 w-6 text-red-600" />
 				<div class="space-y-1">
 					<h3 id="delete-title" class="text-lg font-semibold">
-						{(m as any).actions_delete()}
+						{m.actions_delete()}
 						{username}
 					</h3>
 					<p class="text-sm text-gray-700 dark:text-gray-300">{message}</p>
 				</div>
 			</div>
 			<div class="mt-4 flex justify-end gap-2">
-				<button class="btn secondary" onclick={onCancel}>{(m as any).actions_cancel()}</button>
+				<button class="btn secondary" onclick={onCancel}>{m.actions_cancel()}</button>
 				<button class="btn danger" onclick={confirm} disabled={confirming}
-					>{(m as any).actions_delete()}</button
+					>{m.actions_delete()}</button
 				>
 			</div>
 		</div>

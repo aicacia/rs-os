@@ -6,7 +6,7 @@
 	import UserTable from './UserTable.svelte';
 	import UserCard from './UserCard.svelte';
 	import UserListSkeleton from './UserListSkeleton.svelte';
-	import * as m from '$lib/paraglide/messages/_index.js';
+	import { m } from '$lib/paraglide/messages';
 	import { getCurrentUser, hasPermissions } from '$lib/common/state/currentUser.svelte';
 	import { Permission, type User as OUser } from '$lib/common/openapi/oidc/models';
 
@@ -44,35 +44,31 @@
 </script>
 
 <svelte:head>
-	<title>{(m as any).users_title()}</title>
+	<title>{m.users_title()}</title>
 </svelte:head>
 
 <section class="space-y-4 p-4">
 	<div class="flex items-center justify-between">
-		<h1 class="text-3xl font-semibold">{(m as any).users_title()}</h1>
+		<h1 class="text-3xl font-semibold">{m.users_title()}</h1>
 		{#if canCreate}
 			<button class="btn primary flex items-center gap-2" onclick={onCreate}>
 				<Plus class="h-4 w-4" />
-				{(m as any).users_create_label()}
+				{m.users_create_label()}
 			</button>
 		{/if}
 	</div>
 
 	<div class="relative max-w-xl">
 		<Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-		<input
-			class="w-full pl-9"
-			bind:value={query}
-			placeholder={(m as any).users_search_placeholder()}
-		/>
+		<input class="w-full pl-9" bind:value={query} placeholder={m.users_search_placeholder()} />
 	</div>
 
 	{#if users === null}
 		<UserListSkeleton />
 	{:else if users.length === 0}
-		<p class="text-gray-600 dark:text-gray-400">{(m as any).users_empty()}</p>
+		<p class="text-gray-600 dark:text-gray-400">{m.users_empty()}</p>
 	{:else if filtered.length === 0}
-		<p class="text-gray-600 dark:text-gray-400">{(m as any).users_no_match()}</p>
+		<p class="text-gray-600 dark:text-gray-400">{m.users_no_match()}</p>
 	{:else}
 		<div class="hidden md:block">
 			<UserTable users={filtered} {onEdit} onDelete={onView} />

@@ -6,7 +6,7 @@
 	import { userApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
 	import { createNotification } from '$lib/common/state/notifications.svelte';
-	import * as m from '$lib/paraglide/messages/_index.js';
+	import { m } from '$lib/paraglide/messages';
 	import type { User } from '$lib/common/openapi/oidc/models';
 
 	let { data }: PageProps = $props();
@@ -16,7 +16,7 @@
 	async function onDeleteConfirm() {
 		try {
 			await userApi.deleteUserHandler({ id: user.id });
-			createNotification((m as any).users_deleted_success(), 'success');
+			createNotification(m.users_deleted_success(), 'success');
 			goto('/users');
 		} catch (e) {
 			await handleError(e);
@@ -25,11 +25,11 @@
 </script>
 
 <svelte:head>
-	<title>{(m as any).users_detail_title()} - {user.username}</title>
+	<title>{m.users_detail_title()} - {user.username}</title>
 </svelte:head>
 
 <section class="mx-auto max-w-3xl space-y-4 p-4">
-	<h1 class="text-3xl font-semibold">{(m as any).users_detail_title()}</h1>
+	<h1 class="text-3xl font-semibold">{m.users_detail_title()}</h1>
 
 	<div class="card secondary space-y-2">
 		<div>
@@ -53,11 +53,11 @@
 		<div class="flex gap-2 pt-2">
 			<button class="btn light" onclick={() => goto(`/users/${user.id}/edit`)}>
 				<Edit class="mr-1 h-4 w-4" />
-				{(m as any).actions_edit()}
+				{m.actions_edit()}
 			</button>
 			<button class="btn danger" onclick={() => (showDelete = true)}>
 				<Trash2 class="mr-1 h-4 w-4" />
-				{(m as any).actions_delete()}
+				{m.actions_delete()}
 			</button>
 		</div>
 	</div>
@@ -65,7 +65,7 @@
 	{#if showDelete}
 		<DeleteUserDialog
 			username={user.username}
-			message={(m as any).users_delete_confirm({ username: user.username })}
+			message={m.users_delete_confirm({ username: user.username })}
 			onConfirm={onDeleteConfirm}
 			onCancel={() => (showDelete = false)}
 			open

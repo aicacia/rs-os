@@ -6,7 +6,7 @@ authors = ["nathanfaucett@gmail.com"]
 description = "Aicacia OS Database."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/aicacia/rs-cli"
-rust-version = "1.90"
+rust-version = "1.91"
 
 [dependencies]
 axum = { version = "0.8", default-features = false }

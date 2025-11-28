@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Loader2 } from '@lucide/svelte';
 	import UserFormFields from './UserFormFields.svelte';
-	import * as m from '$lib/paraglide/messages/_index.js';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		initial?: { username?: string };
@@ -30,7 +30,7 @@
 
 <form class="space-y-4" onsubmit={handleSubmit}>
 	<h2 class="text-2xl font-semibold">
-		{mode === 'create' ? (m as any).users_create_title() : (m as any).users_edit_title()}
+		{mode === 'create' ? m.users_create_title() : m.users_edit_title()}
 	</h2>
 
 	<UserFormFields
@@ -49,11 +49,11 @@
 			{#if submitting}
 				<Loader2 class="mr-2 inline h-4 w-4 animate-spin" />
 			{/if}
-			{mode === 'create' ? (m as any).actions_create() : (m as any).actions_save()}
+			{mode === 'create' ? m.actions_create() : m.actions_save()}
 		</button>
 		{#if onCancel}
 			<button type="button" class="btn secondary" onclick={onCancel}>
-				{(m as any).actions_cancel()}
+				{m.actions_cancel()}
 			</button>
 		{/if}
 	</div>

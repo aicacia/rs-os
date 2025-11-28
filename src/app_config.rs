@@ -8,6 +8,8 @@ use serde::Deserialize;
 pub const OIDC_UI_URL_PREFIX: &str = "/oidc";
 pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
 
+pub const DOCUMENT_STORE_API_URL_PREFIX: &str = "/document-store/api";
+
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct ServerConfig {
@@ -31,6 +33,7 @@ impl Default for ServerConfig {
 pub struct AppConfig {
   pub server: ServerConfig,
   pub oidc: os_oidc::core::config::app_config::AppConfig,
+  pub document_store: os_document_store::core::config::app_config::AppConfig,
   pub log_level: String,
   pub url: Option<String>,
 }
@@ -40,6 +43,7 @@ impl Default for AppConfig {
     Self {
       server: Default::default(),
       oidc: Default::default(),
+      document_store: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: None,
     }
@@ -68,6 +72,17 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
       }
       if app_config.oidc.ui_url.is_none() {
         app_config.oidc.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
+      }
+    }
+
+    app_config.document_store.server.host = app_config.server.host.clone();
+    app_config.document_store.server.port = app_config.server.port;
+    app_config.document_store.server.gzip = app_config.server.gzip;
+
+    if let Some(url) = &app_config.url {
+      if app_config.document_store.api_url.is_none() {
+        app_config.document_store.api_url =
+          Some(format!("{}{}", url, DOCUMENT_STORE_API_URL_PREFIX));
       }
     }
 

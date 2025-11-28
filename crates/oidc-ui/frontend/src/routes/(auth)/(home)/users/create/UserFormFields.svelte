@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { AlertCircle, CheckCircle } from '@lucide/svelte';
-	import * as m from '$lib/paraglide/messages/_index.js';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		value?: string;
@@ -15,11 +15,10 @@
 
 	const usernameErrors = $derived.by(() => {
 		const errors: string[] = [];
-		if (!username) errors.push((m as any).validation_username_required());
-		if (username && !usernamePattern.test(username))
-			errors.push((m as any).validation_username_pattern());
+		if (!username) errors.push(m.validation_username_required());
+		if (username && !usernamePattern.test(username)) errors.push(m.validation_username_pattern());
 		if (username && (username.length < 3 || username.length > 50))
-			errors.push((m as any).validation_username_length());
+			errors.push(m.validation_username_length());
 		return errors;
 	});
 	const valid = $derived(usernameErrors.length === 0);
@@ -36,7 +35,7 @@
 
 <div class="space-y-2">
 	<label for="username-input" class="block text-sm font-medium text-gray-700 dark:text-gray-200"
-		>{(m as any).users_username()}</label
+		>{m.users_username()}</label
 	>
 	<input
 		id="username-input"

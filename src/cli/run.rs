@@ -16,7 +16,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 #[cfg(feature = "completions")]
 use crate::cli::completions;
 use crate::{
-  app_config::{AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX},
+  app_config::{AppConfig, DOCUMENT_STORE_API_URL_PREFIX, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX},
   cli::args::{CliArgs, CliCommand},
 };
 
@@ -56,7 +56,11 @@ pub async fn run() -> io::Result<()> {
 
   let (oidc_cleanup, oidc_router) = init_oidc(app_config.oidc.clone()).await?;
   let oidc_ui_router = os_oidc_ui_embed::router::create_router(Some(OIDC_UI_URL_PREFIX));
-  let router = Router::new().merge(oidc_router).merge(oidc_ui_router);
+  let document_store_router = init_document_store(app_config.document_store.clone()).await?;
+  let router = Router::new()
+    .merge(oidc_router)
+    .merge(oidc_ui_router)
+    .merge(document_store_router);
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {
     let addr = SocketAddr::from((
@@ -129,4 +133,17 @@ async fn init_oidc(
   };
 
   Ok((close_pool, oidc_router))
+}
+
+async fn init_document_store(
+  app_config: os_document_store::core::config::app_config::AppConfig,
+) -> io::Result<Router> {
+  let os_document_store_router = os_document_store::router::create_router(
+    os_document_store::router::entity::RouterState {
+      config: Arc::new(app_config),
+    },
+    Some(DOCUMENT_STORE_API_URL_PREFIX),
+  );
+
+  Ok(os_document_store_router)
 }

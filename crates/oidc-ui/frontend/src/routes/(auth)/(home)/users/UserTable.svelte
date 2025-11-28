@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { User } from '$lib/common/openapi/oidc/models';
 	import { Edit, Trash2 } from '@lucide/svelte';
-	import * as m from '$lib/paraglide/messages/_index.js';
+	import { m } from '$lib/paraglide/messages';
 
 	interface Props {
 		users: User[];
@@ -22,16 +22,16 @@
 	<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
 		<thead class="bg-gray-100 dark:bg-gray-800">
 			<tr>
-				<th class="px-4 py-2 text-left text-sm font-medium">{(m as any).users_id()}</th>
+				<th class="px-4 py-2 text-left text-sm font-medium">{m.users_id()}</th>
 				<th class="px-4 py-2 text-left text-sm font-medium">
 					<button class="flex items-center gap-1" onclick={() => (sortAsc = !sortAsc)}>
-						{(m as any).users_username()}
+						{m.users_username()}
 						<span class="text-xs">{sortAsc ? '▲' : '▼'}</span>
 					</button>
 				</th>
-				<th class="px-4 py-2 text-left text-sm font-medium">{(m as any).users_created_at()}</th>
-				<th class="px-4 py-2 text-left text-sm font-medium">{(m as any).users_updated_at()}</th>
-				<th class="px-4 py-2 text-left text-sm font-medium">{(m as any).users_actions()}</th>
+				<th class="px-4 py-2 text-left text-sm font-medium">{m.users_created_at()}</th>
+				<th class="px-4 py-2 text-left text-sm font-medium">{m.users_updated_at()}</th>
+				<th class="px-4 py-2 text-left text-sm font-medium">{m.users_actions()}</th>
 			</tr>
 		</thead>
 		<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
