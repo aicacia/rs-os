@@ -5,8 +5,6 @@ use crate::error::{HttpError, INVALID_ERROR};
 pub const AUTHORIZATION_HEADER: &str = "Authorization";
 pub const AUTHORIZATION_BEARER_PREFIX: &str = "Bearer ";
 
-/// Extracts the bearer token from an Authorization header value.
-/// Returns the token string without the "Bearer " prefix.
 pub fn authorization_from_header(
   authorization_header_value: &HeaderValue,
 ) -> Result<&str, HttpError> {

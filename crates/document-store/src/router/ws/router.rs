@@ -5,7 +5,7 @@ use axum::{
   },
   response::IntoResponse,
 };
-use os_api::HttpError;
+use os_api::{BasicClaims, HttpError};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
@@ -25,7 +25,7 @@ use crate::router::{
 )]
 async fn ws(
   State(state): State<RouterState>,
-  _: Authorization<()>,
+  _: Authorization<BasicClaims>,
   ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
   ws.on_upgrade(move |socket| async move {

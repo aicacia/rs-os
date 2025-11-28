@@ -18,7 +18,7 @@ use crate::{
         SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE, SCOPE_PROFILE,
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
       },
-      entity::{AuthorizationCodeClaims, BasicClaims, Claims, OpenIdClaims, OpenIdProfile, Token},
+      entity::{AuthorizationCodeClaims, BasicClaims, Claims, EncodeClaims, OpenIdClaims, OpenIdProfile, Token},
     },
     error::{HttpError, INTERNAL_ERROR},
   },

@@ -1,8 +1,5 @@
 use std::sync::Arc;
 
-/// Generic router state that can hold any configuration type.
-/// This allows services to define their own config structures while
-/// sharing the same state pattern.
 #[derive(Clone)]
 pub struct RouterState<C> {
   pub config: Arc<C>,

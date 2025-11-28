@@ -8,7 +8,6 @@ use utoipa::{
 
 use crate::middleware::AUTHORIZATION_HEADER;
 
-/// Adds JWT Bearer authentication security scheme to OpenAPI spec
 pub struct SecurityAddon;
 
 impl Modify for SecurityAddon {
@@ -29,7 +28,6 @@ impl Modify for SecurityAddon {
   }
 }
 
-/// Adds server URL to OpenAPI spec
 pub struct ServersAddon {
   base_api_url: String,
 }

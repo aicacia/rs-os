@@ -1,10 +1,9 @@
-use std::str::FromStr;
-
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{model::user::sql::UserInfoSQLRow, router::common::helper::to_public_jwk};
+pub use os_api::claims::{BasicClaims, Claims};
 
 #[derive(Serialize, ToSchema)]
 pub struct Token {
@@ -20,101 +19,6 @@ pub struct Token {
   pub refresh_token_expires_in: Option<i64>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub id_token: Option<String>,
-}
-
-pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
-  fn r#type(&self) -> &str;
-  fn exp(&self) -> i64;
-  fn iat(&self) -> i64;
-  fn nbf(&self) -> i64;
-  fn iss(&self) -> &str;
-  fn aud(&self) -> &str;
-  fn sub(&self) -> i64;
-  fn scope(&self) -> &str;
-
-  fn has_scope(&self, scope: &str) -> bool {
-    self.scope().split_whitespace().any(|s| s == scope)
-  }
-
-  fn encode(
-    &self,
-    issuer: &str,
-    jwk: &jsonwebtoken::jwk::Jwk,
-    encoding_key: &jsonwebtoken::EncodingKey,
-  ) -> Result<String, jsonwebtoken::errors::Error> {
-    let algorithm = match jwk.common.key_algorithm {
-      Some(key_algorithm) => {
-        match jsonwebtoken::Algorithm::from_str(key_algorithm.to_string().as_str()) {
-          Ok(algorithm) => algorithm,
-          Err(e) => {
-            log::error!("failed to convert key algorithm into string: {}", e);
-            return Err(jsonwebtoken::errors::Error::from(
-              jsonwebtoken::errors::ErrorKind::InvalidAlgorithmName,
-            ));
-          }
-        }
-      }
-      None => {
-        return Err(jsonwebtoken::errors::Error::from(
-          jsonwebtoken::errors::ErrorKind::InvalidAlgorithmName,
-        ));
-      }
-    };
-    let mut header = jsonwebtoken::Header::new(algorithm);
-    header.jwk = Some(to_public_jwk(jwk));
-    match &jwk.common.key_id {
-      Some(kid) => {
-        header.jku = Some(format!("{}/jwks/{}", issuer, kid));
-      }
-      None => {
-        log::error!("failed to get JWK ID");
-        return Err(jsonwebtoken::errors::Error::from(
-          jsonwebtoken::errors::ErrorKind::InvalidKeyFormat,
-        ));
-      }
-    }
-    jsonwebtoken::encode(&header, self, encoding_key)
-  }
-}
-
-#[derive(Debug, Default, Serialize, Deserialize, Clone, ToSchema)]
-pub struct BasicClaims {
-  pub r#type: String,
-  pub exp: i64,
-  pub iat: i64,
-  pub nbf: i64,
-  pub iss: String,
-  pub aud: String,
-  pub sub: i64,
-  pub scope: String,
-}
-
-impl Claims for BasicClaims {
-  fn r#type(&self) -> &str {
-    &self.r#type
-  }
-  fn exp(&self) -> i64 {
-    self.exp
-  }
-  fn iat(&self) -> i64 {
-    self.iat
-  }
-  fn nbf(&self) -> i64 {
-    self.nbf
-  }
-  fn iss(&self) -> &str {
-    &self.iss
-  }
-  fn aud(&self) -> &str {
-    &self.aud
-  }
-  fn sub(&self) -> i64 {
-    self.sub
-  }
-
-  fn scope(&self) -> &str {
-    &self.scope
-  }
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, ToSchema)]
@@ -262,3 +166,50 @@ impl Claims for OpenIdClaims {
     &self.basic_claims.scope
   }
 }
+
+pub trait EncodeClaims: Claims {
+  fn encode(
+    &self,
+    issuer: &str,
+    jwk: &jsonwebtoken::jwk::Jwk,
+    encoding_key: &jsonwebtoken::EncodingKey,
+  ) -> Result<String, jsonwebtoken::errors::Error> {
+    use std::str::FromStr;
+    let algorithm = match jwk.common.key_algorithm {
+      Some(key_algorithm) => {
+        match jsonwebtoken::Algorithm::from_str(key_algorithm.to_string().as_str()) {
+          Ok(algorithm) => algorithm,
+          Err(e) => {
+            log::error!("failed to convert key algorithm into string: {}", e);
+            return Err(jsonwebtoken::errors::Error::from(
+              jsonwebtoken::errors::ErrorKind::InvalidAlgorithmName,
+            ));
+          }
+        }
+      }
+      None => {
+        return Err(jsonwebtoken::errors::Error::from(
+          jsonwebtoken::errors::ErrorKind::InvalidAlgorithmName,
+        ));
+      }
+    };
+    let mut header = jsonwebtoken::Header::new(algorithm);
+    header.jwk = Some(to_public_jwk(jwk));
+    match &jwk.common.key_id {
+      Some(kid) => header.jku = Some(format!("{}/jwks/{}", issuer, kid)),
+      None => {
+        log::error!("failed to get JWK ID");
+        return Err(jsonwebtoken::errors::Error::from(
+          jsonwebtoken::errors::ErrorKind::InvalidKeyFormat,
+        ));
+      }
+    }
+    jsonwebtoken::encode(&header, self, encoding_key)
+  }
+}
+
+impl EncodeClaims for BasicClaims {}
+
+impl EncodeClaims for AuthorizationCodeClaims {}
+
+impl EncodeClaims for OpenIdClaims {}
