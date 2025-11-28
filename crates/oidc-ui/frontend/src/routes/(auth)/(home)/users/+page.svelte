@@ -2,6 +2,7 @@
 	import type { PageProps } from './$types';
 	import { Search, Plus } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import UserTable from './UserTable.svelte';
 	import UserCard from './UserCard.svelte';
 	import UserListSkeleton from './UserListSkeleton.svelte';
@@ -32,13 +33,13 @@
 	});
 
 	function onCreate() {
-		goto('/users/create');
+		goto(resolve('/(auth)/(home)/users/create'));
 	}
 	function onEdit(u: OUser) {
-		goto(`/users/${u.id}/edit`);
+		goto(resolve('/(auth)/(home)/users/[id]/edit', { id: u.id.toString() }));
 	}
 	function onView(u: OUser) {
-		goto(`/users/${u.id}`);
+		goto(resolve('/(auth)/(home)/users/[id]', { id: u.id.toString() }));
 	}
 </script>
 
