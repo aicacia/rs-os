@@ -41,8 +41,8 @@ use crate::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
       NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
     },
-    form::Form,
-    json::Json,
+    Form,
+    Json,
     middleware::{
       authorization::{Authorization, parse_authorization},
       user_authorization::UserAuthorization,

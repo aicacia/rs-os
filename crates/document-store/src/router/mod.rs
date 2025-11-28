@@ -1,10 +1,10 @@
 pub mod entity;
-pub mod error;
-pub mod form;
-pub mod json;
 pub mod middleware;
 pub mod openapi;
 mod router;
 pub mod util;
+
+// Re-export from os-api
+pub use os_api::{error, Form, Json};
 
 pub use router::{ApiDoc, create_router};

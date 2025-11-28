@@ -9,7 +9,7 @@ use crate::{
     common::{constants::TOKEN_ISSUE_TYPE_PASSWORD, entity::Token, helper::create_user_token},
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR},
-    json::Json,
+    Json,
     register::{constants::TAG, entity::SignupRequest},
   },
 };

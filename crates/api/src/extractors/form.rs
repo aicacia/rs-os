@@ -1,6 +1,6 @@
 use axum::extract::{FromRequest, Request, rejection::FormRejection};
 
-use crate::router::error::{HttpError, REQUEST_BODY};
+use crate::error::{HttpError, REQUEST_BODY};
 
 pub struct Form<T>(pub T);
 

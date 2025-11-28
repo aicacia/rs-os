@@ -1,6 +1,9 @@
 use axum::extract::{FromRef, FromRequestParts};
-use http::{HeaderValue, request::Parts};
+use http::request::Parts;
 use jsonwebtoken::DecodingKey;
+use os_api::{
+  AUTHORIZATION_HEADER, HttpError, INVALID_ERROR, REQUIRED_ERROR, authorization_from_header,
+};
 
 use crate::{
   core::{
@@ -9,13 +12,8 @@ use crate::{
   },
   model::revoked_token::sql::is_token_revoked,
   router::{
-    common::{
-      constants::{AUTHORIZATION_HEADER, TOKEN_TYPE_BEARER},
-      entity::Claims,
-      helper::parse_jwt,
-    },
+    common::{entity::Claims, helper::parse_jwt},
     entity::RouterState,
-    error::{HttpError, INVALID_ERROR, REQUIRED_ERROR},
   },
 };
 
@@ -51,24 +49,6 @@ where
       });
     }
     Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, REQUIRED_ERROR))
-  }
-}
-
-pub fn authorization_from_header(
-  authorization_header_value: &HeaderValue,
-) -> Result<&str, HttpError> {
-  match authorization_header_value.to_str() {
-    Ok(authorization_string) => {
-      if authorization_string.len() < TOKEN_TYPE_BEARER.len() + 1 {
-        log::error!("invalid authorization header is invalid");
-        return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-      }
-      Ok(&authorization_string[(TOKEN_TYPE_BEARER.len() + 1)..])
-    }
-    Err(e) => {
-      log::error!("invalid authorization header is invalid: {}", e);
-      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-    }
   }
 }
 
@@ -135,15 +115,12 @@ where
     }
   };
 
-  // Check if token is revoked
   match is_token_revoked(pool, authorization_string).await {
     Ok(true) => {
       log::error!("token has been revoked");
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
-    Ok(false) => {
-      // Token is not revoked, continue
-    }
+    Ok(false) => {}
     Err(e) => {
       log::error!("failed to check token revocation status: {}", e);
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
