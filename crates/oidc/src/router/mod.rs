@@ -15,7 +15,6 @@ pub mod user_phone_number;
 pub mod user_role;
 pub mod util;
 
-// Re-export from os-api
-pub use os_api::{error, Form, Json};
+pub use os_api::{Form, Json, error};
 
 pub use router::{ApiDoc, create_router};

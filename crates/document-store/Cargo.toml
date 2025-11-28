@@ -10,7 +10,7 @@ rust-version = "1.91"
 
 [dependencies]
 os-api = { version = "0.1", path = "../api", default-features = false }
-axum = { version = "0.8", default-features = false }
+axum = { version = "0.8", default-features = false, features = ["ws"] }
 build-time = { version = "0.1", default-features = false }
 chrono = { version = "0.4", features = ["serde"], default-features = false }
 config = { version = "0.15", default-features = false }

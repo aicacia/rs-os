@@ -6,7 +6,7 @@ use utoipa_axum::router::OpenApiRouter;
 use crate::router::{
   entity::RouterState,
   openapi::{self, utoipa::SecurityAddon},
-  util,
+  util, ws,
 };
 
 #[derive(OpenApi)]
@@ -23,7 +23,9 @@ pub struct ApiDoc;
 pub fn create_router(state: RouterState, prefix_optional: Option<&str>) -> Router {
   let mut open_api_router = OpenApiRouter::with_openapi(ApiDoc::openapi());
 
-  let open_api_routes = OpenApiRouter::new().merge(util::router::create_router(state.clone()));
+  let open_api_routes = OpenApiRouter::new()
+    .merge(util::router::create_router(state.clone()))
+    .merge(ws::router::create_router(state.clone()).into());
 
   if let Some(prefix) = prefix_optional {
     open_api_router = open_api_router.nest(prefix, open_api_routes);

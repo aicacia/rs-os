@@ -3,8 +3,8 @@ pub mod middleware;
 pub mod openapi;
 mod router;
 pub mod util;
+pub mod ws;
 
-// Re-export from os-api
-pub use os_api::{error, Form, Json};
+pub use os_api::{Form, Json, error};
 
 pub use router::{ApiDoc, create_router};
