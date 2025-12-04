@@ -1,6 +1,3 @@
-# Pedantic lints
-pedantic-lints = true
-
 # Cognitive complexity threshold
 cognitive-complexity-threshold = 30
 

@@ -62,7 +62,7 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
       .build()?
       .try_deserialize()?;
 
-    app_config.oidc.server.host = app_config.server.host.clone();
+    app_config.oidc.server.host = app_config.server.host;
     app_config.oidc.server.port = app_config.server.port;
     app_config.oidc.server.gzip = app_config.server.gzip;
 
@@ -75,16 +75,15 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
       }
     }
 
-    app_config.document_store.server.host = app_config.server.host.clone();
+    app_config.document_store.server.host = app_config.server.host;
     app_config.document_store.server.port = app_config.server.port;
     app_config.document_store.server.gzip = app_config.server.gzip;
 
-    if let Some(url) = &app_config.url {
-      if app_config.document_store.api_url.is_none() {
+    if let Some(url) = &app_config.url
+      && app_config.document_store.api_url.is_none() {
         app_config.document_store.api_url =
           Some(format!("{}{}", url, DOCUMENT_STORE_API_URL_PREFIX));
       }
-    }
 
     Ok(app_config)
   }

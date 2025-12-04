@@ -74,7 +74,10 @@ pub async fn run() -> io::Result<()> {
   let command_handle = match args.command {
     #[cfg(feature = "completions")]
     Some(CliCommand::Completions { shell }) => {
-      tokio::task::spawn_blocking(move || Ok(completions::run(shell)))
+      tokio::task::spawn_blocking(move || {
+          completions::run(shell);
+          Ok(())
+      })
     }
     Some(CliCommand::Serve { serve }) => run_serve(serve.host, serve.port),
     None => run_serve(None, None),
