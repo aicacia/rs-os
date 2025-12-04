@@ -10,3 +10,4 @@
 /os-admin-service-account.json
 /os*.db*
 /values.yaml
+/storage/

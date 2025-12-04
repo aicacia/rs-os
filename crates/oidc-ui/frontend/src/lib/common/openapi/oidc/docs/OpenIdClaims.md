@@ -12,7 +12,7 @@ Name | Type
 `iss` | string
 `nbf` | number
 `scope` | string
-`sub` | number
+`sub` | string
 `type` | string
 `address` | string
 `birthdate` | Date

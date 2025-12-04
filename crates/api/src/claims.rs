@@ -8,7 +8,7 @@ pub struct BasicClaims {
   pub nbf: i64,
   pub iss: String,
   pub aud: String,
-  pub sub: i64,
+  pub sub: String,
   pub scope: String,
 }
 
@@ -19,7 +19,7 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
   fn nbf(&self) -> i64;
   fn iss(&self) -> &str;
   fn aud(&self) -> &str;
-  fn sub(&self) -> i64;
+  fn sub(&self) -> &str;
   fn scope(&self) -> &str;
 
   fn has_scope(&self, scope: &str) -> bool {
@@ -46,8 +46,8 @@ impl Claims for BasicClaims {
   fn aud(&self) -> &str {
     &self.aud
   }
-  fn sub(&self) -> i64 {
-    self.sub
+  fn sub(&self) -> &str {
+    &self.sub
   }
   fn scope(&self) -> &str {
     &self.scope

@@ -18,7 +18,10 @@ use crate::{
         SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE, SCOPE_PROFILE,
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
       },
-      entity::{AuthorizationCodeClaims, BasicClaims, Claims, EncodeClaims, OpenIdClaims, OpenIdProfile, Token},
+      entity::{
+        AuthorizationCodeClaims, BasicClaims, Claims, EncodeClaims, OpenIdClaims, OpenIdProfile,
+        Token,
+      },
     },
     error::{HttpError, INTERNAL_ERROR},
   },
@@ -38,7 +41,7 @@ pub(crate) async fn create_user_token(
   let issuer = app_config.api_url();
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
-    sub: user.id,
+    sub: user.id.to_string(),
     aud: client_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
@@ -213,7 +216,7 @@ pub(crate) async fn create_user_authorization_code_token(
   let claims = AuthorizationCodeClaims {
     basic_claims: BasicClaims {
       r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
-      sub: user_id,
+      sub: user_id.to_string(),
       aud: client_id,
       iat: now.timestamp(),
       nbf: now.timestamp(),

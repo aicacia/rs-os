@@ -184,7 +184,18 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, "invalid-token-type"));
     }
 
-    match get_user_by_id(&router_state.pool, authorization.claims.sub).await {
+    let user_id = match authorization.claims.sub.parse::<i64>() {
+      Ok(id) => id,
+      Err(e) => {
+        log::error!(
+          "invalid authorization sub claim is not a valid user id: {}",
+          e
+        );
+        return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+      }
+    };
+
+    match get_user_by_id(&router_state.pool, user_id).await {
       Ok(Some(user_sql_row)) => {
         if !user_sql_row.is_active() {
           log::error!("invalid authorization user is not active");

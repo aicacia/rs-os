@@ -3,12 +3,35 @@ use std::path::Path;
 use os_api::{Environment, ServerConfig};
 use serde::Deserialize;
 
+#[derive(Debug, Default, Deserialize, Clone)]
+pub enum StorageAdapterKind {
+  #[default]
+  Sled,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
+pub struct StorageConfig {
+  pub storage_adapter: StorageAdapterKind,
+  pub data_path: String,
+}
+
+impl Default for StorageConfig {
+  fn default() -> Self {
+    Self {
+      storage_adapter: StorageAdapterKind::default(),
+      data_path: "./storage/data".to_string(),
+    }
+  }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct AppConfig {
   pub server: ServerConfig,
   pub log_level: String,
   pub env: Environment,
+  pub storage: StorageConfig,
   pub api_url: Option<String>,
   pub ui_url: Option<String>,
 }
@@ -19,6 +42,7 @@ impl Default for AppConfig {
       server: ServerConfig::default(),
       log_level: tracing::Level::DEBUG.to_string(),
       env: Environment::default(),
+      storage: StorageConfig::default(),
       api_url: None,
       ui_url: None,
     }

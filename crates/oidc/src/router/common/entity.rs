@@ -48,8 +48,8 @@ impl Claims for AuthorizationCodeClaims {
   fn aud(&self) -> &str {
     &self.basic_claims.aud
   }
-  fn sub(&self) -> i64 {
-    self.basic_claims.sub
+  fn sub(&self) -> &str {
+    &self.basic_claims.sub
   }
   fn scope(&self) -> &str {
     &self.basic_claims.scope
@@ -159,8 +159,8 @@ impl Claims for OpenIdClaims {
   fn aud(&self) -> &str {
     &self.basic_claims.aud
   }
-  fn sub(&self) -> i64 {
-    self.basic_claims.sub
+  fn sub(&self) -> &str {
+    &self.basic_claims.sub
   }
   fn scope(&self) -> &str {
     &self.basic_claims.scope
@@ -196,7 +196,10 @@ pub trait EncodeClaims: Claims {
     let mut header = jsonwebtoken::Header::new(algorithm);
     header.jwk = Some(to_public_jwk(jwk));
     match &jwk.common.key_id {
-      Some(kid) => header.jku = Some(format!("{}/jwks/{}", issuer, kid)),
+      Some(kid) => {
+        header.kid = Some(kid.clone());
+        header.jku = Some(format!("{}/.well-known/jwks.json", issuer))
+      }
       None => {
         log::error!("failed to get JWK ID");
         return Err(jsonwebtoken::errors::Error::from(

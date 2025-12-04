@@ -26,6 +26,7 @@ use crate::{
     },
   },
   router::{
+    Form, Json,
     common::{
       constants::{
         SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_OPENID, SCOPE_PHONE, SCOPE_PROFILE,
@@ -41,8 +42,6 @@ use crate::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
       NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
     },
-    Form,
-    Json,
     middleware::{
       authorization::{Authorization, parse_authorization},
       user_authorization::UserAuthorization,
@@ -448,7 +447,18 @@ async fn refresh_token_grant(
   )
   .await?;
 
-  let user = match get_user_by_id(&state.pool, token_data.claims.sub).await {
+  let user_id = match token_data.claims.sub.parse::<i64>() {
+    Ok(id) => id,
+    Err(e) => {
+      log::error!(
+        "invalid refresh token sub claim is not a valid user id: {}",
+        e
+      );
+      return Err(HttpError::unauthorized());
+    }
+  };
+
+  let user = match get_user_by_id(&state.pool, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -517,7 +527,18 @@ async fn authorization_code_grant(
   )
   .await?;
 
-  let user = match get_user_by_id(&state.pool, token_data.claims.basic_claims.sub).await {
+  let user_id = match token_data.claims.basic_claims.sub.parse::<i64>() {
+    Ok(id) => id,
+    Err(e) => {
+      log::error!(
+        "invalid authorization code sub claim is not a valid user id: {}",
+        e
+      );
+      return Err(HttpError::unauthorized());
+    }
+  };
+
+  let user = match get_user_by_id(&state.pool, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {

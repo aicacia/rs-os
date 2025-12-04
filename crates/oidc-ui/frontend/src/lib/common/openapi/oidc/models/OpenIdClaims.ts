@@ -57,10 +57,10 @@ export interface OpenIdClaims {
     scope: string;
     /**
      * 
-     * @type {number}
+     * @type {string}
      * @memberof OpenIdClaims
      */
-    sub: number;
+    sub: string;
     /**
      * 
      * @type {string}

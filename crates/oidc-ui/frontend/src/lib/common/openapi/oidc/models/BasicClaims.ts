@@ -57,10 +57,10 @@ export interface BasicClaims {
     scope: string;
     /**
      * 
-     * @type {number}
+     * @type {string}
      * @memberof BasicClaims
      */
-    sub: number;
+    sub: string;
     /**
      * 
      * @type {string}
