@@ -3,7 +3,7 @@ use std::{
   io,
 };
 
-use automerge::{ActorId, Automerge, ChangeHash, sync::State};
+use automerge::{ActorId, Automerge, ChangeHash, sync::Message};
 use dashmap::DashMap;
 use uuid::Uuid;
 
@@ -182,9 +182,14 @@ where
     }
   }
 
-  pub fn save_sync_state(&self, uuid: Uuid, id: [u8; 32], sync_state: State) -> io::Result<()> {
+  pub fn save_sync_message(
+    &self,
+    uuid: Uuid,
+    id: [u8; 32],
+    sync_message: Message,
+  ) -> io::Result<()> {
     let storage_key = StorageKey::new_sync_state(uuid, id);
-    let bytes = sync_state.encode();
+    let bytes = sync_message.encode();
 
     self.storage_adapter.set(storage_key.as_bytes(), &bytes)
   }
@@ -239,7 +244,7 @@ where
   }
 }
 
-fn hash_bytes(bytes: &[u8]) -> [u8; 32] {
+pub fn hash_bytes(bytes: &[u8]) -> [u8; 32] {
   use sha2::{Digest, Sha256};
 
   let mut hasher = Sha256::new();
@@ -252,7 +257,7 @@ fn hash_bytes(bytes: &[u8]) -> [u8; 32] {
   hash
 }
 
-fn hash_changes<T>(changes: &[T]) -> [u8; 32]
+pub fn hash_changes<T>(changes: &[T]) -> [u8; 32]
 where
   T: AsRef<[u8]>,
 {

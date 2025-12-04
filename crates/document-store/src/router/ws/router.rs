@@ -10,15 +10,18 @@ use axum::{
 use os_api::{BasicClaims, HttpError};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::router::{
-  entity::RouterState,
-  middleware::authorization::parse_token_data,
-  ws::{
-    constants::TAG,
-    entity::{
-      FromClientMessage, FromServerMessage, PeerMessage, PeerMetadata, WSAuthorizationRequest,
+use crate::{
+  core::storage::storage::hash_bytes,
+  router::{
+    entity::RouterState,
+    middleware::authorization::parse_token_data,
+    ws::{
+      constants::TAG,
+      entity::{
+        FromClientMessage, FromServerMessage, PeerMessage, PeerMetadata, WSAuthorizationRequest,
+      },
+      service::SharedStorage,
     },
-    service::SharedStorage,
   },
 };
 
@@ -52,14 +55,14 @@ async fn ws(
   let sub = claims.sub;
   let aud = claims.aud;
 
-  let shared =
+  let storage =
     match SharedStorage::get(Path::new(&state.config.storage.data_path), &aud, &sub).await {
       Ok(s) => s,
       Err(err) => return err.into_response(),
     };
 
   ws.on_upgrade(move |socket| async move {
-    if let Err(err) = handle_ws(socket, shared).await {
+    if let Err(err) = handle_ws(socket, storage).await {
       log::error!("WebSocket error: {}", err);
     }
   })
@@ -95,7 +98,7 @@ async fn handle_ws(mut socket: WebSocket, storage: SharedStorage) -> Result<(), 
               &FromServerMessage::Peer(PeerMessage {
                 sender_id: storage.peer_id(),
                 peer_metadata: PeerMetadata {
-                  storage_id: join_message.peer_metadata.storage_id.clone(),
+                  storage_id: storage.id().to_string(),
                   is_ephemeral: false,
                 },
                 target_id: join_message.sender_id.clone(),
@@ -117,6 +120,24 @@ async fn handle_ws(mut socket: WebSocket, storage: SharedStorage) -> Result<(), 
           }
           FromClientMessage::Sync(sync_message) => {
             log::debug!("Received Sync message: {:?}", sync_message);
+            let uuid = uuid::Uuid::new_v3(
+              &uuid::Uuid::NAMESPACE_URL,
+              sync_message.document_id.as_bytes(),
+            );
+            let id = hash_bytes(&sync_message.data);
+            let sync_message = match automerge::sync::Message::decode(&sync_message.data) {
+              Ok(s) => s,
+              Err(err) => {
+                log::error!("Failed to decode sync message: {}", err);
+                continue;
+              }
+            };
+            match storage.save_sync_message(uuid, id, sync_message) {
+              Ok(()) => {}
+              Err(err) => {
+                log::error!("Failed to save sync message: {}", err);
+              }
+            }
             continue;
           }
           FromClientMessage::Ephemeral(ephemeral_message) => {

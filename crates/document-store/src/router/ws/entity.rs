@@ -16,9 +16,9 @@ pub type SessionId = String;
 pub struct SyncMessage {
   pub sender_id: PeerId,
   pub target_id: PeerId,
+  pub document_id: DocumentId,
   #[serde(with = "serde_bytes")]
   pub data: Vec<u8>,
-  pub document_id: DocumentId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,9 +46,9 @@ pub struct DocumentUnavailableMessage {
 pub struct RequestMessage {
   pub sender_id: PeerId,
   pub target_id: PeerId,
+  pub document_id: DocumentId,
   #[serde(with = "serde_bytes")]
   pub data: Vec<u8>,
-  pub document_id: DocumentId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

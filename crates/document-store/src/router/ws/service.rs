@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub struct SharedStorage {
+  id: uuid::Uuid,
   inner: Arc<Storage<SledStorageAdapter>>,
   key: u64,
 }
@@ -31,6 +32,10 @@ impl SharedStorage {
     aud.hash(&mut hasher);
     sub.hash(&mut hasher);
     hasher.finish()
+  }
+
+  pub fn id(&self) -> uuid::Uuid {
+    self.id
   }
 
   pub fn peer_id(&self) -> String {
@@ -75,7 +80,11 @@ impl SharedStorage {
       }
     };
 
-    Ok(SharedStorage { inner, key })
+    Ok(SharedStorage {
+      id: uuid::Uuid::now_v7(),
+      inner,
+      key,
+    })
   }
 }
 
