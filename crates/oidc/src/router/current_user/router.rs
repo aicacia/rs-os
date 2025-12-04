@@ -1,18 +1,22 @@
-use crate::router::{Json, current_user::entity::UserInfo};
 use axum::{extract::State, response::IntoResponse};
 use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::router::{
-  current_user::{constants::TAG, entity::CurrentUser},
-  entity::RouterState,
-  error::HttpError,
-  middleware::user_authorization::UserAuthorization,
+use crate::{
+  model::user::sql::{update_user_password, update_user_username},
+  router::{
+    Json,
+    current_user::{
+      constants::TAG,
+      entity::{
+        CurrentUser, UpdateUserInfoRequest, UpdateUserPassword, UpdateUsernameRequest, UserInfo,
+      },
+    },
+    entity::RouterState,
+    error::HttpError,
+    middleware::user_authorization::UserAuthorization,
+  },
 };
-
-use crate::model::user::sql::{update_user_password, update_user_username};
-use crate::router::current_user::entity::UpdateUserInfoRequest;
-use crate::router::current_user::entity::{UpdateUserPassword, UpdateUsernameRequest};
 
 #[utoipa::path(
   get,

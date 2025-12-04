@@ -16,5 +16,4 @@ pub mod user_role;
 pub mod util;
 
 pub use os_api::{Form, Json, error};
-
 pub use router::{ApiDoc, create_router};

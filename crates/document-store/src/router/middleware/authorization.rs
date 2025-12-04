@@ -2,8 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
-use jsonwebtoken::jwk::Jwk;
-use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode, jwk::Jwk};
 use once_cell::sync::Lazy;
 use os_api::{
   AUTHORIZATION_HEADER, Claims, HttpError, INVALID_ERROR, REQUIRED_ERROR, authorization_from_header,
@@ -81,8 +80,7 @@ async fn fetch_decoding_key(jku: &str, kid: &str) -> Result<DecodingKey, HttpErr
 }
 
 fn base64_url_decode(segment: &str) -> Result<Vec<u8>, HttpError> {
-  use base64::Engine;
-  use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+  use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
   URL_SAFE_NO_PAD
     .decode(segment)
     .map_err(|_| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))

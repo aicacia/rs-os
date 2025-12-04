@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
+pub use os_api::claims::{BasicClaims, Claims};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{model::user::sql::UserInfoSQLRow, router::common::helper::to_public_jwk};
-pub use os_api::claims::{BasicClaims, Claims};
 
 #[derive(Serialize, ToSchema)]
 pub struct Token {

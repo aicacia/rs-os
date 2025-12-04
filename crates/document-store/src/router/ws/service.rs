@@ -12,8 +12,10 @@ use once_cell::sync::Lazy;
 use os_api::{HttpError, INTERNAL_ERROR};
 use tokio::fs;
 
-use crate::core::storage::{sled_storage_adapter::SledStorageAdapter, storage::Storage};
-use crate::router::ws::constants::DATA_PATH_DOCUMENTS;
+use crate::{
+  core::storage::{sled_storage_adapter::SledStorageAdapter, storage::Storage},
+  router::ws::constants::DATA_PATH_DOCUMENTS,
+};
 
 pub struct SharedStorage {
   inner: Arc<Storage<SledStorageAdapter>>,

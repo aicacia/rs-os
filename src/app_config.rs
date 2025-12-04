@@ -80,10 +80,10 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.document_store.server.gzip = app_config.server.gzip;
 
     if let Some(url) = &app_config.url
-      && app_config.document_store.api_url.is_none() {
-        app_config.document_store.api_url =
-          Some(format!("{}{}", url, DOCUMENT_STORE_API_URL_PREFIX));
-      }
+      && app_config.document_store.api_url.is_none()
+    {
+      app_config.document_store.api_url = Some(format!("{}{}", url, DOCUMENT_STORE_API_URL_PREFIX));
+    }
 
     Ok(app_config)
   }

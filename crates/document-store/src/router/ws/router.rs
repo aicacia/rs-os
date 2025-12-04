@@ -10,16 +10,15 @@ use axum::{
 use os_api::{BasicClaims, HttpError};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::router::ws::{
-  entity::{FromServerMessage, PeerMessage, PeerMetadata},
-  service::SharedStorage,
-};
 use crate::router::{
   entity::RouterState,
   middleware::authorization::parse_token_data,
   ws::{
     constants::TAG,
-    entity::{FromClientMessage, WSAuthorizationRequest},
+    entity::{
+      FromClientMessage, FromServerMessage, PeerMessage, PeerMetadata, WSAuthorizationRequest,
+    },
+    service::SharedStorage,
   },
 };
 
