@@ -1,4 +1,4 @@
-use crate::router::{current_user::entity::UserInfo, Json};
+use crate::router::{Json, current_user::entity::UserInfo};
 use axum::{extract::State, response::IntoResponse};
 use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};

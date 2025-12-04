@@ -11,7 +11,7 @@ use os_api::{BasicClaims, HttpError};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::ws::{
-  entity::{FromServerMessage, JoinMessage, PeerMessage, PeerMetadata},
+  entity::{FromServerMessage, PeerMessage, PeerMetadata},
   service::SharedStorage,
 };
 use crate::router::{

@@ -60,8 +60,7 @@ pub async fn list_user_oauth2_providers(
 
   match get_user_oauth2_providers(&state.pool, user_id_parsed).await {
     Ok(providers) => {
-      let providers: Vec<UserOAuth2Provider> =
-        providers.into_iter().map(|p| p.into()).collect();
+      let providers: Vec<UserOAuth2Provider> = providers.into_iter().map(|p| p.into()).collect();
       axum::Json(providers).into_response()
     }
     Err(e) => {

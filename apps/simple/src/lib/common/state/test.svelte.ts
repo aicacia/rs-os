@@ -6,10 +6,7 @@ export interface TestDocument {
 	count: number;
 }
 
-const testDocumentId = localStorageState<DocumentId | null>(
-	'test-document-id',
-	null
-);
+const testDocumentId = localStorageState<DocumentId | null>('test-document-id', null);
 const testDocumentHandle = $derived.by(initTestDocumentHandle);
 
 async function initTestDocumentHandle() {

@@ -6,9 +6,7 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  model::user::sql::{
-    assign_user_role, get_user_permissions, get_user_roles, remove_user_role,
-  },
+  model::user::sql::{assign_user_role, get_user_permissions, get_user_roles, remove_user_role},
   router::{
     common::permissions::Permission,
     entity::RouterState,
@@ -108,9 +106,7 @@ pub async fn list_user_permissions(
   }
 
   match get_user_permissions(&state.pool, user_id_parsed).await {
-    Ok(permissions) => {
-      axum::Json(UserPermissions { permissions }).into_response()
-    }
+    Ok(permissions) => axum::Json(UserPermissions { permissions }).into_response(),
     Err(e) => {
       log::error!("error listing user permissions: {}", e);
       HttpError::internal_error()

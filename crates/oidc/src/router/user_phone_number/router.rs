@@ -8,8 +8,7 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 use crate::{
   model::user::sql::{
     create_user_phone_number, delete_user_phone_number, get_user_phone_number_by_id,
-    get_user_phone_numbers_by_user_id, update_user_phone_number_primary,
-    verify_user_phone_number,
+    get_user_phone_numbers_by_user_id, update_user_phone_number_primary, verify_user_phone_number,
   },
   router::{
     common::permissions::Permission,
@@ -251,22 +250,26 @@ pub async fn update_user_phone_number_handler(
 
   if let Some(is_primary) = request.is_primary {
     if is_primary {
-      let phone_sql_row =
-        match update_user_phone_number_primary(&state.pool, user_id_parsed, phone_id_parsed).await
-        {
-          Ok(Some(phone)) => phone,
-          Ok(None) => {
-            return HttpError::not_found()
-              .with_error("phone_number", NOT_FOUND_ERROR)
-              .into_response();
-          }
-          Err(e) => {
-            log::error!("error updating user phone number primary: {}", e);
-            return HttpError::internal_error()
-              .with_application_error(INTERNAL_ERROR)
-              .into_response();
-          }
-        };
+      let phone_sql_row = match update_user_phone_number_primary(
+        &state.pool,
+        user_id_parsed,
+        phone_id_parsed,
+      )
+      .await
+      {
+        Ok(Some(phone)) => phone,
+        Ok(None) => {
+          return HttpError::not_found()
+            .with_error("phone_number", NOT_FOUND_ERROR)
+            .into_response();
+        }
+        Err(e) => {
+          log::error!("error updating user phone number primary: {}", e);
+          return HttpError::internal_error()
+            .with_application_error(INTERNAL_ERROR)
+            .into_response();
+        }
+      };
 
       let phone: UserPhoneNumber = phone_sql_row.into();
       return axum::Json(phone).into_response();

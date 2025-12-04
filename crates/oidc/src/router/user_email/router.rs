@@ -396,8 +396,7 @@ pub async fn verify_user_email_handler(
     Err(e) => return e.into_response(),
   }
 
-  let email_sql_row = match verify_user_email(&state.pool, user_id_parsed, email_id_parsed).await
-  {
+  let email_sql_row = match verify_user_email(&state.pool, user_id_parsed, email_id_parsed).await {
     Ok(Some(email)) => email,
     Ok(None) => {
       return HttpError::not_found()

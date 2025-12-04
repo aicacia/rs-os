@@ -48,7 +48,9 @@ const userSettings = browser
 
 const authority = localStorageState('authority', 'http://localhost:3000/oidc/api');
 
-const userManager = $derived.by(() => new UserManager({ ...userSettings, authority: authority.value }))
+const userManager = $derived.by(
+	() => new UserManager({ ...userSettings, authority: authority.value })
+);
 
 export function getAuthority() {
 	return authority.value;
@@ -57,8 +59,6 @@ export function getAuthority() {
 export function setAuthority(value: string) {
 	authority.value = value;
 }
-
-
 
 export function getUserManager() {
 	return userManager;

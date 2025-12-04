@@ -6,10 +6,10 @@ use crate::{
   core::jwk::sql::get_jwk_for_sign_and_verify,
   model::user::sql::create_user_with_password,
   router::{
+    Json,
     common::{constants::TOKEN_ISSUE_TYPE_PASSWORD, entity::Token, helper::create_user_token},
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR},
-    Json,
     register::{constants::TAG, entity::SignupRequest},
   },
 };
