@@ -24,6 +24,7 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 	#ws: KeepAliveWebSocket;
 
 	#ready = false;
+	#joinSent = false;
 	// @ts-expect-error private field initialization
 	#readyResolve: () => void;
 	#readyPromise: Promise<void> = new Promise((resolve) => {
@@ -80,13 +81,13 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 		}
 	}
 
-	connect(peerId: PeerId, peerMetadata?: PeerMetadata): void {
+	connect(peerId: PeerId, peerMetadata?: PeerMetadata) {
 		this.#peerId = peerId;
 		this.#peerMetadata = peerMetadata || {};
-		this.#join();
+		void this.#join();
 	}
 
-	send(message: Message): void {
+	send(message: Message) {
 		if ('data' in message && message.data?.byteLength === 0) {
 			throw new Error('Tried to send a zero-length message');
 		}
@@ -96,7 +97,7 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 
 		console.debug('Sending message', message);
 
-		this.#ws.send(toArrayBuffer(encode(message)));
+		void this.#ws.send(toArrayBuffer(encode(message)));
 	}
 
 	disconnect(): void {
@@ -122,6 +123,7 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 
 	#peerCandidate(remotePeerId: PeerId, peerMetadata: PeerMetadata) {
 		this.#remotePeerId = remotePeerId;
+		this.#joinSent = false;
 		this.#setReady(true);
 		this.emit('peer-candidate', {
 			peerId: remotePeerId,
@@ -131,6 +133,7 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 
 	#close() {
 		this.#setReady(false);
+		this.#joinSent = false;
 		if (this.#remotePeerId) {
 			this.emit('peer-disconnected', { peerId: this.#remotePeerId });
 			this.#remotePeerId = undefined;
@@ -144,9 +147,13 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 		if (this.isReady()) {
 			return;
 		}
+		if (this.#joinSent) {
+			return;
+		}
 		if (this.#peerId === null || this.#peerMetadata === null) {
 			return;
 		}
+		this.#joinSent = true;
 		this.send(joinMessage(this.#peerId, this.#peerMetadata) as never as Message);
 	}
 }

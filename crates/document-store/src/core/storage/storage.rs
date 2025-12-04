@@ -5,7 +5,6 @@ use std::{
 
 use automerge::{ActorId, Automerge, ChangeHash, sync::Message};
 use dashmap::DashMap;
-use uuid::Uuid;
 
 use crate::core::storage::{
   storage_adapter::StorageAdapter,
@@ -18,9 +17,9 @@ where
 {
   storage_adapter: SA,
   // TODO: use LRU cache
-  chunk_infos: DashMap<Uuid, HashMap<StorageKey, usize>>,
+  chunk_infos: DashMap<String, HashMap<StorageKey, usize>>,
   // TODO: use LRU cache
-  stored_heads: DashMap<Uuid, Vec<ChangeHash>>,
+  stored_heads: DashMap<String, Vec<ChangeHash>>,
 }
 
 impl<SA> From<SA> for Storage<SA>
@@ -44,8 +43,8 @@ where
     }
   }
 
-  fn should_save_document(&self, uuid: Uuid, document: &Automerge) -> bool {
-    let old_heads = match self.stored_heads.get(&uuid) {
+  fn should_save_document(&self, key: &str, document: &Automerge) -> bool {
+    let old_heads = match self.stored_heads.get(key) {
       Some(old_heads) => old_heads,
       None => {
         log::debug!("no cached heads should save");
@@ -96,7 +95,7 @@ where
 
   fn save_compact(
     &self,
-    uuid: Uuid,
+    key: String,
     document: &Automerge,
     chunk_info: &mut HashMap<StorageKey, usize>,
     stored_heads: &mut Vec<ChangeHash>,
@@ -106,26 +105,26 @@ where
     let snapshot_hash = hash_changes(&new_heads);
     let old_keys: HashSet<_> = chunk_info
       .keys()
-      .filter_map(|key| {
-        if &key.id != &snapshot_hash {
-          Some(key.clone())
+      .filter_map(|storage_key| {
+        if &storage_key.id != &snapshot_hash {
+          Some(storage_key.clone())
         } else {
           None
         }
       })
       .collect();
-    let key = StorageKey::new(uuid, ChunkType::Snapshot, snapshot_hash);
+    let storage_key = StorageKey::new(key, ChunkType::Snapshot, snapshot_hash);
 
-    self.storage_adapter.set(key.as_bytes(), &bytes)?;
+    self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
 
     for old_key in &old_keys {
-      self.storage_adapter.delete(old_key.as_bytes())?;
+      self.storage_adapter.delete(&old_key.to_bytes())?;
     }
 
     for old_key in old_keys {
       chunk_info.remove(&old_key);
     }
-    chunk_info.insert(key, bytes.len());
+    chunk_info.insert(storage_key, bytes.len());
 
     *stored_heads = new_heads;
 
@@ -134,7 +133,7 @@ where
 
   fn save_incremental(
     &self,
-    uuid: Uuid,
+    key: String,
     document: &Automerge,
     chunk_info: &mut HashMap<StorageKey, usize>,
     stored_heads: &mut Vec<ChangeHash>,
@@ -146,35 +145,35 @@ where
     }
 
     let snapshot_hash = hash_bytes(&bytes);
-    let key = StorageKey::new(uuid, ChunkType::Incremental, snapshot_hash);
+    let storage_key = StorageKey::new(key, ChunkType::Incremental, snapshot_hash);
 
-    self.storage_adapter.set(key.as_bytes(), &bytes)?;
+    self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
 
-    chunk_info.insert(key.clone(), bytes.len());
+    chunk_info.insert(storage_key.clone(), bytes.len());
 
     *stored_heads = document.get_heads();
 
     Ok(())
   }
 
-  pub fn save_document(&self, uuid: Uuid, document: &Automerge) -> io::Result<()> {
-    if !self.should_save_document(uuid, document) {
+  pub fn save_document(&self, key: String, document: &Automerge) -> io::Result<()> {
+    if !self.should_save_document(&key, document) {
       return Ok(());
     }
 
-    let mut chunk_info = self.chunk_infos.entry(uuid).or_default();
-    let mut stored_heads = self.stored_heads.entry(uuid).or_default();
+    let mut chunk_info = self.chunk_infos.entry(key.clone()).or_default();
+    let mut stored_heads = self.stored_heads.entry(key.clone()).or_default();
 
     if self.should_compact(chunk_info.value()) {
       self.save_compact(
-        uuid,
+        key,
         document,
         chunk_info.value_mut(),
         stored_heads.value_mut(),
       )
     } else {
       self.save_incremental(
-        uuid,
+        key,
         document,
         chunk_info.value_mut(),
         stored_heads.value_mut(),
@@ -184,21 +183,21 @@ where
 
   pub fn save_sync_message(
     &self,
-    uuid: Uuid,
+    key: String,
     id: [u8; 32],
     sync_message: Message,
   ) -> io::Result<()> {
-    let storage_key = StorageKey::new_sync_state(uuid, id);
+    let storage_key = StorageKey::new_sync_state(key, id);
     let bytes = sync_message.encode();
 
-    self.storage_adapter.set(storage_key.as_bytes(), &bytes)
+    self.storage_adapter.set(&storage_key.to_bytes(), &bytes)
   }
 
-  pub fn load_document(&self, uuid: Uuid) -> io::Result<(Automerge, bool)> {
+  pub fn load_document(&self, key: String) -> io::Result<(Automerge, bool)> {
     let mut bytes = Vec::new();
     let mut chunk_info = HashMap::new();
 
-    self.storage_adapter.search(uuid.as_bytes(), |(k, mut v)| {
+    self.storage_adapter.search(key.as_bytes(), |(k, mut v)| {
       let storage_key = StorageKey::try_from(k.as_slice())?;
 
       chunk_info.insert(storage_key, v.len());
@@ -207,9 +206,9 @@ where
       Ok(())
     })?;
 
-    self.chunk_infos.insert(uuid, chunk_info);
+    self.chunk_infos.insert(key.clone(), chunk_info);
 
-    let mut document: Automerge = Automerge::new().with_actor(ActorId::from(uuid.as_bytes()));
+    let mut document: Automerge = Automerge::new().with_actor(ActorId::from(key.as_bytes()));
 
     let is_new = bytes.is_empty();
 
@@ -219,21 +218,21 @@ where
         .map_err(io::Error::other)?;
     }
 
-    self.stored_heads.insert(uuid, document.get_heads());
+    self.stored_heads.insert(key, document.get_heads());
 
     Ok((document, is_new))
   }
 
-  pub fn remove_document(self, uuid: &Uuid) -> io::Result<()> {
+  pub fn remove_document(self, key: &str) -> io::Result<()> {
     let mut storage_keys = Vec::new();
 
-    self.storage_adapter.search(uuid.as_bytes(), |(k, _)| {
+    self.storage_adapter.search(key.as_bytes(), |(k, _)| {
       storage_keys.push(StorageKey::try_from(k.as_slice())?);
       Ok(())
     })?;
 
     for storage_key in storage_keys {
-      self.storage_adapter.delete(storage_key.as_bytes())?;
+      self.storage_adapter.delete(&storage_key.to_bytes())?;
     }
 
     Ok(())

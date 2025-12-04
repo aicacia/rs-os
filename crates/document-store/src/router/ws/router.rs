@@ -119,20 +119,15 @@ async fn handle_ws(mut socket: WebSocket, storage: SharedStorage) -> Result<(), 
             }
           }
           FromClientMessage::Sync(sync_message) => {
-            log::debug!("Received Sync message: {:?}", sync_message);
-            let uuid = uuid::Uuid::new_v3(
-              &uuid::Uuid::NAMESPACE_URL,
-              sync_message.document_id.as_bytes(),
-            );
             let id = hash_bytes(&sync_message.data);
-            let sync_message = match automerge::sync::Message::decode(&sync_message.data) {
+            let message = match automerge::sync::Message::decode(&sync_message.data) {
               Ok(s) => s,
               Err(err) => {
                 log::error!("Failed to decode sync message: {}", err);
                 continue;
               }
             };
-            match storage.save_sync_message(uuid, id, sync_message) {
+            match storage.save_sync_message(sync_message.document_id, id, message) {
               Ok(()) => {}
               Err(err) => {
                 log::error!("Failed to save sync message: {}", err);
