@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use automerge::sync::SyncDoc;
 use axum::{
   extract::{
     Query, State,
@@ -18,7 +19,7 @@ use crate::{
     ws::{
       constants::TAG,
       entity::{
-        FromClientMessage, FromServerMessage, PeerMessage, PeerMetadata, WSAuthorizationRequest,
+        FromClientMessage, FromServerMessage, PeerMessage, SyncMessage, WSAuthorizationRequest,
       },
       service::SharedStorage,
     },
@@ -97,10 +98,7 @@ async fn handle_ws(mut socket: WebSocket, storage: SharedStorage) -> Result<(), 
             match ciborium::into_writer(
               &FromServerMessage::Peer(PeerMessage {
                 sender_id: storage.peer_id(),
-                peer_metadata: PeerMetadata {
-                  storage_id: storage.id().to_string(),
-                  is_ephemeral: false,
-                },
+                peer_metadata: storage.peer_metadata(),
                 target_id: join_message.sender_id.clone(),
               }),
               &mut cbor_message,
@@ -127,7 +125,7 @@ async fn handle_ws(mut socket: WebSocket, storage: SharedStorage) -> Result<(), 
                 continue;
               }
             };
-            match storage.save_sync_message(sync_message.document_id, id, message) {
+            match storage.save_sync_message(&sync_message.document_id, id, message) {
               Ok(()) => {}
               Err(err) => {
                 log::error!("Failed to save sync message: {}", err);
@@ -140,8 +138,63 @@ async fn handle_ws(mut socket: WebSocket, storage: SharedStorage) -> Result<(), 
             continue;
           }
           FromClientMessage::Request(request_message) => {
-            log::debug!("Received Request message: {:?}", request_message);
-            continue;
+            let id = hash_bytes(&request_message.data);
+            let message = match automerge::sync::Message::decode(&request_message.data) {
+              Ok(s) => s,
+              Err(err) => {
+                log::error!("Failed to decode request message: {}", err);
+                continue;
+              }
+            };
+            let mut document = match storage.load_document(&request_message.document_id) {
+              Ok((document, _is_new)) => document,
+              Err(e) => {
+                log::error!(
+                  "Failed to load document {}: {}",
+                  request_message.document_id,
+                  e
+                );
+                continue;
+              }
+            };
+            let mut sync_state = automerge::sync::State::new();
+            match document.receive_sync_message(&mut sync_state, message) {
+              Ok(()) => {}
+              Err(err) => {
+                log::error!("Failed to receive sync message: {}", err);
+                continue;
+              }
+            }
+            let sync_message = match document.generate_sync_message(&mut sync_state) {
+              Some(sync_message) => sync_message,
+              None => {
+                log::debug!("No sync message to send in response to request");
+                continue;
+              }
+            };
+            let server_message = FromServerMessage::Sync(SyncMessage {
+              sender_id: storage.peer_id(),
+              target_id: request_message.sender_id.clone(),
+              document_id: request_message.document_id.clone(),
+              data: sync_message.encode(),
+            });
+            let mut encoded_server_message = Vec::new();
+            match ciborium::ser::into_writer(&server_message, &mut encoded_server_message) {
+              Ok(()) => {}
+              Err(err) => {
+                log::error!("Failed to serialize server message: {}", err);
+                continue;
+              }
+            };
+            match socket
+              .send(Message::Binary(encoded_server_message.into()))
+              .await
+            {
+              Ok(()) => {}
+              Err(err) => {
+                log::error!("Failed to send sync message over WebSocket: {}", err);
+              }
+            }
           }
           FromClientMessage::DocumentUnavailable(document_unavailable_message) => {
             log::debug!(

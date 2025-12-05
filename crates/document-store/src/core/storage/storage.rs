@@ -95,7 +95,7 @@ where
 
   fn save_compact(
     &self,
-    key: String,
+    key: &str,
     document: &Automerge,
     chunk_info: &mut HashMap<StorageKey, usize>,
     stored_heads: &mut Vec<ChangeHash>,
@@ -113,7 +113,7 @@ where
         }
       })
       .collect();
-    let storage_key = StorageKey::new(key, ChunkType::Snapshot, snapshot_hash);
+    let storage_key = StorageKey::new(key.to_string(), ChunkType::Snapshot, snapshot_hash);
 
     self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
 
@@ -133,7 +133,7 @@ where
 
   fn save_incremental(
     &self,
-    key: String,
+    key: &str,
     document: &Automerge,
     chunk_info: &mut HashMap<StorageKey, usize>,
     stored_heads: &mut Vec<ChangeHash>,
@@ -145,7 +145,7 @@ where
     }
 
     let snapshot_hash = hash_bytes(&bytes);
-    let storage_key = StorageKey::new(key, ChunkType::Incremental, snapshot_hash);
+    let storage_key = StorageKey::new(key.to_string(), ChunkType::Incremental, snapshot_hash);
 
     self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
 
@@ -156,13 +156,13 @@ where
     Ok(())
   }
 
-  pub fn save_document(&self, key: String, document: &Automerge) -> io::Result<()> {
-    if !self.should_save_document(&key, document) {
+  pub fn save_document(&self, key: &str, document: &Automerge) -> io::Result<()> {
+    if !self.should_save_document(key, document) {
       return Ok(());
     }
 
-    let mut chunk_info = self.chunk_infos.entry(key.clone()).or_default();
-    let mut stored_heads = self.stored_heads.entry(key.clone()).or_default();
+    let mut chunk_info = self.chunk_infos.entry(key.to_string()).or_default();
+    let mut stored_heads = self.stored_heads.entry(key.to_string()).or_default();
 
     if self.should_compact(chunk_info.value()) {
       self.save_compact(
@@ -183,17 +183,17 @@ where
 
   pub fn save_sync_message(
     &self,
-    key: String,
+    key: &str,
     id: [u8; 32],
     sync_message: Message,
   ) -> io::Result<()> {
-    let storage_key = StorageKey::new_sync_state(key, id);
+    let storage_key = StorageKey::new_sync_state(key.to_string(), id);
     let bytes = sync_message.encode();
 
     self.storage_adapter.set(&storage_key.to_bytes(), &bytes)
   }
 
-  pub fn load_document(&self, key: String) -> io::Result<(Automerge, bool)> {
+  pub fn load_document(&self, key: &str) -> io::Result<(Automerge, bool)> {
     let mut bytes = Vec::new();
     let mut chunk_info = HashMap::new();
 
@@ -206,7 +206,7 @@ where
       Ok(())
     })?;
 
-    self.chunk_infos.insert(key.clone(), chunk_info);
+    self.chunk_infos.insert(key.to_string(), chunk_info);
 
     let mut document: Automerge = Automerge::new().with_actor(ActorId::from(key.as_bytes()));
 
@@ -218,7 +218,9 @@ where
         .map_err(io::Error::other)?;
     }
 
-    self.stored_heads.insert(key, document.get_heads());
+    self
+      .stored_heads
+      .insert(key.to_string(), document.get_heads());
 
     Ok((document, is_new))
   }

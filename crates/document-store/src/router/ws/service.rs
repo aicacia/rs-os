@@ -14,7 +14,7 @@ use tokio::fs;
 
 use crate::{
   core::storage::{sled_storage_adapter::SledStorageAdapter, storage::Storage},
-  router::ws::constants::DATA_PATH_DOCUMENTS,
+  router::ws::{constants::DATA_PATH_DOCUMENTS, entity::PeerMetadata},
 };
 
 pub struct SharedStorage {
@@ -40,6 +40,13 @@ impl SharedStorage {
 
   pub fn peer_id(&self) -> String {
     format!("server-{}", self.key)
+  }
+
+  pub fn peer_metadata(&self) -> PeerMetadata {
+    PeerMetadata {
+      storage_id: self.id().to_string(),
+      is_ephemeral: false,
+    }
   }
 
   pub async fn get(base_path: &Path, aud: &str, sub: &str) -> Result<Self, HttpError> {
