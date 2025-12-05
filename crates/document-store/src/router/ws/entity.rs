@@ -147,3 +147,31 @@ pub enum FromServerMessage {
   #[serde(rename = "remote-heads-changed")]
   RemoteHeadsChanged(RemoteHeadsChanged),
 }
+
+impl FromServerMessage {
+  pub fn set_sender_id(&mut self, sender_id: PeerId) {
+    match self {
+      FromServerMessage::Peer(msg) => msg.sender_id = sender_id,
+      FromServerMessage::Error(msg) => msg.sender_id = sender_id,
+      FromServerMessage::Sync(msg) => msg.sender_id = sender_id,
+      FromServerMessage::Ephemeral(msg) => msg.sender_id = sender_id,
+      FromServerMessage::Request(msg) => msg.sender_id = sender_id,
+      FromServerMessage::DocumentUnavailable(msg) => msg.sender_id = sender_id,
+      FromServerMessage::RemoteSubscriptionControl(msg) => msg.sender_id = sender_id,
+      FromServerMessage::RemoteHeadsChanged(msg) => msg.sender_id = sender_id,
+    }
+  }
+
+  pub fn set_target_id(&mut self, target_id: PeerId) {
+    match self {
+      FromServerMessage::Peer(msg) => msg.target_id = target_id,
+      FromServerMessage::Error(msg) => msg.target_id = target_id,
+      FromServerMessage::Sync(msg) => msg.target_id = target_id,
+      FromServerMessage::Ephemeral(msg) => msg.target_id = target_id,
+      FromServerMessage::Request(msg) => msg.target_id = target_id,
+      FromServerMessage::DocumentUnavailable(msg) => msg.target_id = target_id,
+      FromServerMessage::RemoteSubscriptionControl(msg) => msg.target_id = target_id,
+      FromServerMessage::RemoteHeadsChanged(msg) => msg.target_id = target_id,
+    }
+  }
+}

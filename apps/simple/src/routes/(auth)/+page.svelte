@@ -15,6 +15,9 @@
 		getTestDocumentHandle().then((doc) => {
 			handle = doc;
 			count = doc.doc().count;
+			doc.on('change', (payload) => {
+				count = payload.doc.count;
+			});
 		});
 	})
 
