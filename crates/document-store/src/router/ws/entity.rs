@@ -11,7 +11,7 @@ pub type DocumentId = String;
 pub type StorageId = String;
 pub type SessionId = String;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncMessage {
   pub sender_id: PeerId,
@@ -21,7 +21,7 @@ pub struct SyncMessage {
   pub data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EphemeralMessage {
   pub sender_id: PeerId,
@@ -33,7 +33,7 @@ pub struct EphemeralMessage {
   pub data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentUnavailableMessage {
   pub sender_id: PeerId,
@@ -41,7 +41,7 @@ pub struct DocumentUnavailableMessage {
   pub document_id: DocumentId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestMessage {
   pub sender_id: PeerId,
@@ -51,7 +51,7 @@ pub struct RequestMessage {
   pub data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteSubscriptionControlMessage {
   pub sender_id: PeerId,
@@ -62,7 +62,7 @@ pub struct RemoteSubscriptionControlMessage {
   pub remove: Option<Vec<StorageId>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteHeadsChanged {
   pub sender_id: PeerId,
@@ -71,28 +71,28 @@ pub struct RemoteHeadsChanged {
   pub new_heads: std::collections::HashMap<StorageId, HeadsInfo>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HeadsInfo {
   pub heads: Vec<String>,
   pub timestamp: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PeerMetadata {
   pub storage_id: String,
   pub is_ephemeral: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JoinMessage {
   pub sender_id: PeerId,
   pub peer_metadata: PeerMetadata,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PeerMessage {
   pub sender_id: PeerId,
@@ -100,7 +100,7 @@ pub struct PeerMessage {
   pub target_id: PeerId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ErrorMessage {
   pub sender_id: PeerId,

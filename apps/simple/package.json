@@ -44,6 +44,7 @@
 		"@automerge/automerge-repo-storage-indexeddb": "^2.5.1",
 		"@lucide/svelte": "0.553.0",
 		"cbor-x": "^1.6.0",
-		"oidc-client-ts": "^3.4.1"
+		"oidc-client-ts": "^3.4.1",
+		"uuidv7": "^1.1.0"
 	}
 }

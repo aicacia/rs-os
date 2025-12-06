@@ -3,10 +3,12 @@ use std::{
   io,
 };
 
-use automerge::{ActorId, Automerge, ChangeHash, sync::Message};
+use automerge::{ActorId, Automerge, ChangeHash};
 use dashmap::DashMap;
+use uuid::Uuid;
 
 use crate::core::storage::{
+  helper::{hash_bytes, hash_changes},
   storage_adapter::StorageAdapter,
   storage_key::{ChunkType, StorageKey},
 };
@@ -17,9 +19,9 @@ where
 {
   storage_adapter: SA,
   // TODO: use LRU cache
-  chunk_infos: DashMap<String, HashMap<StorageKey, usize>>,
+  chunk_infos: DashMap<Uuid, HashMap<StorageKey, usize>>,
   // TODO: use LRU cache
-  stored_heads: DashMap<String, Vec<ChangeHash>>,
+  stored_heads: DashMap<Uuid, Vec<ChangeHash>>,
 }
 
 impl<SA> From<SA> for Storage<SA>
@@ -43,8 +45,8 @@ where
     }
   }
 
-  fn should_save_document(&self, key: &str, document: &Automerge) -> bool {
-    let old_heads = match self.stored_heads.get(key) {
+  fn should_save_document(&self, document_id: Uuid, document: &Automerge) -> bool {
+    let old_heads = match self.stored_heads.get(&document_id) {
       Some(old_heads) => old_heads,
       None => {
         log::debug!("no cached heads should save");
@@ -78,7 +80,6 @@ where
       match key.r#type {
         ChunkType::Incremental => incremental_size += size,
         ChunkType::Snapshot => snapshot_size += size,
-        _ => {}
       }
     }
 
@@ -95,7 +96,7 @@ where
 
   fn save_compact(
     &self,
-    key: &str,
+    document_id: Uuid,
     document: &Automerge,
     chunk_info: &mut HashMap<StorageKey, usize>,
     stored_heads: &mut Vec<ChangeHash>,
@@ -113,7 +114,7 @@ where
         }
       })
       .collect();
-    let storage_key = StorageKey::new(key.to_string(), ChunkType::Snapshot, snapshot_hash);
+    let storage_key = StorageKey::new(document_id, ChunkType::Snapshot, snapshot_hash);
 
     self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
 
@@ -133,7 +134,7 @@ where
 
   fn save_incremental(
     &self,
-    key: &str,
+    document_id: Uuid,
     document: &Automerge,
     chunk_info: &mut HashMap<StorageKey, usize>,
     stored_heads: &mut Vec<ChangeHash>,
@@ -145,7 +146,7 @@ where
     }
 
     let snapshot_hash = hash_bytes(&bytes);
-    let storage_key = StorageKey::new(key.to_string(), ChunkType::Incremental, snapshot_hash);
+    let storage_key = StorageKey::new(document_id, ChunkType::Incremental, snapshot_hash);
 
     self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
 
@@ -156,24 +157,24 @@ where
     Ok(())
   }
 
-  pub fn save_document(&self, key: &str, document: &Automerge) -> io::Result<()> {
-    if !self.should_save_document(key, document) {
+  pub fn save_document(&self, document_id: Uuid, document: &Automerge) -> io::Result<()> {
+    if !self.should_save_document(document_id, document) {
       return Ok(());
     }
 
-    let mut chunk_info = self.chunk_infos.entry(key.to_string()).or_default();
-    let mut stored_heads = self.stored_heads.entry(key.to_string()).or_default();
+    let mut chunk_info = self.chunk_infos.entry(document_id).or_default();
+    let mut stored_heads = self.stored_heads.entry(document_id).or_default();
 
     if self.should_compact(chunk_info.value()) {
       self.save_compact(
-        key,
+        document_id,
         document,
         chunk_info.value_mut(),
         stored_heads.value_mut(),
       )
     } else {
       self.save_incremental(
-        key,
+        document_id,
         document,
         chunk_info.value_mut(),
         stored_heads.value_mut(),
@@ -181,57 +182,48 @@ where
     }
   }
 
-  pub fn save_sync_message(
-    &self,
-    key: &str,
-    id: [u8; 32],
-    sync_message: Message,
-  ) -> io::Result<()> {
-    let storage_key = StorageKey::new_sync_state(key.to_string(), id);
-    let bytes = sync_message.encode();
-
-    self.storage_adapter.set(&storage_key.to_bytes(), &bytes)
-  }
-
-  pub fn load_document(&self, key: &str) -> io::Result<(Automerge, bool)> {
+  pub fn load_document(&self, document_id: Uuid) -> io::Result<Option<Automerge>> {
     let mut bytes = Vec::new();
     let mut chunk_info = HashMap::new();
 
-    self.storage_adapter.search(key.as_bytes(), |(k, mut v)| {
-      let storage_key = StorageKey::try_from(k.as_slice())?;
+    self
+      .storage_adapter
+      .search(document_id.as_bytes(), |(k, mut v)| {
+        let storage_key = StorageKey::try_from(k.as_slice())?;
 
-      chunk_info.insert(storage_key, v.len());
-      bytes.append(&mut v);
+        chunk_info.insert(storage_key, v.len());
+        bytes.append(&mut v);
 
-      Ok(())
-    })?;
+        Ok(())
+      })?;
 
-    self.chunk_infos.insert(key.to_string(), chunk_info);
-
-    let mut document: Automerge = Automerge::new().with_actor(ActorId::from(key.as_bytes()));
-
-    let is_new = bytes.is_empty();
-
-    if !is_new {
-      document
-        .load_incremental(&bytes)
-        .map_err(io::Error::other)?;
+    if bytes.is_empty() {
+      return Ok(None);
     }
 
-    self
-      .stored_heads
-      .insert(key.to_string(), document.get_heads());
+    self.chunk_infos.insert(document_id, chunk_info);
 
-    Ok((document, is_new))
+    let mut document: Automerge =
+      Automerge::new().with_actor(ActorId::from(document_id.as_bytes()));
+
+    document
+      .load_incremental(&bytes)
+      .map_err(io::Error::other)?;
+
+    self.stored_heads.insert(document_id, document.get_heads());
+
+    Ok(Some(document))
   }
 
-  pub fn remove_document(self, key: &str) -> io::Result<()> {
+  pub fn remove_document(self, document_id: Uuid) -> io::Result<()> {
     let mut storage_keys = Vec::new();
 
-    self.storage_adapter.search(key.as_bytes(), |(k, _)| {
-      storage_keys.push(StorageKey::try_from(k.as_slice())?);
-      Ok(())
-    })?;
+    self
+      .storage_adapter
+      .search(document_id.as_bytes(), |(k, _)| {
+        storage_keys.push(StorageKey::try_from(k.as_slice())?);
+        Ok(())
+      })?;
 
     for storage_key in storage_keys {
       self.storage_adapter.delete(&storage_key.to_bytes())?;
@@ -243,37 +235,4 @@ where
   pub fn flush(&self) -> io::Result<()> {
     self.storage_adapter.flush()
   }
-}
-
-pub fn hash_bytes(bytes: &[u8]) -> [u8; 32] {
-  use sha2::{Digest, Sha256};
-
-  let mut hasher = Sha256::new();
-  hasher.update(bytes);
-  let result = hasher.finalize();
-
-  let mut hash = [0u8; 32];
-  hash.copy_from_slice(&result);
-
-  hash
-}
-
-pub fn hash_changes<T>(changes: &[T]) -> [u8; 32]
-where
-  T: AsRef<[u8]>,
-{
-  use sha2::{Digest, Sha256};
-
-  let mut hasher = Sha256::new();
-
-  for change in changes {
-    hasher.update(change.as_ref());
-  }
-
-  let result = hasher.finalize();
-
-  let mut hash = [0u8; 32];
-  hash.copy_from_slice(&result);
-
-  hash
 }
