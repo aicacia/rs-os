@@ -75,12 +75,11 @@ async fn handle_ws(socket: WebSocket, shared_sync: StorageSystem) -> Result<(), 
     }
   });
 
-  let registered_peer_id = shared_sync
+  if let Some(registered_peer_id) = shared_sync
     .handle_ws_messages(peer_sender, ws_receiver)
-    .await;
-
-  if let Some(peer_id) = registered_peer_id {
-    shared_sync.unregister_peer(&peer_id);
+    .await
+  {
+    shared_sync.unregister_peer(&registered_peer_id);
   }
 
   Ok(())

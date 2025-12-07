@@ -116,10 +116,10 @@ where
       .collect();
     let storage_key = StorageKey::new(document_id, ChunkType::Snapshot, snapshot_hash);
 
-    self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
+    self.storage_adapter.set(&storage_key, &bytes)?;
 
     for old_key in &old_keys {
-      self.storage_adapter.delete(&old_key.to_bytes())?;
+      self.storage_adapter.delete(&old_key)?;
     }
 
     for old_key in old_keys {
@@ -148,7 +148,7 @@ where
     let snapshot_hash = hash_bytes(&bytes);
     let storage_key = StorageKey::new(document_id, ChunkType::Incremental, snapshot_hash);
 
-    self.storage_adapter.set(&storage_key.to_bytes(), &bytes)?;
+    self.storage_adapter.set(&storage_key, &bytes)?;
 
     chunk_info.insert(storage_key.clone(), bytes.len());
 
@@ -186,16 +186,14 @@ where
     let mut bytes = Vec::new();
     let mut chunk_info = HashMap::new();
 
-    self
-      .storage_adapter
-      .search(document_id.as_bytes(), |(k, mut v)| {
-        let storage_key = StorageKey::try_from(k.as_slice())?;
+    self.storage_adapter.search(document_id, |(k, mut v)| {
+      let storage_key = StorageKey::try_from(k.as_slice())?;
 
-        chunk_info.insert(storage_key, v.len());
-        bytes.append(&mut v);
+      chunk_info.insert(storage_key, v.len());
+      bytes.append(&mut v);
 
-        Ok(())
-      })?;
+      Ok(())
+    })?;
 
     if bytes.is_empty() {
       return Ok(None);
@@ -218,15 +216,13 @@ where
   pub fn remove_document(self, document_id: Uuid) -> io::Result<()> {
     let mut storage_keys = Vec::new();
 
-    self
-      .storage_adapter
-      .search(document_id.as_bytes(), |(k, _)| {
-        storage_keys.push(StorageKey::try_from(k.as_slice())?);
-        Ok(())
-      })?;
+    self.storage_adapter.search(document_id, |(k, _)| {
+      storage_keys.push(StorageKey::try_from(k.as_slice())?);
+      Ok(())
+    })?;
 
     for storage_key in storage_keys {
-      self.storage_adapter.delete(&storage_key.to_bytes())?;
+      self.storage_adapter.delete(&storage_key)?;
     }
 
     Ok(())

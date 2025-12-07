@@ -1901,6 +1901,7 @@ dependencies = [
  "dashmap",
  "futures",
  "hashbrown 0.16.1",
+ "hex",
  "http",
  "jsonwebtoken",
  "log",

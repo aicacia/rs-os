@@ -1,6 +1,8 @@
-use std::{io, path::Path};
+use std::{fs, io, path::Path};
 
-use crate::core::storage::storage_adapter::StorageAdapter;
+use uuid::Uuid;
+
+use crate::core::storage::{storage_adapter::StorageAdapter, storage_key::StorageKey};
 
 pub struct SledStorageAdapter {
   db: sled::Db,
@@ -16,6 +18,8 @@ impl<'a> TryFrom<&'a Path> for SledStorageAdapter {
   type Error = io::Error;
 
   fn try_from(path: &'a Path) -> Result<Self, Self::Error> {
+    fs::create_dir_all(&path)?;
+
     let db = sled::Config::default()
       .path(path)
       .open()
@@ -26,8 +30,8 @@ impl<'a> TryFrom<&'a Path> for SledStorageAdapter {
 }
 
 impl StorageAdapter for SledStorageAdapter {
-  fn get(&self, key: &[u8]) -> io::Result<Option<Vec<u8>>> {
-    let value_bytes_optional = self.db.get(key).map_err(io::Error::other)?;
+  fn get(&self, key: &StorageKey) -> io::Result<Option<Vec<u8>>> {
+    let value_bytes_optional = self.db.get(key.as_bytes()).map_err(io::Error::other)?;
 
     match value_bytes_optional {
       Some(value_bytes) => Ok(Some(value_bytes.to_vec())),
@@ -35,24 +39,29 @@ impl StorageAdapter for SledStorageAdapter {
     }
   }
 
-  fn set(&self, key: &[u8], value: &[u8]) -> io::Result<()> {
-    self.db.insert(key, value).map_err(io::Error::other)?;
+  fn set(&self, key: &StorageKey, value: &[u8]) -> io::Result<()> {
+    self
+      .db
+      .insert(key.as_bytes(), value)
+      .map_err(io::Error::other)?;
     Ok(())
   }
 
-  fn delete(&self, key: &[u8]) -> io::Result<()> {
-    self.db.remove(key).map_err(io::Error::other)?;
+  fn delete(&self, key: &StorageKey) -> io::Result<()> {
+    self.db.remove(key.as_bytes()).map_err(io::Error::other)?;
     Ok(())
   }
 
-  fn search<F>(&self, prefix: &[u8], mut f: F) -> io::Result<()>
+  fn search<F>(&self, prefix: Uuid, mut f: F) -> io::Result<()>
   where
     F: FnMut((Vec<u8>, Vec<u8>)) -> io::Result<()>,
   {
-    for result in self.db.range(prefix..) {
+    let prefix_bytes = prefix.as_bytes().as_ref();
+
+    for result in self.db.range(prefix_bytes..) {
       let (k, v) = result.map_err(io::Error::other)?;
 
-      if !k.starts_with(prefix) {
+      if !k.starts_with(prefix_bytes) {
         continue;
       }
 

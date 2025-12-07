@@ -13,12 +13,11 @@ use hashbrown::HashSet;
 use once_cell::sync::Lazy;
 use os_api::{HttpError, INTERNAL_ERROR};
 use serde::Serialize;
-use tokio::fs;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::{
-  core::storage::{sled_storage_adapter::SledStorageAdapter, storage::Storage},
+  core::storage::{fs_storage_adapter::FSStorageAdapter, storage::Storage},
   router::ws::{
     constants::DATA_PATH_DOCUMENTS,
     entity::{
@@ -34,7 +33,7 @@ pub type PeerSender = mpsc::UnboundedSender<Message>;
 struct StorageSystemInner {
   key: u64,
   storage_id: uuid::Uuid,
-  storage: Arc<Storage<SledStorageAdapter>>,
+  storage: Arc<Storage<FSStorageAdapter>>,
   peer_senders: DashMap<PeerId, PeerSender>,
 }
 
@@ -57,16 +56,7 @@ impl StorageSystem {
           .join(BASE64_URL_SAFE_NO_PAD.encode(aud.as_bytes()))
           .join(BASE64_URL_SAFE_NO_PAD.encode(sub.as_bytes()));
 
-        if let Err(err) = fs::create_dir_all(&storage_path).await {
-          log::error!(
-            "failed to create document store storage path {}: {}",
-            storage_path.display(),
-            err
-          );
-          return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
-        }
-
-        let storage_adapter = match SledStorageAdapter::try_from(storage_path.as_path()) {
+        let storage_adapter = match FSStorageAdapter::try_from(storage_path.as_path()) {
           Ok(adapter) => adapter,
           Err(err) => {
             log::error!(
@@ -111,7 +101,7 @@ impl StorageSystem {
     }
   }
 
-  pub fn storage(&self) -> &Arc<Storage<SledStorageAdapter>> {
+  pub fn storage(&self) -> &Arc<Storage<FSStorageAdapter>> {
     &self.inner.storage
   }
 
@@ -475,6 +465,7 @@ fn bs58_to_uuid(bs58_string: &str) -> Option<Uuid> {
 
   let uuid_bytes = match bytes.len() {
     16 => &bytes,
+    // Skip the first 4 bytes if length is 20 checksum prefix bs58check npm package
     20 => &bytes[4..20],
     _ => {
       log::error!(
