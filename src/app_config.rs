@@ -10,6 +10,8 @@ pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
 
 pub const DOCUMENT_STORE_API_URL_PREFIX: &str = "/document-store/api";
 
+pub const FS_API_URL_PREFIX: &str = "/fs/api";
+
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct ServerConfig {
@@ -34,6 +36,7 @@ pub struct AppConfig {
   pub server: ServerConfig,
   pub oidc: os_oidc::core::config::app_config::AppConfig,
   pub document_store: os_document_store::core::config::app_config::AppConfig,
+  pub fs: os_fs::core::config::app_config::AppConfig,
   pub log_level: String,
   pub url: Option<String>,
 }
@@ -44,6 +47,7 @@ impl Default for AppConfig {
       server: Default::default(),
       oidc: Default::default(),
       document_store: Default::default(),
+      fs: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: None,
     }
@@ -83,6 +87,16 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
       && app_config.document_store.api_url.is_none()
     {
       app_config.document_store.api_url = Some(format!("{}{}", url, DOCUMENT_STORE_API_URL_PREFIX));
+    }
+
+    app_config.fs.server.host = app_config.server.host;
+    app_config.fs.server.port = app_config.server.port;
+    app_config.fs.server.gzip = app_config.server.gzip;
+
+    if let Some(url) = &app_config.url
+      && app_config.fs.api_url.is_none()
+    {
+      app_config.fs.api_url = Some(format!("{}{}", url, FS_API_URL_PREFIX));
     }
 
     Ok(app_config)

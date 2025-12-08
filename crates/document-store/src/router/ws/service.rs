@@ -9,7 +9,6 @@ use automerge::{ActorId, Automerge, sync::SyncDoc};
 use axum::extract::ws::Message;
 use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
 use dashmap::{DashMap, mapref::entry::Entry};
-use hashbrown::HashSet;
 use once_cell::sync::Lazy;
 use os_api::{HttpError, INTERNAL_ERROR};
 use serde::Serialize;
@@ -21,9 +20,9 @@ use crate::{
   router::ws::{
     constants::DATA_PATH_DOCUMENTS,
     entity::{
-      DocumentUnavailableMessage, ErrorMessage, FromClientMessage, FromServerMessage, JoinMessage,
-      PeerId, PeerMessage, PeerMetadata, RemoteHeadsChanged, RemoteSubscriptionControlMessage,
-      RequestMessage, SyncMessage,
+      DocumentId, DocumentUnavailableMessage, ErrorMessage, FromClientMessage, FromServerMessage,
+      JoinMessage, PeerId, PeerMessage, PeerMetadata, RemoteHeadsChanged,
+      RemoteSubscriptionControlMessage, RequestMessage, SyncMessage,
     },
   },
 };
@@ -35,6 +34,7 @@ struct StorageSystemInner {
   storage_id: uuid::Uuid,
   storage: Arc<Storage<FSStorageAdapter>>,
   peer_senders: DashMap<PeerId, PeerSender>,
+  sync_states: DashMap<PeerId, DashMap<DocumentId, automerge::sync::State>>,
 }
 
 static SYNC_REGISTRY: Lazy<DashMap<u64, Arc<StorageSystemInner>>> = Lazy::new(DashMap::new);
@@ -74,6 +74,7 @@ impl StorageSystem {
           storage_id: uuid::Uuid::now_v7(),
           storage,
           peer_senders: DashMap::new(),
+          sync_states: DashMap::new(),
         });
         vacant.insert(inner.clone());
         inner
@@ -90,39 +91,31 @@ impl StorageSystem {
     hasher.finish()
   }
 
-  pub fn peer_id(&self) -> String {
+  fn peer_id(&self) -> String {
     format!("server-{}", self.inner.key)
   }
 
-  pub fn peer_metadata(&self) -> PeerMetadata {
+  fn peer_metadata(&self) -> PeerMetadata {
     PeerMetadata {
       storage_id: self.inner.storage_id.to_string(),
       is_ephemeral: false,
     }
   }
 
-  pub fn storage(&self) -> &Arc<Storage<FSStorageAdapter>> {
+  fn storage(&self) -> &Storage<FSStorageAdapter> {
     &self.inner.storage
   }
 
-  pub fn register_peer(&self, peer_id: PeerId, sender: PeerSender) {
+  fn register_peer(&self, peer_id: PeerId, sender: PeerSender) {
     self.inner.peer_senders.insert(peer_id, sender);
   }
 
-  pub fn unregister_peer(&self, peer_id: &str) {
+  fn unregister_peer(&self, peer_id: &PeerId) {
     self.inner.peer_senders.remove(peer_id);
+    self.inner.sync_states.remove(peer_id);
   }
 
-  pub fn get_peer_ids(&self) -> HashSet<PeerId> {
-    self
-      .inner
-      .peer_senders
-      .iter()
-      .map(|entry| entry.key().clone())
-      .collect()
-  }
-
-  pub fn broadcast_to_peers(&self, sender_id: PeerId, mut from_server_message: FromServerMessage) {
+  fn broadcast_to_peers(&self, sender_id: PeerId, mut from_server_message: FromServerMessage) {
     from_server_message.set_sender_id(self.peer_id());
 
     for entry in self.inner.peer_senders.iter() {
@@ -143,7 +136,7 @@ impl StorageSystem {
     }
   }
 
-  pub fn send_to_peer(&self, peer_id: PeerId, mut from_server_message: FromServerMessage) {
+  fn send_to_peer(&self, peer_id: PeerId, mut from_server_message: FromServerMessage) {
     from_server_message.set_sender_id(self.peer_id());
     from_server_message.set_target_id(peer_id.clone());
 
@@ -170,6 +163,7 @@ impl StorageSystem {
     if let Some(encoded) = encode_to_bytes(&from_server_message) {
       if let Err(err) = peer_sender.send(Message::Binary(encoded.into())) {
         log::error!("Failed to send peer message: {}", err);
+        return None;
       }
     }
 
@@ -197,6 +191,7 @@ impl StorageSystem {
         return;
       }
     };
+
     let mut document = match self.storage().load_document(document_id) {
       Ok(Some(document)) => document,
       Ok(None) => Automerge::new().with_actor(ActorId::from(document_id.as_bytes())),
@@ -213,7 +208,15 @@ impl StorageSystem {
       }
     };
 
-    let mut sync_state = automerge::sync::State::new();
+    let peer_states = self
+      .inner
+      .sync_states
+      .entry(sync_message.sender_id.clone())
+      .or_insert_with(DashMap::new);
+    let mut sync_state = peer_states
+      .entry(sync_message.document_id.clone())
+      .or_insert_with(automerge::sync::State::new)
+      .clone();
 
     if let Err(err) = document.receive_sync_message(&mut sync_state, message) {
       log::error!("Failed to receive sync message: {}", err);
@@ -226,13 +229,21 @@ impl StorageSystem {
       );
       return;
     }
+
     let outgoing = match document.generate_sync_message(&mut sync_state) {
       Some(outgoing) => outgoing,
       None => {
         log::debug!("No sync message to send in response");
+        if let Some(peer_states) = self.inner.sync_states.get(&sync_message.sender_id) {
+          peer_states.insert(sync_message.document_id.clone(), sync_state);
+        }
         return;
       }
     };
+
+    if let Some(peer_states) = self.inner.sync_states.get(&sync_message.sender_id) {
+      peer_states.insert(sync_message.document_id.clone(), sync_state);
+    }
 
     match self.storage().save_document(document_id, &document) {
       Ok(_) => {}
@@ -311,7 +322,15 @@ impl StorageSystem {
       }
     };
 
-    let mut sync_state = automerge::sync::State::new();
+    let peer_states = self
+      .inner
+      .sync_states
+      .entry(request_message.sender_id.clone())
+      .or_insert_with(DashMap::new);
+    let mut sync_state = peer_states
+      .entry(request_message.document_id.clone())
+      .or_insert_with(automerge::sync::State::new)
+      .clone();
 
     if let Err(err) = document.receive_sync_message(&mut sync_state, message) {
       log::error!("Failed to receive sync message: {}", err);
@@ -322,9 +341,16 @@ impl StorageSystem {
       Some(outgoing) => outgoing,
       None => {
         log::debug!("No sync message to send in response");
+        if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
+          peer_states.insert(request_message.document_id.clone(), sync_state);
+        }
         return;
       }
     };
+
+    if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
+      peer_states.insert(request_message.document_id.clone(), sync_state);
+    }
 
     let response = FromServerMessage::Sync(SyncMessage {
       document_id: request_message.document_id,
@@ -365,7 +391,7 @@ impl StorageSystem {
     mut ws_receiver: impl futures::stream::StreamExt<
       Item = Result<axum::extract::ws::Message, axum::Error>,
     > + Unpin,
-  ) -> Option<String> {
+  ) {
     let mut registered_peer_id: Option<String> = None;
 
     while let Some(result) = ws_receiver.next().await {
@@ -427,7 +453,9 @@ impl StorageSystem {
       }
     }
 
-    registered_peer_id
+    if let Some(peer_id) = registered_peer_id.clone() {
+      self.unregister_peer(&peer_id);
+    }
   }
 }
 
@@ -465,7 +493,6 @@ fn bs58_to_uuid(bs58_string: &str) -> Option<Uuid> {
 
   let uuid_bytes = match bytes.len() {
     16 => &bytes,
-    // Skip the first 4 bytes if length is 20 checksum prefix bs58check npm package
     20 => &bytes[4..20],
     _ => {
       log::error!(

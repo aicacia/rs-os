@@ -166,6 +166,7 @@ where
     let mut stored_heads = self.stored_heads.entry(document_id).or_default();
 
     if self.should_compact(chunk_info.value()) {
+      log::debug!("saving compact: {}", document_id);
       self.save_compact(
         document_id,
         document,
@@ -173,6 +174,7 @@ where
         stored_heads.value_mut(),
       )
     } else {
+      log::debug!("saving incremental: {}", document_id);
       self.save_incremental(
         document_id,
         document,
