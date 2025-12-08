@@ -64,7 +64,8 @@ pub async fn run() -> io::Result<()> {
   let router = Router::new()
     .merge(oidc_router)
     .merge(oidc_ui_router)
-    .merge(document_store_router);
+    .merge(document_store_router)
+    .merge(fs_router);
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {
     let addr = SocketAddr::from((

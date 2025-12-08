@@ -8,13 +8,12 @@ use axum::{
   response::IntoResponse,
 };
 use futures::{SinkExt, StreamExt};
-use os_api::{BasicClaims, HttpError};
+use os_api::{BasicClaims, HttpError, parse_token_data};
 use tokio::sync::mpsc;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
   entity::RouterState,
-  middleware::authorization::parse_token_data,
   ws::{constants::TAG, entity::WSAuthorizationRequest, service::StorageSystem},
 };
 

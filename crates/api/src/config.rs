@@ -2,6 +2,10 @@ use std::net::{IpAddr, Ipv4Addr};
 
 use serde::Deserialize;
 
+pub trait AppConfig: Send + Sync + Clone {
+  fn base_api_url(&self) -> Result<String, url::ParseError>;
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct ServerConfig {

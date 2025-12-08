@@ -5,9 +5,10 @@ pub mod extractors;
 pub mod middleware;
 pub mod openapi;
 pub mod state;
+pub mod util;
 
 pub use claims::{BasicClaims, Claims};
-pub use config::{Environment, ServerConfig};
+pub use config::{AppConfig, Environment, ServerConfig};
 pub use error::{
   ALREADY_EXISTS_ERROR, ALREADY_USED_ERROR, APPLICATION, CREDENTIALS, Errors, HttpError,
   HttpErrorMessage, HttpErrorMessages, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR,
@@ -15,7 +16,8 @@ pub use error::{
 };
 pub use extractors::{Form, Json};
 pub use middleware::{
-  AUTHORIZATION_BEARER_PREFIX, AUTHORIZATION_HEADER, authorization_from_header,
+  AUTHORIZATION_BEARER_PREFIX, AUTHORIZATION_HEADER, Authorization, authorization_from_header,
+  parse_token_data,
 };
 pub use openapi::{SecurityAddon, ServersAddon};
 pub use state::RouterState;

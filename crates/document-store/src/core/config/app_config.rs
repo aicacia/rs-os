@@ -49,17 +49,19 @@ impl Default for AppConfig {
   }
 }
 
+impl os_api::AppConfig for AppConfig {
+  fn base_api_url(&self) -> Result<String, url::ParseError> {
+    let url = url::Url::parse(&self.api_url())?;
+    Ok(url.origin().unicode_serialization())
+  }
+}
+
 impl AppConfig {
   pub fn api_url(&self) -> String {
     self
       .api_url
       .to_owned()
       .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
-  }
-
-  pub fn base_api_url(&self) -> Result<String, url::ParseError> {
-    let url = url::Url::parse(&self.api_url())?;
-    Ok(url.origin().unicode_serialization())
   }
 }
 

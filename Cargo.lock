@@ -1836,14 +1836,23 @@ name = "os-api"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64",
+ "build-time",
+ "chrono",
  "config",
  "hashbrown 0.16.1",
  "http",
+ "jsonwebtoken",
  "log",
+ "once_cell",
+ "reqwest",
  "serde",
  "serde_json",
+ "tokio",
  "tracing",
+ "url",
  "utoipa",
+ "utoipa-axum",
  "validator",
 ]
 

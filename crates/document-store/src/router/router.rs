@@ -3,19 +3,20 @@ use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLay
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
-use crate::router::{
-  entity::RouterState,
-  openapi::{self, utoipa::SecurityAddon},
-  util, ws,
-};
+use crate::router::{entity::RouterState, ws};
+
+use os_api::util::{Health, Version};
+use os_api::openapi::SecurityAddon;
 
 #[derive(OpenApi)]
 #[openapi(
   info(license(name = "MIT OR Apache-2.0", identifier = "https://spdx.org/licenses/MIT.html")),
   tags(
-    (name = util::constants::TAG, description = util::constants::DESCRIPTION),
-    (name = crate::router::openapi::constants::TAG, description = crate::router::openapi::constants::DESCRIPTION)
+    (name = os_api::util::TAG, description = os_api::util::DESCRIPTION),
+    (name = os_api::openapi::TAG, description = os_api::openapi::DESCRIPTION),
+    (name = ws::constants::TAG, description = ws::constants::DESCRIPTION)
   ),
+  components(schemas(Health, Version, ws::entity::WSAuthorizationRequest)),
   modifiers(&SecurityAddon)
 )]
 pub struct ApiDoc;
@@ -24,7 +25,7 @@ pub fn create_router(state: RouterState, prefix_optional: Option<&str>) -> Route
   let mut open_api_router = OpenApiRouter::with_openapi(ApiDoc::openapi());
 
   let open_api_routes = OpenApiRouter::new()
-    .merge(util::router::create_router(state.clone()))
+    .merge(os_api::util::create_router(state.clone()))
     .merge(ws::router::create_router(state.clone()).into());
 
   if let Some(prefix) = prefix_optional {
@@ -33,7 +34,7 @@ pub fn create_router(state: RouterState, prefix_optional: Option<&str>) -> Route
 
   let openapi_spec = open_api_router.get_openapi().clone();
   open_api_router
-    .merge(openapi::router::create_router(
+    .merge(os_api::openapi::create_router(
       state.clone(),
       openapi_spec,
       prefix_optional,
