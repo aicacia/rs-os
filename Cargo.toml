@@ -19,7 +19,6 @@ members = [
   "crates/document-store",
   "crates/fs",
   "crates/model",
-  "crates/model/migration",
 ]
 
 [dependencies]

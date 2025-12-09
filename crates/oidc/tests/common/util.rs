@@ -45,6 +45,7 @@ pub async fn setup()
   let router = create_router(
     RouterState {
       pool: pool.clone(),
+      database: unimplemented!(), // Placeholder for sea_orm::DatabaseConnection
       config: config.clone(),
     },
     None,
