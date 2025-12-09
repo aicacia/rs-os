@@ -18,6 +18,8 @@ members = [
   "crates/cli",
   "crates/document-store",
   "crates/fs",
+  "crates/model",
+  "crates/model/migration",
 ]
 
 [dependencies]
@@ -38,6 +40,7 @@ config = { version = "0.15", features = ["json"], default-features = false }
 dotenvy = { version = "0.15", default-features = false }
 log = { version = "0.4", default-features = false }
 os-cli = { version = "0.1", path = "./crates/cli", default-features = false }
+os-model = { version = "0.1", path = "./crates/model", default-features = false }
 os-db = { version = "0.1", path = "./crates/db", default-features = false }
 os-oidc = { version = "0.1", path = "./crates/oidc", default-features = false }
 os-oidc-ui = { version = "0.1", path = "./crates/oidc-ui", default-features = false, optional = true }
@@ -54,7 +57,7 @@ sqlx = { version = "0.8", features = [
   "runtime-tokio-rustls",
   "all-databases",
 ], default-features = false }
-tokio = { version = "1.47", features = [
+tokio = { version = "1.48", features = [
   "rt",
   "rt-multi-thread",
   "macros",

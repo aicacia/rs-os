@@ -28,7 +28,7 @@ dotenvy = { version = "0.15", default-features = false }
 log = { version = "0.4", default-features = false }
 os-cli = { version = "0.1", path = "../cli", default-features = false }
 os-oidc-ui-embed = { version = "0.1", path = "./embed", default-features = false }
-tokio = { version = "1.47", default-features = false, features = [
+tokio = { version = "1.48", default-features = false, features = [
   "rt",
   "rt-multi-thread",
   "macros",

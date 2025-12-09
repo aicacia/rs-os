@@ -1,0 +1,39 @@
+[package]
+name = "os-model"
+edition = "2024"
+version = "0.1.0"
+authors = ["nathanfaucett@gmail.com"]
+description = "Aicacia OS Model."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/aicacia/rs-os"
+rust-version = "1.91"
+
+[lib]
+name = "os_model"
+
+[dependencies]
+log = { version = "0.4", default-features = false }
+dotenvy = { version = "0.15", default-features = false }
+tokio = { version = "1.48", features = [
+  "rt",
+  "rt-multi-thread",
+  "macros",
+  "signal",
+], default-features = false }
+os-model-migration = { version = "0.1", path = "migration" }
+sea-orm = { version = "2.0.0-rc.20", default-features = false, features = [
+  "macros",
+  "sqlite-use-returning-for-3_35",
+  "with-bigdecimal",
+  "with-chrono",
+  "with-json",
+  "with-rust_decimal",
+  "with-time",
+  "with-uuid",
+  "runtime-tokio-rustls",
+  "sqlx-postgres",
+  "sqlx-sqlite",
+  "sqlx-mysql",
+  "schema-sync",
+  "entity-registry",
+] }

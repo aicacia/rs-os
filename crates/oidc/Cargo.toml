@@ -47,6 +47,7 @@ num-bigint = { version = "0.4", features = ["std"], default-features = false }
 num-bigint-dig = { version = "0.8", default-features = false }
 os-api = { version = "0.1", path = "../api", default-features = false }
 os-db = { version = "0.1", path = "../db", default-features = false }
+os-model = { version = "0.1", path = "../model", default-features = false }
 hex = { version = "0.4", default-features = false }
 p256 = { version = "0.13", features = [
   "arithmetic",
@@ -75,7 +76,7 @@ sqlx = { version = "0.8", features = [
   "runtime-tokio-rustls",
   "all-databases",
 ], default-features = false }
-tokio = { version = "1.47", features = [
+tokio = { version = "1.48", features = [
   "rt",
   "rt-multi-thread",
   "macros",

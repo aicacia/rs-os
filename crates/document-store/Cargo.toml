@@ -5,7 +5,7 @@ version = "0.1.0"
 authors = ["nathanfaucett@gmail.com"]
 description = "Aicacia OS Document Store."
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/aicacia/rs-document-store"
+repository = "https://github.com/aicacia/rs-os"
 rust-version = "1.91"
 
 [dependencies]
@@ -37,7 +37,7 @@ utoipa = { version = "5.4", features = [
   "macros",
 ], default-features = false }
 utoipa-axum = { version = "0.2", default-features = false }
-tokio = { version = "1.47", features = [
+tokio = { version = "1.48", features = [
   "rt",
   "rt-multi-thread",
   "macros",
