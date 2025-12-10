@@ -37,3 +37,11 @@ sea-orm = { version = "2.0.0-rc.20", default-features = false, features = [
   "schema-sync",
   "entity-registry",
 ] }
+sea-orm-migration = { version = "2.0.0-rc.20", default-features = false, features = [
+  "cli",
+  "sqlx-sqlite",
+  "sqlx-postgres",
+  "sqlx-mysql",
+  "runtime-tokio-rustls",
+] }
+async-trait = { version = "0.1", default-features = false }
