@@ -10,7 +10,7 @@ use crate::{
   core::helper::json_to_string_vec,
   model::{
     client::sql::{deactivate_client, get_client_by_client_id, list_clients, upsert_client},
-    user::sql::{get_user_client_by_client_id, upsert_user_client},
+    user::orm::{get_user_client_by_client_id, upsert_user_client},
   },
   router::{
     client::{
@@ -50,7 +50,7 @@ pub async fn client_by_client_id(
     Err(e) => return e.into_response(),
   }
 
-  let client_sql_row = match get_client_by_client_id(&state.pool, &client_id).await {
+  let client_sql_row = match get_client_by_client_id(&state.database, &client_id).await {
     Ok(Some(client)) => client,
     Ok(None) => {
       return HttpError::not_found()
@@ -93,7 +93,7 @@ pub async fn client_list(
     Err(e) => return e.into_response(),
   }
 
-  match list_clients(&state.pool).await {
+  match list_clients(&state.database).await {
     Ok(clients) => {
       let clients: Vec<Client> = clients.into_iter().map(|c| c.into()).collect();
       axum::Json(clients).into_response()
@@ -135,7 +135,7 @@ pub async fn client_create(
   }
 
   let (client_sql_row, is_new) =
-    match upsert_client(&state.pool, client_register_request.into()).await {
+    match upsert_client(&state.database, client_register_request.into()).await {
       Ok(r) => r,
       Err(e) => {
         log::error!("error upserting client: {}", e);
@@ -188,7 +188,7 @@ pub async fn client_update(
   }
 
   let (client_sql_row, _is_new) =
-    match upsert_client(&state.pool, client_register_request.into()).await {
+    match upsert_client(&state.database, client_register_request.into()).await {
       Ok(r) => r,
       Err(e) => {
         log::error!("error updating client: {}", e);
@@ -228,7 +228,7 @@ pub async fn client_delete(
     Err(e) => return e.into_response(),
   }
 
-  match deactivate_client(&state.pool, &client_id).await {
+  match deactivate_client(&state.database, &client_id).await {
     Ok(Some(_client_sql_row)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("client", NOT_FOUND_ERROR)
@@ -263,7 +263,7 @@ pub async fn client_user_allowed(
   user_authorization: UserAuthorization,
   Path(client_id): Path<String>,
 ) -> impl IntoResponse {
-  match get_user_client_by_client_id(&state.pool, user_authorization.user_sql_row.id, &client_id)
+  match get_user_client_by_client_id(&state.database, user_authorization.user_model.id, &client_id)
     .await
   {
     Ok(Some(user_client_sql_row)) => axum::Json(ClientAllowed {
@@ -303,7 +303,7 @@ pub async fn client_user_approve(
   user_authorization: UserAuthorization,
   Path(client_id): Path<String>,
 ) -> impl IntoResponse {
-  let client_sql_row = match get_client_by_client_id(&state.pool, &client_id).await {
+  let client_sql_row = match get_client_by_client_id(&state.database, &client_id).await {
     Ok(Some(client)) => client,
     Ok(None) => {
       return HttpError::not_found()
@@ -318,11 +318,12 @@ pub async fn client_user_approve(
     }
   };
 
+  let scopes = json_to_string_vec(&client_sql_row.scopes);
   match upsert_user_client(
-    &state.pool,
-    user_authorization.user_sql_row.id,
-    client_id,
-    client_sql_row.scopes,
+    &state.database,
+    user_authorization.user_model.id,
+    &client_id,
+    scopes,
   )
   .await
   {
@@ -360,7 +361,7 @@ pub async fn client_authorize(
   Path(client_id): Path<String>,
   Json(authorization_request): Json<ClientAuthorizeRequest>,
 ) -> impl IntoResponse {
-  let client_sql_row = match get_client_by_client_id(&state.pool, &client_id).await {
+  let client_sql_row = match get_client_by_client_id(&state.database, &client_id).await {
     Ok(Some(client_sql_row)) => client_sql_row,
     Ok(None) => {
       return HttpError::not_found()
@@ -376,8 +377,8 @@ pub async fn client_authorize(
   };
 
   match get_user_client_by_client_id(
-    &state.pool,
-    user_authorization.user_sql_row.id,
+    &state.database,
+    user_authorization.user_model.id,
     &client_sql_row.client_id,
   )
   .await
@@ -437,9 +438,9 @@ pub async fn client_authorize(
     };
 
     match create_user_authorization_code_token(
-      &state.pool,
+      &state.database,
       &state.config,
-      user_authorization.user_sql_row.id,
+      user_authorization.user_model.id,
       client_id,
       authorization_request.scope,
       code_challenge,

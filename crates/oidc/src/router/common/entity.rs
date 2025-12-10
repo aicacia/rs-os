@@ -3,7 +3,7 @@ pub use os_api::claims::{BasicClaims, Claims};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{model::user::sql::UserInfoSQLRow, router::common::helper::to_public_jwk};
+use crate::{model::user::orm::UserInfoModel, router::common::helper::to_public_jwk};
 
 #[derive(Serialize, ToSchema)]
 pub struct Token {
@@ -94,8 +94,8 @@ pub struct OpenIdProfile {
   pub address: Option<String>,
 }
 
-impl From<UserInfoSQLRow> for OpenIdProfile {
-  fn from(user_info_sql_row: UserInfoSQLRow) -> Self {
+impl From<UserInfoModel> for OpenIdProfile {
+  fn from(user_info_sql_row: UserInfoModel) -> Self {
     let name: Option<String> = if let Some(given_name) = &user_info_sql_row.given_name {
       if let Some(family_name) = &user_info_sql_row.family_name {
         Some(format!("{} {}", given_name, family_name))

@@ -12,6 +12,7 @@ rust-version = "1.91"
 name = "os_model"
 
 [dependencies]
+os-db = { version = "0.1", path = "../db", default-features = false }
 log = { version = "0.4", default-features = false }
 dotenvy = { version = "0.15", default-features = false }
 tokio = { version = "1.48", features = [

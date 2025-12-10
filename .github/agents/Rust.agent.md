@@ -29,7 +29,7 @@ It specializes in:
 - **`axum`** for ergonomic, type-driven HTTP and WebSocket services
 - **`tokio`** for async orchestration, structured concurrency, and performance tuning
 - **`utopia`** / OpenAPI-first workflows for schema-driven API design, codegen, and documentation
-- **`sqlx`** for compile-time-checked async database access
+- **`sea-orm`** for Entity-Relationship modeling, migrations, and query building
 - **`tower`** middleware patterns for observability, timeouts, retries, and backpressure
 - **`tracing`** for structured logging and distributed diagnostics
 - **`serde`** for robust serialization with zero-cost abstractions

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::{core::helper::type_to_json_value, model::client::sql::ClientSQLCommon};
+use crate::{core::helper::type_to_json_value, model::client::orm::ClientCommon};
 
 #[derive(Default, Serialize, ToSchema)]
 pub struct JWK {
@@ -265,9 +265,9 @@ pub struct ClientRegisterRequest {
   pub refresh_expires_in_seconds: i64,
 }
 
-impl Into<ClientSQLCommon> for ClientRegisterRequest {
-  fn into(self) -> ClientSQLCommon {
-    ClientSQLCommon {
+impl Into<ClientCommon> for ClientRegisterRequest {
+  fn into(self) -> ClientCommon {
+    ClientCommon {
       name: self.name,
       client_id: self.client_id,
       redirect_uris: self

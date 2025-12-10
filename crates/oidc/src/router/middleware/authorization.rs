@@ -8,7 +8,7 @@ use os_api::{
 use crate::{
   core::{
     config::app_config::AppConfig,
-    jwk::sql::{JwkSQLRow, get_jwk_by_kid},
+    jwk::orm::{JwkRow, get_jwk_by_kid},
   },
   model::revoked_token::sql::is_token_revoked,
   router::{
@@ -38,7 +38,7 @@ where
     if let Some(authorization_header_value) = parts.headers.get(AUTHORIZATION_HEADER) {
       let authorization_string = authorization_from_header(authorization_header_value)?;
       let (token_data, _jwk_sql_row) = parse_authorization(
-        &router_state.pool,
+        &router_state.database,
         &router_state.config,
         authorization_string,
       )
@@ -53,10 +53,10 @@ where
 }
 
 pub async fn parse_authorization<T>(
-  pool: &sqlx::AnyPool,
+  db: &sea_orm::DatabaseConnection,
   app_config: &AppConfig,
   authorization_string: &str,
-) -> Result<(jsonwebtoken::TokenData<T>, JwkSQLRow), HttpError>
+) -> Result<(jsonwebtoken::TokenData<T>, JwkRow), HttpError>
 where
   T: Claims,
 {
@@ -79,7 +79,7 @@ where
     }
   };
   let alg = header.alg.clone();
-  let jwk_sql_row = match get_jwk_by_kid(pool, kid).await {
+  let jwk_row = match get_jwk_by_kid(db, kid).await {
     Ok(Some(jwk)) => jwk,
     Ok(None) => {
       log::error!("invalid JWK not found by kid");
@@ -90,7 +90,7 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
   };
-  let jwk = match jwk_sql_row.clone().try_into() {
+  let jwk = match jwk_row.clone().try_into() {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("invalid JWK unable to convert to token decoding key: {}", e);
@@ -115,7 +115,7 @@ where
     }
   };
 
-  match is_token_revoked(pool, authorization_string).await {
+  match is_token_revoked(db, authorization_string).await {
     Ok(true) => {
       log::error!("token has been revoked");
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
@@ -127,5 +127,5 @@ where
     }
   }
 
-  Ok((token_data, jwk_sql_row))
+  Ok((token_data, jwk_row))
 }

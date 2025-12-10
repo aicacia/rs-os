@@ -6,12 +6,15 @@ use crate::{
     config::app_config::AppConfig,
     jwk::{
       helper::to_encoding_key,
-      sql::{JwkSQLRow, get_jwk_for_sign_and_verify},
+      orm::{JwkRow, get_jwk_for_sign_and_verify},
+      sql::{jwk_model_to_jwt_jwk},
     },
   },
-  model::user::sql::{
-    UserSQLRow, get_user_info_by_user_id, get_user_primary_email, get_user_primary_phone_number,
+  model::user::orm::{
+    UserModel, get_user_info_by_user_id,
+    UserEmailModelExt as _, UserPhoneNumberModelExt as _,
   },
+  model::user::sql::{get_user_primary_email, get_user_primary_phone_number},
   router::{
     common::{
       constants::{
@@ -26,12 +29,13 @@ use crate::{
     error::{HttpError, INTERNAL_ERROR},
   },
 };
+use sea_orm::DatabaseConnection;
 
 pub(crate) async fn create_user_token(
-  pool: &sqlx::AnyPool,
+  db: &DatabaseConnection,
   app_config: &AppConfig,
-  jwk_sql_row: JwkSQLRow,
-  user: UserSQLRow,
+  jwk_sql_row: JwkRow,
+  user: UserModel,
   client_id: String,
   scope: String,
   issued_token_type: String,
@@ -52,7 +56,7 @@ pub(crate) async fn create_user_token(
     scope: scope.clone(),
   };
 
-  let encoding_key = match to_encoding_key(&jwk_sql_row) {
+  let encoding_key = match to_encoding_key(&jwk_sql_row.clone().into()) {
     Ok(encoding_key) => encoding_key,
     Err(e) => {
       log::error!("error getting converting into jwt encoding key: {}", e);
@@ -61,7 +65,7 @@ pub(crate) async fn create_user_token(
       );
     }
   };
-  let jwk = match jwk_sql_row.try_into() {
+  let jwk = match jwk_model_to_jwt_jwk(jwk_sql_row.clone().into()) {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("error getting converting into json web key: {}", e);
@@ -118,9 +122,28 @@ pub(crate) async fn create_user_token(
     };
     id_claims.basic_claims.r#type = TOKEN_TYPE_ID.to_owned();
 
-    let user_info = match get_user_info_by_user_id(pool, user.id).await {
+    let user_info = match get_user_info_by_user_id(db, user.id).await {
       Ok(Some(user_info)) => user_info,
-      Ok(None) => Default::default(),
+      Ok(None) => {
+        // Create a default user info model
+        let now = chrono::Utc::now().timestamp();
+        os_model::entities::user_infos::Model {
+          user_id: user.id,
+          given_name: None,
+          family_name: None,
+          middle_name: None,
+          nickname: None,
+          profile_picture: None,
+          website: None,
+          gender: None,
+          birthdate: None,
+          zone_info: None,
+          locale: None,
+          address: None,
+          updated_at: now,
+          created_at: now,
+        }
+      },
       Err(e) => {
         log::error!("error fetching user info: {}", e);
         return Err(
@@ -133,7 +156,7 @@ pub(crate) async fn create_user_token(
     id_claims.profile.preferred_username = Some(user.username.clone());
 
     if show_email {
-      match get_user_primary_email(pool, user.id).await {
+      match get_user_primary_email(db, user.id).await {
         Ok(Some(email)) => {
           id_claims.profile.email_verified = Some(email.is_verified());
           id_claims.profile.email = Some(email.email);
@@ -149,7 +172,7 @@ pub(crate) async fn create_user_token(
       }
     }
     if show_phone_number {
-      match get_user_primary_phone_number(pool, user.id).await {
+      match get_user_primary_phone_number(db, user.id).await {
         Ok(Some(phone_number)) => {
           id_claims.profile.phone_verified = Some(phone_number.is_verified());
           id_claims.profile.phone = Some(phone_number.phone_number);
@@ -190,7 +213,7 @@ pub(crate) async fn create_user_token(
 }
 
 pub(crate) async fn create_user_authorization_code_token(
-  pool: &sqlx::AnyPool,
+  db: &DatabaseConnection,
   app_config: &AppConfig,
   user_id: i64,
   client_id: String,
@@ -198,7 +221,7 @@ pub(crate) async fn create_user_authorization_code_token(
   code_challenge: String,
   code_challenge_method: String,
 ) -> Result<String, HttpError> {
-  let jwk_sql_row = match get_jwk_for_sign_and_verify(pool).await {
+  let jwk_sql_row = match get_jwk_for_sign_and_verify(db).await {
     Ok(Some(jwk_sql_row)) => jwk_sql_row,
     Ok(None) => {
       log::error!("error no valid jwk for signing and verifying jwts");
@@ -230,7 +253,7 @@ pub(crate) async fn create_user_authorization_code_token(
     code_challenge_method,
   };
 
-  let encoding_key = match to_encoding_key(&jwk_sql_row) {
+  let encoding_key = match to_encoding_key(&jwk_sql_row.clone().into()) {
     Ok(encoding_key) => encoding_key,
     Err(e) => {
       log::error!("error getting converting into jwt encoding key: {}", e);
@@ -239,7 +262,7 @@ pub(crate) async fn create_user_authorization_code_token(
       );
     }
   };
-  let jwk = match jwk_sql_row.try_into() {
+  let jwk = match jwk_model_to_jwt_jwk(jwk_sql_row.clone().into()) {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("error getting converting into json web key: {}", e);

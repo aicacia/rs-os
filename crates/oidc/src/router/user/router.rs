@@ -6,7 +6,7 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  model::user::sql::{create_user, delete_user, get_user_by_id, list_users, update_user},
+  model::user::orm::{create_user, delete_user, get_user_by_id, list_users, update_user},
   router::{
     common::permissions::Permission,
     entity::RouterState,
@@ -42,7 +42,7 @@ pub async fn user_list(
     Err(e) => return e.into_response(),
   }
 
-  match list_users(&state.pool).await {
+  match list_users(&state.database).await {
     Ok(users) => {
       let users: Vec<User> = users.into_iter().map(|u| u.into()).collect();
       axum::Json(users).into_response()
@@ -81,7 +81,7 @@ pub async fn get_user(
     Err(e) => return e.into_response(),
   }
 
-  let user_sql_row = match get_user_by_id(&state.pool, user_id).await {
+  let user_sql_row = match get_user_by_id(&state.database, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => {
       return HttpError::not_found()
@@ -126,7 +126,7 @@ pub async fn create_user_handler(
     Err(e) => return e.into_response(),
   }
 
-  let user_sql_row = match create_user(&state.pool, &request.username).await {
+  let user_sql_row = match create_user(&state.database, &request.username).await {
     Ok(user) => user,
     Err(e) => {
       log::error!("error creating user: {}", e);
@@ -168,7 +168,7 @@ pub async fn update_user_handler(
     Err(e) => return e.into_response(),
   }
 
-  let user_sql_row = match update_user(&state.pool, user_id, &request.username).await {
+  let user_sql_row = match update_user(&state.database, user_id, &request.username).await {
     Ok(user) => user,
     Err(e) => {
       log::error!("error updating user: {}", e);
@@ -205,7 +205,7 @@ pub async fn delete_user_handler(
     Err(e) => return e.into_response(),
   }
 
-  match delete_user(&state.pool, user_id).await {
+  match delete_user(&state.database, user_id).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("user", NOT_FOUND_ERROR)

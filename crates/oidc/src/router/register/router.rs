@@ -3,8 +3,8 @@ use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  core::jwk::sql::get_jwk_for_sign_and_verify,
-  model::user::sql::create_user_with_password,
+  core::jwk::orm::get_jwk_for_sign_and_verify,
+  model::user::orm::create_user_with_password,
   router::{
     Json,
     common::{constants::TOKEN_ISSUE_TYPE_PASSWORD, entity::Token, helper::create_user_token},
@@ -31,7 +31,7 @@ pub async fn register(
   Json(register_request): Json<SignupRequest>,
 ) -> impl IntoResponse {
   let user = match create_user_with_password(
-    &state.pool,
+    &state.database,
     &state.config,
     &register_request.username,
     &register_request.password,
@@ -47,7 +47,7 @@ pub async fn register(
     }
   };
 
-  let jwk = match get_jwk_for_sign_and_verify(&state.pool).await {
+  let jwk = match get_jwk_for_sign_and_verify(&state.database).await {
     Ok(Some(jwk)) => jwk,
     Ok(None) => {
       log::error!("error no valid jwk for signing and verifying jwts");
@@ -64,7 +64,7 @@ pub async fn register(
   };
 
   match create_user_token(
-    &state.pool,
+    &state.database,
     &state.config,
     jwk,
     user,

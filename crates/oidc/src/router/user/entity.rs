@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator::Validate;
 
-use crate::model::user::sql::UserSQLRow;
+use crate::model::user::orm::UserModel;
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct CreateUserRequest {
@@ -25,8 +25,8 @@ pub struct User {
   pub updated_at: DateTime<Utc>,
 }
 
-impl From<UserSQLRow> for User {
-  fn from(row: UserSQLRow) -> Self {
+impl From<UserModel> for User {
+  fn from(row: UserModel) -> Self {
     Self {
       id: row.id.to_string(),
       username: row.username,

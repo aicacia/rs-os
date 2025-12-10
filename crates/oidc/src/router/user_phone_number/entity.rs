@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::model::user::sql::UserPhoneNumberSQLRow;
+use crate::model::user::orm::{UserPhoneNumberModel, UserPhoneNumberModelExt};
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateUserPhoneNumberRequest {
@@ -26,8 +26,8 @@ pub struct UserPhoneNumber {
   pub updated_at: DateTime<Utc>,
 }
 
-impl From<UserPhoneNumberSQLRow> for UserPhoneNumber {
-  fn from(row: UserPhoneNumberSQLRow) -> Self {
+impl From<UserPhoneNumberModel> for UserPhoneNumber {
+  fn from(row: UserPhoneNumberModel) -> Self {
     let verified = row.is_verified();
     let is_primary = row.is_primary();
     Self {

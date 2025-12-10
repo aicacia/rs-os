@@ -15,7 +15,7 @@ pub struct DatabaseConfig {
 impl Default for DatabaseConfig {
   fn default() -> Self {
     Self {
-      url: std::env::var("DATABASE_URL").unwrap_or("sqlite:dev.db".to_owned()),
+      url: std::env::var("DATABASE_URL").unwrap_or_default(),
       min_connections: 1,
       max_connections: 100,
       connect_timeout: 10,

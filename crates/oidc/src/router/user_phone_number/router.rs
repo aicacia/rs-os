@@ -6,9 +6,9 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  model::user::sql::{
+  model::user::orm::{
     create_user_phone_number, delete_user_phone_number, get_user_phone_number_by_id,
-    get_user_phone_numbers_by_user_id, update_user_phone_number_primary, verify_user_phone_number,
+    list_user_phone_numbers_by_user_id, update_user_phone_number_primary, verify_user_phone_number,
   },
   router::{
     common::permissions::Permission,
@@ -51,14 +51,14 @@ pub async fn list_user_phone_numbers(
   };
 
   // Users can read their own phone numbers, admins can read any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserRead) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  match get_user_phone_numbers_by_user_id(&state.pool, user_id_parsed).await {
+  match list_user_phone_numbers_by_user_id(&state.database, user_id_parsed).await {
     Ok(phone_numbers) => {
       let phone_numbers: Vec<UserPhoneNumber> =
         phone_numbers.into_iter().map(|p| p.into()).collect();
@@ -112,14 +112,14 @@ pub async fn get_user_phone_number(
   };
 
   // Users can read their own phone numbers, admins can read any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserRead) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  let phone_sql_row = match get_user_phone_number_by_id(&state.pool, phone_id_parsed).await {
+  let phone_sql_row = match get_user_phone_number_by_id(&state.database, phone_id_parsed).await {
     Ok(Some(phone)) => {
       if phone.user_id != user_id_parsed {
         return HttpError::not_found()
@@ -177,7 +177,7 @@ pub async fn create_user_phone_number_handler(
   };
 
   // Users can add their own phone numbers, admins can add any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserWrite) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
@@ -185,7 +185,7 @@ pub async fn create_user_phone_number_handler(
   }
 
   let phone_sql_row =
-    match create_user_phone_number(&state.pool, user_id_parsed, &request.phone_number).await {
+    match create_user_phone_number(&state.database, user_id_parsed, &request.phone_number).await {
       Ok(phone) => phone,
       Err(e) => {
         log::error!("error creating user phone number: {}", e);
@@ -241,7 +241,7 @@ pub async fn update_user_phone_number_handler(
   };
 
   // Users can update their own phone numbers, admins can update any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserWrite) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
@@ -251,7 +251,7 @@ pub async fn update_user_phone_number_handler(
   if let Some(is_primary) = request.is_primary {
     if is_primary {
       let phone_sql_row = match update_user_phone_number_primary(
-        &state.pool,
+        &state.database,
         user_id_parsed,
         phone_id_parsed,
       )
@@ -277,7 +277,7 @@ pub async fn update_user_phone_number_handler(
   }
 
   // If no changes, just return the current phone number
-  match get_user_phone_number_by_id(&state.pool, phone_id_parsed).await {
+  match get_user_phone_number_by_id(&state.database, phone_id_parsed).await {
     Ok(Some(phone)) => {
       if phone.user_id != user_id_parsed {
         return HttpError::not_found()
@@ -338,14 +338,14 @@ pub async fn delete_user_phone_number_handler(
   };
 
   // Users can delete their own phone numbers, admins can delete any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserWrite) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  match delete_user_phone_number(&state.pool, user_id_parsed, phone_id_parsed).await {
+  match delete_user_phone_number(&state.database, user_id_parsed, phone_id_parsed).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("phone_number", NOT_FOUND_ERROR)
@@ -404,7 +404,7 @@ pub async fn verify_user_phone_number_handler(
   }
 
   let phone_sql_row =
-    match verify_user_phone_number(&state.pool, user_id_parsed, phone_id_parsed).await {
+    match verify_user_phone_number(&state.database, user_id_parsed, phone_id_parsed).await {
       Ok(Some(phone)) => phone,
       Ok(None) => {
         return HttpError::not_found()

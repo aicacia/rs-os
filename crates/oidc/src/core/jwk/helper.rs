@@ -11,6 +11,7 @@ use rsa::{
   pkcs1::EncodeRsaPrivateKey as RSAEncodePrivateKey,
   traits::{PrivateKeyParts, PublicKeyParts},
 };
+use sea_orm::DatabaseConnection;
 
 use crate::core::{
   config::app_config,
@@ -18,13 +19,13 @@ use crate::core::{
 };
 
 pub async fn init_jwk(
-  pool: &sqlx::AnyPool,
+  db: &DatabaseConnection,
   app_config: &app_config::AppConfig,
 ) -> Result<(), Box<dyn Error>> {
-  let jwks = list_jwks(pool).await?;
+  let jwks = list_jwks(db).await?;
 
   if jwks.is_empty() {
-    let _ = create_jwk(pool, generate_jwk(app_config.token.default_jwt_algorithm)?).await?;
+    let _ = create_jwk(db, generate_jwk(app_config.token.default_jwt_algorithm)?).await?;
   }
 
   Ok(())
@@ -43,12 +44,33 @@ fn generate_hmac_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Er
 
   let k = BASE64_URL_SAFE_NO_PAD.encode(&secret);
 
-  let mut jwk = JwkSQLRow::default();
-  jwk.alg = alg_name;
-  jwk.kty = "oct".to_owned();
-  jwk.r#use = Some("sig".to_owned());
-  jwk.key_ops = Some("[\"sign\",\"verify\"]".to_owned());
-  jwk.k = Some(k);
+  let jwk = JwkSQLRow {
+    kid: 0,
+    active: 1,
+    alg: alg_name,
+    kty: "oct".to_owned(),
+    r#use: Some("sig".to_owned()),
+    key_ops: Some("[\"sign\",\"verify\"]".to_owned()),
+    k: Some(k),
+    n: None,
+    e: None,
+    d: None,
+    p: None,
+    q: None,
+    dp: None,
+    dq: None,
+    qi: None,
+    crv: None,
+    x: None,
+    y: None,
+    d_ec: None,
+    x5u: None,
+    x5c: None,
+    x5t: None,
+    x5t_s256: None,
+    updated_at: 0,
+    created_at: 0,
+  };
 
   Ok(jwk)
 }
@@ -68,15 +90,33 @@ fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Erro
       let x = BASE64_URL_SAFE_NO_PAD.encode(&point.x().ok_or_else(|| "invalid x")?.to_vec());
       let y = BASE64_URL_SAFE_NO_PAD.encode(&point.y().ok_or_else(|| "invalid y")?.to_vec());
 
-      let mut jwk = JwkSQLRow::default();
-      jwk.alg = "ES256".to_owned();
-      jwk.kty = "EC".to_owned();
-      jwk.r#use = Some("sig".to_owned());
-      jwk.key_ops = Some("[\"sign\",\"verify\"]".to_owned());
-      jwk.crv = Some("P-256".to_owned());
-      jwk.d = Some(d);
-      jwk.x = Some(x);
-      jwk.y = Some(y);
+      let jwk = JwkSQLRow {
+        kid: 0,
+        active: 1,
+        alg: "ES256".to_owned(),
+        kty: "EC".to_owned(),
+        r#use: Some("sig".to_owned()),
+        key_ops: Some("[\"sign\",\"verify\"]".to_owned()),
+        crv: Some("P-256".to_owned()),
+        d: Some(d),
+        x: Some(x),
+        y: Some(y),
+        n: None,
+        e: None,
+        p: None,
+        q: None,
+        dp: None,
+        dq: None,
+        qi: None,
+        d_ec: None,
+        k: None,
+        x5u: None,
+        x5c: None,
+        x5t: None,
+        x5t_s256: None,
+        updated_at: 0,
+        created_at: 0,
+      };
 
       Ok(jwk)
     }
@@ -93,15 +133,33 @@ fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Erro
       let x = BASE64_URL_SAFE_NO_PAD.encode(&point.x().ok_or_else(|| "invalid x")?.to_vec());
       let y = BASE64_URL_SAFE_NO_PAD.encode(&point.y().ok_or_else(|| "invalid y")?.to_vec());
 
-      let mut jwk = JwkSQLRow::default();
-      jwk.alg = "ES384".to_owned();
-      jwk.kty = "EC".to_owned();
-      jwk.r#use = Some("sig".to_owned());
-      jwk.key_ops = Some("[\"sign\",\"verify\"]".to_owned());
-      jwk.crv = Some("P-384".to_owned());
-      jwk.d = Some(d);
-      jwk.x = Some(x);
-      jwk.y = Some(y);
+      let jwk = JwkSQLRow {
+        kid: 0,
+        active: 1,
+        alg: "ES384".to_owned(),
+        kty: "EC".to_owned(),
+        r#use: Some("sig".to_owned()),
+        key_ops: Some("[\"sign\",\"verify\"]".to_owned()),
+        crv: Some("P-384".to_owned()),
+        d: Some(d),
+        x: Some(x),
+        y: Some(y),
+        n: None,
+        e: None,
+        p: None,
+        q: None,
+        dp: None,
+        dq: None,
+        qi: None,
+        d_ec: None,
+        k: None,
+        x5u: None,
+        x5c: None,
+        x5t: None,
+        x5t_s256: None,
+        updated_at: 0,
+        created_at: 0,
+      };
 
       Ok(jwk)
     }
@@ -140,20 +198,33 @@ fn generate_rsa_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Err
   let dq = BASE64_URL_SAFE_NO_PAD.encode(&dq.to_bytes_be());
   let qi = BASE64_URL_SAFE_NO_PAD.encode(&qi_bytes);
 
-  let mut jwk_sql_row = JwkSQLRow::default();
-  jwk_sql_row.alg = alg_name;
-  jwk_sql_row.kty = "RSA".to_owned();
-  jwk_sql_row.r#use = Some("sig".to_owned());
-  jwk_sql_row.key_ops = Some("[\"sign\",\"verify\"]".to_owned());
-
-  jwk_sql_row.n = Some(n);
-  jwk_sql_row.e = Some(e);
-  jwk_sql_row.d = Some(d);
-  jwk_sql_row.p = Some(p);
-  jwk_sql_row.q = Some(q);
-  jwk_sql_row.dp = Some(dp);
-  jwk_sql_row.dq = Some(dq);
-  jwk_sql_row.qi = Some(qi);
+  let jwk_sql_row = JwkSQLRow {
+    kid: 0,
+    active: 1,
+    alg: alg_name,
+    kty: "RSA".to_owned(),
+    r#use: Some("sig".to_owned()),
+    key_ops: Some("[\"sign\",\"verify\"]".to_owned()),
+    n: Some(n),
+    e: Some(e),
+    d: Some(d),
+    p: Some(p),
+    q: Some(q),
+    dp: Some(dp),
+    dq: Some(dq),
+    qi: Some(qi),
+    crv: None,
+    x: None,
+    y: None,
+    d_ec: None,
+    k: None,
+    x5u: None,
+    x5c: None,
+    x5t: None,
+    x5t_s256: None,
+    updated_at: 0,
+    created_at: 0,
+  };
 
   Ok(jwk_sql_row)
 }
@@ -169,14 +240,33 @@ fn generate_ed_jwk() -> Result<JwkSQLRow, Box<dyn Error>> {
   let x = BASE64_URL_SAFE_NO_PAD.encode(verifying_key.to_bytes());
 
   // Construct JWK row
-  let mut jwk = JwkSQLRow::default();
-  jwk.alg = "EdDSA".to_owned();
-  jwk.kty = "OKP".to_owned(); // Octet Key Pair
-  jwk.r#use = Some("sig".to_owned());
-  jwk.key_ops = Some("[\"sign\",\"verify\"]".to_owned());
-  jwk.crv = Some("Ed25519".to_owned());
-  jwk.d = Some(d);
-  jwk.x = Some(x);
+  let jwk = JwkSQLRow {
+    kid: 0,
+    active: 1,
+    alg: "EdDSA".to_owned(),
+    kty: "OKP".to_owned(), // Octet Key Pair
+    r#use: Some("sig".to_owned()),
+    key_ops: Some("[\"sign\",\"verify\"]".to_owned()),
+    crv: Some("Ed25519".to_owned()),
+    d: Some(d),
+    x: Some(x),
+    n: None,
+    e: None,
+    p: None,
+    q: None,
+    dp: None,
+    dq: None,
+    qi: None,
+    y: None,
+    d_ec: None,
+    k: None,
+    x5u: None,
+    x5c: None,
+    x5t: None,
+    x5t_s256: None,
+    updated_at: 0,
+    created_at: 0,
+  };
 
   Ok(jwk)
 }

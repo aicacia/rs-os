@@ -45,7 +45,7 @@ pub async fn run() -> io::Result<()> {
     .with(
       tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         format!(
-          "{}={level},tower_http={level},axum::rejection=trace,sqlx::query=info",
+          "{}={level},tower_http={level},axum::rejection=trace",
           env!("CARGO_PKG_NAME"),
           level = level.as_str().to_lowercase()
         )
@@ -103,25 +103,19 @@ pub async fn run() -> io::Result<()> {
 async fn init_oidc(
   app_config: os_oidc::core::config::app_config::AppConfig,
 ) -> io::Result<(impl FnOnce(), Router)> {
-  let oidc_pool = match os_db::pool::create(
-    &app_config.database,
-    &os_oidc::core::migrations::SQLITE_MIGRATOR,
-    &os_oidc::core::migrations::POSTGRESQL_MIGRATOR,
-  )
-  .await
-  {
-    Ok(pool) => pool,
+  let oidc_database = match os_model::create_database_connection(&app_config.database).await {
+    Ok(db) => db,
     Err(e) => return Err(io::Error::other(e)),
   };
 
-  match os_oidc::core::jwk::helper::init_jwk(&oidc_pool, &app_config).await {
+  match os_oidc::core::jwk::helper::init_jwk(&oidc_database, &app_config).await {
     Ok(_) => {}
     Err(e) => return Err(io::Error::other(e.to_string())),
   }
 
   let oidc_router = os_oidc::router::create_router(
     os_oidc::router::entity::RouterState {
-      pool: oidc_pool.clone(),
+      database: oidc_database.clone(),
       config: Arc::new(app_config),
     },
     Some(OIDC_API_URL_PREFIX),
@@ -130,7 +124,7 @@ async fn init_oidc(
   let close_pool = move || {
     block_in_place(move || {
       Handle::current().block_on(async move {
-        match os_db::pool::close(oidc_pool).await {
+        match os_db::connection::close(oidc_database).await {
           Ok(_) => {}
           Err(e) => log::error!("failed to close pool: {}", e),
         }

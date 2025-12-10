@@ -47,15 +47,6 @@ os-oidc-ui-embed = { version = "0.1", path = "./crates/oidc-ui/embed", default-f
 os-document-store = { version = "0.1", path = "./crates/document-store", default-features = false }
 os-fs = { version = "0.1", path = "./crates/fs", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
-sqlx = { version = "0.8", features = [
-  "uuid",
-  "chrono",
-  "time",
-  "macros",
-  "migrate",
-  "runtime-tokio-rustls",
-  "all-databases",
-], default-features = false }
 tokio = { version = "1.48", features = [
   "rt",
   "rt-multi-thread",

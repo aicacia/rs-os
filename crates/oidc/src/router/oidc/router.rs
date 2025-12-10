@@ -16,10 +16,12 @@ use crate::{
     config::app_config::AppConfig,
     encryption::verify_password,
     helper::json_to_string_vec,
-    jwk::sql::{get_jwk_for_sign_and_verify, list_jwks},
+    jwk::orm::get_jwk_for_sign_and_verify,
+    jwk::sql::{JwkModelExt, list_jwks},
   },
   model::{
-    client::sql::{ClientSQLRow, get_client_by_client_id, upsert_client},
+    client::orm::{ClientModel, ClientModelExt},
+    client::sql::{get_client_by_client_id, upsert_client},
     revoked_token::sql::revoke_token,
     user::sql::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
@@ -69,7 +71,7 @@ use crate::{
   )
 )]
 pub async fn jwks(State(state): State<RouterState>) -> impl IntoResponse {
-  let jwks = match list_jwks(&state.pool).await {
+  let jwks = match list_jwks(&state.database).await {
     Ok(jwks) => jwks,
     Err(e) => {
       log::error!("error getting jwks: {}", e);
@@ -118,7 +120,7 @@ pub async fn jwks(State(state): State<RouterState>) -> impl IntoResponse {
 pub async fn openid_configuration(State(state): State<RouterState>) -> impl IntoResponse {
   let api_url = state.config.api_url();
 
-  let jwks = match list_jwks(&state.pool).await {
+  let jwks = match list_jwks(&state.database).await {
     Ok(jwks) => jwks,
     Err(e) => {
       log::error!("error getting jwks: {}", e);
@@ -227,7 +229,9 @@ pub async fn end_session(
     Some(client_id) => client_id,
     None => match end_session_request.id_token_hint {
       Some(id_token_hint) => {
-        match parse_authorization::<BasicClaims>(&state.pool, &state.config, &id_token_hint).await {
+        match parse_authorization::<BasicClaims>(&state.database, &state.config, &id_token_hint)
+          .await
+        {
           Ok((token, _jwk)) => token.claims.aud,
           Err(e) => {
             log::error!("failed to parse id_token_hint: {}", e);
@@ -244,7 +248,7 @@ pub async fn end_session(
     },
   };
 
-  let client_sql_row = match get_client_by_client_id(&state.pool, &client_id).await {
+  let client_sql_row = match get_client_by_client_id(&state.database, &client_id).await {
     Ok(Some(client_sql_row)) => client_sql_row,
     Ok(None) => {
       return HttpError::not_found()
@@ -351,7 +355,7 @@ async fn password_grant(
 ) -> Result<Token, HttpError> {
   let client_id = if let Some(client_id) = &client_auth.client_id {
     let _client_sql_row = validate_client_authentication(
-      &state.pool,
+      &state.database,
       client_id,
       &client_auth,
       GRANT_TYPE_PASSWORD,
@@ -363,7 +367,7 @@ async fn password_grant(
     state.config.api_url()
   };
 
-  let user = match get_user_by_username_or_primary_email(&state.pool, &username).await {
+  let user = match get_user_by_username_or_primary_email(&state.database, &username).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR)),
     Err(e) => {
@@ -372,7 +376,7 @@ async fn password_grant(
     }
   };
 
-  let user_password = match get_user_active_password_by_user_id(&state.pool, user.id).await {
+  let user_password = match get_user_active_password_by_user_id(&state.database, user.id).await {
     Ok(Some(user_password)) => user_password,
     Ok(None) => {
       return Err(HttpError::forbidden().with_error(CREDENTIALS, TOKEN_ISSUE_TYPE_PASSWORD));
@@ -394,7 +398,7 @@ async fn password_grant(
     }
   }
 
-  let jwk = match get_jwk_for_sign_and_verify(&state.pool).await {
+  let jwk = match get_jwk_for_sign_and_verify(&state.database).await {
     Ok(Some(jwk)) => jwk,
     Ok(None) => {
       log::error!("error no valid jwk for signing and verifying jwts");
@@ -407,7 +411,7 @@ async fn password_grant(
   };
 
   create_user_token(
-    &state.pool,
+    &state.database,
     &state.config,
     jwk,
     user,
@@ -424,7 +428,7 @@ async fn refresh_token_grant(
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let (token_data, jwk_sql_row) =
-    parse_authorization::<BasicClaims>(&state.pool, &state.config, &refresh_token).await?;
+    parse_authorization::<BasicClaims>(&state.database, &state.config, &refresh_token).await?;
 
   if token_data.claims.r#type != TOKEN_TYPE_REFRESH {
     return Err(HttpError::unauthorized());
@@ -439,7 +443,7 @@ async fn refresh_token_grant(
     token_data.claims.aud.to_owned()
   };
   let _client_sql_row = validate_client_authentication(
-    &state.pool,
+    &state.database,
     &client_id,
     &client_auth,
     GRANT_TYPE_REFRESH_TOKEN,
@@ -458,7 +462,7 @@ async fn refresh_token_grant(
     }
   };
 
-  let user = match get_user_by_id(&state.pool, user_id).await {
+  let user = match get_user_by_id(&state.database, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -468,7 +472,7 @@ async fn refresh_token_grant(
   };
 
   create_user_token(
-    &state.pool,
+    &state.database,
     &state.config,
     jwk_sql_row,
     user,
@@ -486,7 +490,7 @@ async fn authorization_code_grant(
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let (token_data, jwk_sql_row) =
-    parse_authorization::<AuthorizationCodeClaims>(&state.pool, &state.config, &code).await?;
+    parse_authorization::<AuthorizationCodeClaims>(&state.database, &state.config, &code).await?;
 
   if token_data.claims.basic_claims.r#type != TOKEN_TYPE_AUTHORIZATION_CODE {
     return Err(HttpError::unauthorized());
@@ -519,7 +523,7 @@ async fn authorization_code_grant(
 
   let client_id = token_data.claims.basic_claims.aud;
   let _client_sql_row = validate_client_authentication(
-    &state.pool,
+    &state.database,
     &client_id,
     &client_auth,
     GRANT_TYPE_AUTHORIZATION_CODE,
@@ -538,7 +542,7 @@ async fn authorization_code_grant(
     }
   };
 
-  let user = match get_user_by_id(&state.pool, user_id).await {
+  let user = match get_user_by_id(&state.database, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -548,7 +552,7 @@ async fn authorization_code_grant(
   };
 
   create_user_token(
-    &state.pool,
+    &state.database,
     &state.config,
     jwk_sql_row,
     user,
@@ -560,13 +564,13 @@ async fn authorization_code_grant(
 }
 
 pub(crate) async fn validate_client_authentication(
-  pool: &sqlx::AnyPool,
+  db: &sea_orm::DatabaseConnection,
   client_id: &str,
   client_auth: &ClientAuthentication,
   grant_type: &str,
   scope: &str,
-) -> Result<ClientSQLRow, HttpError> {
-  let client_sql_row = match get_client_by_client_id(pool, client_id).await {
+) -> Result<ClientModel, HttpError> {
+  let client_sql_row = match get_client_by_client_id(db, client_id).await {
     Ok(Some(client)) => client,
     Ok(None) => {
       return Err(HttpError::not_found().with_error("client", NOT_FOUND_ERROR));
@@ -648,7 +652,7 @@ pub async fn authorize(
   State(state): State<RouterState>,
   Query(authorize_request): Query<AuthorizeRequest>,
 ) -> impl IntoResponse {
-  authorize_internal(state.pool, state.config, authorize_request).await
+  authorize_internal(state.database, state.config, authorize_request).await
 }
 
 #[utoipa::path(
@@ -668,11 +672,11 @@ pub async fn post_authorize(
   State(state): State<RouterState>,
   Json(authorize_request): Json<AuthorizeRequest>,
 ) -> impl IntoResponse {
-  authorize_internal(state.pool, state.config, authorize_request).await
+  authorize_internal(state.database, state.config, authorize_request).await
 }
 
 async fn authorize_internal(
-  _pool: sqlx::AnyPool,
+  _db: sea_orm::DatabaseConnection,
   config: Arc<AppConfig>,
   authorize_request: AuthorizeRequest,
 ) -> impl IntoResponse {
@@ -767,7 +771,7 @@ pub async fn register_client(
   };
 
   let (client_sql_row, is_new) =
-    match upsert_client(&state.pool, client_register_request.into()).await {
+    match upsert_client(&state.database, client_register_request.into()).await {
       Ok(result) => result,
       Err(e) => {
         log::error!("error registering client: {}", e);
@@ -829,7 +833,7 @@ pub async fn revoke(
   Form(revoke_request): Form<RevokeRequest>,
 ) -> impl IntoResponse {
   let (token_data, _jwk_sql_row) =
-    match parse_authorization::<BasicClaims>(&state.pool, &state.config, &revoke_request.token)
+    match parse_authorization::<BasicClaims>(&state.database, &state.config, &revoke_request.token)
       .await
     {
       Ok(result) => result,
@@ -848,7 +852,7 @@ pub async fn revoke(
     }
 
     match validate_client_authentication(
-      &state.pool,
+      &state.database,
       client_id,
       &revoke_request.client_auth,
       GRANT_TYPE_REVOKE,
@@ -864,7 +868,13 @@ pub async fn revoke(
     }
   }
 
-  match revoke_token(&state.pool, &revoke_request.token, token_data.claims.exp).await {
+  match revoke_token(
+    &state.database,
+    &revoke_request.token,
+    token_data.claims.exp,
+  )
+  .await
+  {
     Ok(_) => {
       log::info!("token successfully revoked");
       StatusCode::NO_CONTENT.into_response()

@@ -3,7 +3,7 @@ use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  model::user::sql::{update_user_password, update_user_username},
+  model::user::orm::{update_user, update_user_password, update_user_info as update_user_info_orm},
   router::{
     Json,
     current_user::{
@@ -36,7 +36,7 @@ pub async fn current_user(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
 ) -> impl IntoResponse {
-  match user_authorization.get_user(&state.pool).await {
+  match user_authorization.get_user(&state.database).await {
     Ok(user) => axum::Json(user).into_response(),
     Err(e) => return e.into_response(),
   }
@@ -62,10 +62,10 @@ pub async fn update_username(
   user_authorization: UserAuthorization,
   Json(update): Json<UpdateUsernameRequest>,
 ) -> impl IntoResponse {
-  match update_user_username(
-    &state.pool,
-    user_authorization.user_sql_row.id,
-    update.username,
+  match update_user(
+    &state.database,
+    user_authorization.user_model.id,
+    &update.username,
   )
   .await
   {
@@ -98,9 +98,9 @@ pub async fn update_password(
   Json(update): Json<UpdateUserPassword>,
 ) -> impl IntoResponse {
   match update_user_password(
-    &state.pool,
+    &state.database,
     &state.config,
-    user_authorization.user_sql_row.id,
+    user_authorization.user_model.id,
     update.password.as_str(),
   )
   .await
@@ -133,9 +133,9 @@ pub async fn update_user_info(
   user_authorization: UserAuthorization,
   Json(update): Json<UpdateUserInfoRequest>,
 ) -> impl IntoResponse {
-  match crate::model::user::sql::update_user_info(
-    &state.pool,
-    user_authorization.user_sql_row.id,
+  match update_user_info_orm(
+    &state.database,
+    user_authorization.user_model.id,
     update.into(),
   )
   .await

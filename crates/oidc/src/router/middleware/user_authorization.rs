@@ -7,10 +7,11 @@ use http::request::Parts;
 use crate::{
   model::{
     rbac::sql::PermissionSQLRow,
-    user::sql::{
-      UserSQLRow, get_user_by_id, get_user_emails_by_user_id, get_user_info_by_user_id,
-      get_user_oauth2_providers, get_user_phone_numbers_by_user_id,
-      get_user_role_permissions_by_user_id, get_user_roles_by_user_id,
+    user::orm::{
+      UserModel, UserModelExt, UserEmailModelExt, UserPhoneNumberModelExt,
+      get_user_by_id, get_user_info_by_user_id, get_user_oauth2_providers,
+      get_user_role_permissions_by_user_id, get_user_roles_by_user_id, list_user_emails_by_user_id,
+      list_user_phone_numbers_by_user_id,
     },
   },
   router::{
@@ -31,14 +32,14 @@ use crate::{
 
 pub struct UserAuthorization {
   pub claims: BasicClaims,
-  pub user_sql_row: UserSQLRow,
+  pub user_model: UserModel,
   pub permission_sql_rows: HashMap<i64, Vec<PermissionSQLRow>>,
   pub permissions: HashSet<Permission>,
 }
 
 impl UserAuthorization {
-  pub async fn get_user(&self, pool: &sqlx::AnyPool) -> Result<CurrentUser, HttpError> {
-    let mut user: CurrentUser = self.user_sql_row.clone().into();
+  pub async fn get_user(&self, db: &sea_orm::DatabaseConnection) -> Result<CurrentUser, HttpError> {
+    let mut user: CurrentUser = self.user_model.clone().into();
 
     let has_profile = self.claims.has_scope(SCOPE_PROFILE);
     let has_email = self.claims.has_scope(SCOPE_EMAIL);
@@ -46,7 +47,7 @@ impl UserAuthorization {
     let has_address = self.claims.has_scope(SCOPE_ADDRESS);
 
     if has_profile {
-      let role_sql_rows = match get_user_roles_by_user_id(pool, user.id).await {
+      let role_tuples = match get_user_roles_by_user_id(db, user.id).await {
         Ok(roles) => roles,
         Err(e) => {
           log::error!("error fetching user roles: {}", e);
@@ -54,27 +55,30 @@ impl UserAuthorization {
         }
       };
 
-      for role_sql_row in role_sql_rows {
-        let permissions = if let Some(permissions) = self.permission_sql_rows.get(&role_sql_row.id)
-        {
-          permissions
-            .into_iter()
-            .map(|p| p.uri.clone())
-            .collect::<Vec<_>>()
-        } else {
-          Vec::default()
-        };
-        let mut role: UserRole = role_sql_row.into();
-        role.permissions = permissions;
-        user.roles.push(role);
+      for (_, role_opt) in role_tuples {
+        if let Some(role_model) = role_opt {
+          let permissions = if let Some(permissions) = self.permission_sql_rows.get(&role_model.id)
+          {
+            permissions
+              .into_iter()
+              .map(|p| p.uri.clone())
+              .collect::<Vec<_>>()
+          } else {
+            Vec::default()
+          };
+          let mut role: UserRole = role_model.into();
+          role.permissions = permissions;
+          user.roles.push(role);
+        }
       }
 
-      user.info = match get_user_info_by_user_id(pool, user.id).await {
-        Ok(Some(mut user_info)) => {
+      user.info = match get_user_info_by_user_id(db, user.id).await {
+        Ok(Some(user_info_model)) => {
+          let mut user_info: crate::router::current_user::entity::UserInfo = user_info_model.into();
           if !has_address {
             user_info.address = None;
           }
-          Some(user_info.into())
+          Some(user_info)
         }
         Ok(None) => None,
         Err(e) => {
@@ -82,17 +86,28 @@ impl UserAuthorization {
           return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
         }
       };
-      user.oauth2_providers = match get_user_oauth2_providers(pool, user.id).await {
+      user.oauth2_providers = match get_user_oauth2_providers(db, user.id).await {
         Ok(oauth2_providers) => oauth2_providers
           .into_iter()
-          .map(|op| {
-            let mut oauth2_provider: UserOAuth2Provider = op.into();
+          .filter_map(|(provider, provider_info_opt)| {
+            provider_info_opt.map(|provider_info| {
+              let mut oauth2_provider = UserOAuth2Provider {
+                id: provider_info.id,
+                uri: provider_info.uri,
+                name: provider_info.description,
+                email: Some(provider.email),
+                updated_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.updated_at, 0)
+                  .unwrap_or_default(),
+                created_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.created_at, 0)
+                  .unwrap_or_default(),
+              };
 
-            if !has_email && !has_profile {
-              oauth2_provider.email = None;
-            }
+              if !has_email && !has_profile {
+                oauth2_provider.email = None;
+              }
 
-            oauth2_provider
+              oauth2_provider
+            })
           })
           .collect(),
         Err(e) => {
@@ -102,7 +117,7 @@ impl UserAuthorization {
       };
     }
     if has_email {
-      match get_user_emails_by_user_id(pool, user.id).await {
+      match list_user_emails_by_user_id(db, user.id).await {
         Ok(emails) => {
           for email in emails {
             if email.is_primary() {
@@ -119,7 +134,7 @@ impl UserAuthorization {
       }
     }
     if has_phone_number {
-      match get_user_phone_numbers_by_user_id(pool, user.id).await {
+      match list_user_phone_numbers_by_user_id(db, user.id).await {
         Ok(phone_numbers) => {
           for phone_number in phone_numbers {
             if phone_number.is_primary() {
@@ -195,14 +210,14 @@ where
       }
     };
 
-    match get_user_by_id(&router_state.pool, user_id).await {
-      Ok(Some(user_sql_row)) => {
-        if !user_sql_row.is_active() {
+    match get_user_by_id(&router_state.database, user_id).await {
+      Ok(Some(user_model)) => {
+        if !user_model.is_active() {
           log::error!("invalid authorization user is not active");
           return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
         }
         let permission_sql_rows =
-          match get_user_role_permissions_by_user_id(&router_state.pool, user_sql_row.id).await {
+          match get_user_role_permissions_by_user_id(&router_state.database, user_model.id).await {
             Ok(permission_sql_rows) => permission_sql_rows,
             Err(e) => {
               log::error!("failed to fetch permissions: {}", e);
@@ -221,7 +236,7 @@ where
 
         return Ok(Self {
           claims: authorization.claims,
-          user_sql_row,
+          user_model,
           permission_sql_rows,
           permissions,
         });

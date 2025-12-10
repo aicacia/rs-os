@@ -1998,7 +1998,6 @@ dependencies = [
  "os-oidc-ui",
  "os-oidc-ui-embed",
  "serde",
- "sqlx",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
@@ -2046,8 +2045,8 @@ name = "os-db"
 version = "0.1.0"
 dependencies = [
  "log",
+ "sea-orm",
  "serde",
- "sqlx",
 ]
 
 [[package]]
@@ -2122,6 +2121,7 @@ version = "0.1.0"
 dependencies = [
  "dotenvy",
  "log",
+ "os-db",
  "sea-orm",
  "tokio",
 ]
@@ -2159,7 +2159,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
- "sqlx",
  "tokio",
  "tokio-util",
  "tower",

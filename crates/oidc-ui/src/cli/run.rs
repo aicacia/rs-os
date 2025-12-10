@@ -33,7 +33,7 @@ pub async fn run() -> io::Result<()> {
     .with(
       tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         format!(
-          "{}={level},tower_http={level},axum::rejection=trace,sqlx::query={level}",
+          "{}={level},tower_http={level},axum::rejection=trace",
           env!("CARGO_PKG_NAME"),
           level = level.as_str().to_lowercase()
         )

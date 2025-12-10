@@ -5,7 +5,7 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  core::jwk::sql::get_jwk_by_kid,
+  core::jwk::orm::get_jwk_by_kid,
   router::{
     entity::RouterState,
     error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
@@ -28,7 +28,7 @@ pub async fn jwk_by_id(
   State(state): State<RouterState>,
   Path(kid): Path<i64>,
 ) -> impl IntoResponse {
-  let jwk_sql_row = match get_jwk_by_kid(&state.pool, kid.to_string()).await {
+  let jwk_sql_row = match get_jwk_by_kid(&state.database, kid.to_string()).await {
     Ok(Some(jwk)) => jwk,
     Ok(None) => {
       log::error!("invalid JWK not found by kid");

@@ -34,54 +34,22 @@ where
   }
 }
 
-// Type alias for backward compatibility
-pub type JwkSQLRow = jwks::Model;
-
-// Extension trait to add helper methods to the Model
-pub trait JwkModelExt {
-  fn key_operations(&self) -> Vec<String>;
-  fn public_key_operations(&self) -> Option<Vec<String>>;
-}
-
-impl JwkModelExt for jwks::Model {
-  fn key_operations(&self) -> Vec<String> {
-    if let Some(key_ops) = self.key_ops.as_ref() {
-      match serde_json::from_str::<Vec<String>>(key_ops.as_str()) {
-        Ok(key_ops_array) => return key_ops_array,
-        Err(e) => {
-          log::error!("invalid key_ops JSON: {}", e);
-        }
-      }
-    }
-    Vec::new()
-  }
-
-  fn public_key_operations(&self) -> Option<Vec<String>> {
-    let key_operations: Vec<String> = self
-      .key_operations()
-      .into_iter()
-      .filter(is_public_key_op)
-      .collect();
-
-    if key_operations.is_empty() {
-      return None;
-    }
-    Some(key_operations)
-  }
-}
-
-// Serialization wrapper for JSON output
-#[derive(Clone, Serialize, Deserialize)]
-pub struct JwkForSerialization {
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct JwkRow {
+  #[serde(default)]
   #[serde(serialize_with = "serialize_i64_as_string")]
   #[serde(deserialize_with = "deserialize_string_as_i64")]
   pub kid: i64,
+  #[serde(default)]
   pub active: i64,
+
   pub kty: String,
   pub alg: String,
   pub r#use: Option<String>,
   #[serde(deserialize_with = "deserialize_optional_vec_of_strings_as_string")]
   pub key_ops: Option<String>,
+
+  // RSA fields
   pub n: Option<String>,
   pub e: Option<String>,
   pub d: Option<String>,
@@ -90,20 +58,29 @@ pub struct JwkForSerialization {
   pub dp: Option<String>,
   pub dq: Option<String>,
   pub qi: Option<String>,
+
+  // EC fields
   pub crv: Option<String>,
   pub x: Option<String>,
   pub y: Option<String>,
   pub d_ec: Option<String>,
+
+  // Symmetric (oct) fields
   pub k: Option<String>,
+
+  // X.509 fields
   pub x5u: Option<String>,
   pub x5c: Option<String>,
   pub x5t: Option<String>,
   pub x5t_s256: Option<String>,
+
+  #[serde(default)]
   pub updated_at: i64,
+  #[serde(default)]
   pub created_at: i64,
 }
 
-impl From<jwks::Model> for JwkForSerialization {
+impl From<jwks::Model> for JwkRow {
   fn from(model: jwks::Model) -> Self {
     Self {
       kid: model.kid,
@@ -135,83 +112,124 @@ impl From<jwks::Model> for JwkForSerialization {
   }
 }
 
-// Helper functions to convert between jwks::Model and jsonwebtoken::jwk::Jwk
-pub fn jwk_model_to_jwt_jwk(
-  model: jwks::Model,
-) -> Result<jsonwebtoken::jwk::Jwk, serde_json::Error> {
-  let serialized = JwkForSerialization::from(model);
-  let value = match serde_json::to_value(&serialized)? {
-    serde_json::Value::Object(mut map) => {
-      if let Some(serde_json::Value::String(key_ops)) = map.remove("key_ops") {
-        map.insert(
-          "key_ops".to_owned(),
-          serde_json::from_str(key_ops.as_str())?,
-        );
+impl Into<jwks::Model> for JwkRow {
+  fn into(self) -> jwks::Model {
+    jwks::Model {
+      kid: self.kid,
+      active: self.active,
+      kty: self.kty,
+      alg: self.alg,
+      r#use: self.r#use,
+      key_ops: self.key_ops,
+      n: self.n,
+      e: self.e,
+      d: self.d,
+      p: self.p,
+      q: self.q,
+      dp: self.dp,
+      dq: self.dq,
+      qi: self.qi,
+      crv: self.crv,
+      x: self.x,
+      y: self.y,
+      d_ec: self.d_ec,
+      k: self.k,
+      x5u: self.x5u,
+      x5c: self.x5c,
+      x5t: self.x5t,
+      x5t_s256: self.x5t_s256,
+      updated_at: self.updated_at,
+      created_at: self.created_at,
+    }
+  }
+}
+
+impl JwkRow {
+  pub fn key_operations(&self) -> Vec<String> {
+    if let Some(key_ops) = self.key_ops.as_ref() {
+      match serde_json::from_str::<Vec<String>>(key_ops.as_str()) {
+        Ok(key_ops_array) => return key_ops_array,
+        Err(e) => {
+          log::error!("invalid key_ops JSON: {}", e);
+        }
       }
-      serde_json::Value::Object(map)
     }
-    _ => {
-      return Err(serde_json::Error::custom(
-        "expected a JSON object but got a different type",
-      ));
+    Vec::new()
+  }
+
+  pub fn public_key_operations(&self) -> Option<Vec<String>> {
+    let key_operations: Vec<String> = self
+      .key_operations()
+      .into_iter()
+      .filter(is_public_key_op)
+      .collect();
+
+    if key_operations.is_empty() {
+      return None;
     }
-  };
-  Ok(serde_json::from_value(value)?)
+    Some(key_operations)
+  }
 }
 
-pub fn jwt_jwk_to_jwk_model(
-  value: jsonwebtoken::jwk::Jwk,
-) -> Result<jwks::Model, serde_json::Error> {
-  let serialized: JwkForSerialization = serde_json::from_value(serde_json::to_value(value)?)?;
-  Ok(jwks::Model {
-    kid: serialized.kid,
-    active: serialized.active,
-    kty: serialized.kty,
-    alg: serialized.alg,
-    r#use: serialized.r#use,
-    key_ops: serialized.key_ops,
-    n: serialized.n,
-    e: serialized.e,
-    d: serialized.d,
-    p: serialized.p,
-    q: serialized.q,
-    dp: serialized.dp,
-    dq: serialized.dq,
-    qi: serialized.qi,
-    crv: serialized.crv,
-    x: serialized.x,
-    y: serialized.y,
-    d_ec: serialized.d_ec,
-    k: serialized.k,
-    x5u: serialized.x5u,
-    x5c: serialized.x5c,
-    x5t: serialized.x5t,
-    x5t_s256: serialized.x5t_s256,
-    updated_at: serialized.updated_at,
-    created_at: serialized.created_at,
-  })
+impl TryInto<jsonwebtoken::jwk::Jwk> for JwkRow {
+  type Error = serde_json::Error;
+
+  fn try_into(self) -> Result<jsonwebtoken::jwk::Jwk, Self::Error> {
+    let value = match serde_json::to_value(&self)? {
+      serde_json::Value::Object(mut map) => {
+        if let Some(serde_json::Value::String(key_ops)) = map.remove("key_ops") {
+          map.insert(
+            "key_ops".to_owned(),
+            serde_json::from_str(key_ops.as_str())?,
+          );
+        }
+        serde_json::Value::Object(map)
+      }
+      _ => {
+        return Err(serde_json::Error::custom(
+          "expected a JSON object but got a different type",
+        ));
+      }
+    };
+    Ok(serde_json::from_value(value)?)
+  }
 }
 
-pub async fn list_jwks(db: &DatabaseConnection) -> Result<Vec<jwks::Model>, DbErr> {
-  Jwks::find()
+impl TryFrom<jsonwebtoken::jwk::Jwk> for JwkRow {
+  type Error = serde_json::Error;
+
+  fn try_from(value: jsonwebtoken::jwk::Jwk) -> Result<Self, Self::Error> {
+    Ok(serde_json::from_value(serde_json::to_value(value)?)?)
+  }
+}
+
+pub async fn list_jwks(db: &DatabaseConnection) -> Result<Vec<JwkRow>, DbErr> {
+  let models = Jwks::find()
     .filter(jwks::Column::Active.ne(0))
     .all(db)
-    .await
+    .await?;
+
+  Ok(models.into_iter().map(|m| m.into()).collect())
 }
 
 pub async fn get_jwk_by_kid(
   db: &DatabaseConnection,
-  kid: i64,
-) -> Result<Option<jwks::Model>, DbErr> {
-  Jwks::find_by_id(kid)
+  kid: impl Into<String>,
+) -> Result<Option<JwkRow>, DbErr> {
+  let kid_str = kid.into();
+  let kid_i64: i64 = kid_str
+    .parse()
+    .map_err(|_| DbErr::Custom("Invalid kid format".to_string()))?;
+
+  let model = Jwks::find_by_id(kid_i64)
     .filter(jwks::Column::Active.ne(0))
     .one(db)
-    .await
+    .await?;
+
+  Ok(model.map(|m| m.into()))
 }
 
-pub async fn get_jwk_for_sign_and_verify(
-  db: &DatabaseConnection,
-) -> Result<Option<jwks::Model>, DbErr> {
+pub async fn get_jwk_for_sign_and_verify(db: &DatabaseConnection) -> Result<Option<JwkRow>, DbErr> {
   let jwks = list_jwks(db).await?;
   Ok(jwks.into_iter().find(|jwk| {
     if let Some(key_ops) = jwk.key_ops.as_ref() {
@@ -222,11 +240,9 @@ pub async fn get_jwk_for_sign_and_verify(
   }))
 }
 
-pub async fn create_jwk(db: &DatabaseConnection, jwk: jwks::Model) -> Result<jwks::Model, DbErr> {
+pub async fn create_jwk(db: &DatabaseConnection, jwk: JwkRow) -> Result<JwkRow, DbErr> {
   let now = chrono::Utc::now().timestamp();
-  let active_model = jwks::ActiveModel {
-    kid: NotSet,
-    active: Set(1),
+  let new_jwk = jwks::ActiveModel {
     kty: Set(jwk.kty),
     alg: Set(jwk.alg),
     r#use: Set(jwk.r#use),
@@ -248,9 +264,12 @@ pub async fn create_jwk(db: &DatabaseConnection, jwk: jwks::Model) -> Result<jwk
     x5c: Set(jwk.x5c),
     x5t: Set(jwk.x5t),
     x5t_s256: Set(jwk.x5t_s256),
-    updated_at: Set(now),
+    active: Set(1),
     created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
   };
 
-  active_model.insert(db).await
+  let model = new_jwk.insert(db).await?;
+  Ok(model.into())
 }

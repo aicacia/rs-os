@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{
-  core::helper::json_to_string_vec, model::client::sql::ClientSQLRow,
+  core::helper::json_to_string_vec,
+  model::client::orm::{ClientModel, ClientModelExt},
   router::oidc::entity::ResponseType,
 };
 
@@ -34,8 +35,8 @@ pub struct Client {
   pub created_at: DateTime<Utc>,
 }
 
-impl From<ClientSQLRow> for Client {
-  fn from(client_sql_row: ClientSQLRow) -> Self {
+impl From<ClientModel> for Client {
+  fn from(client_sql_row: ClientModel) -> Self {
     Self {
       active: client_sql_row.is_active(),
       id: client_sql_row.id,

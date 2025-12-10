@@ -6,7 +6,9 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  model::user::sql::{assign_user_role, get_user_permissions, get_user_roles, remove_user_role},
+  model::user::orm::{
+    assign_user_role, get_user_permissions, get_user_roles_by_user_id, remove_user_role,
+  },
   router::{
     common::permissions::Permission,
     entity::RouterState,
@@ -48,16 +50,19 @@ pub async fn list_user_roles(
   };
 
   // Users can read their own roles, admins can read any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserRead) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  match get_user_roles(&state.pool, user_id_parsed).await {
-    Ok(roles) => {
-      let roles: Vec<UserRole> = roles.into_iter().map(|r| r.into()).collect();
+  match get_user_roles_by_user_id(&state.database, user_id_parsed).await {
+    Ok(role_tuples) => {
+      let roles: Vec<UserRole> = role_tuples
+        .into_iter()
+        .filter_map(|(_, role_opt)| role_opt.map(|r| r.into()))
+        .collect();
       axum::Json(roles).into_response()
     }
     Err(e) => {
@@ -98,14 +103,14 @@ pub async fn list_user_permissions(
   };
 
   // Users can read their own permissions, admins can read any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserRead) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  match get_user_permissions(&state.pool, user_id_parsed).await {
+  match get_user_permissions(&state.database, user_id_parsed).await {
     Ok(permissions) => axum::Json(UserPermissions { permissions }).into_response(),
     Err(e) => {
       log::error!("error listing user permissions: {}", e);
@@ -153,7 +158,7 @@ pub async fn assign_user_role_handler(
     }
   };
 
-  let role_sql_row = match assign_user_role(&state.pool, user_id_parsed, request.role_id).await {
+  let role_model = match assign_user_role(&state.database, user_id_parsed, request.role_id).await {
     Ok(role) => role,
     Err(e) => {
       log::error!("error assigning user role: {}", e);
@@ -163,7 +168,7 @@ pub async fn assign_user_role_handler(
     }
   };
 
-  let role: UserRole = role_sql_row.into();
+  let role: UserRole = role_model.into();
   (axum::http::StatusCode::CREATED, axum::Json(role)).into_response()
 }
 
@@ -211,7 +216,7 @@ pub async fn remove_user_role_handler(
     }
   };
 
-  match remove_user_role(&state.pool, user_id_parsed, role_id_parsed).await {
+  match remove_user_role(&state.database, user_id_parsed, role_id_parsed).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("role", NOT_FOUND_ERROR)

@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::model::user::sql::UserEmailSQLRow;
+use crate::model::user::orm::{UserEmailModel, UserEmailModelExt};
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateUserEmailRequest {
@@ -26,8 +26,8 @@ pub struct UserEmail {
   pub updated_at: DateTime<Utc>,
 }
 
-impl From<UserEmailSQLRow> for UserEmail {
-  fn from(row: UserEmailSQLRow) -> Self {
+impl From<UserEmailModel> for UserEmail {
+  fn from(row: UserEmailModel) -> Self {
     let verified = row.is_verified();
     let is_primary = row.is_primary();
     Self {

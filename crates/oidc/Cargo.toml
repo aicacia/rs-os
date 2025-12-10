@@ -67,15 +67,6 @@ rsa = { version = "0.9", features = ["pem", "serde"], default-features = false }
 rust-argon2 = { version = "3.0", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
 serde_json = { version = "1.0", default-features = false }
-sqlx = { version = "0.8", features = [
-  "uuid",
-  "chrono",
-  "time",
-  "macros",
-  "migrate",
-  "runtime-tokio-rustls",
-  "all-databases",
-], default-features = false }
 sea-orm = { version = "2.0.0-rc.20", default-features = false }
 tokio = { version = "1.48", features = [
   "rt",

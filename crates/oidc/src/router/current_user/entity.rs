@@ -4,12 +4,12 @@ use utoipa::ToSchema;
 use validator::Validate;
 
 use crate::model::{
-  rbac::sql::RoleSQLRow,
-  user::sql::{
-    UserEmailSQLRow, UserInfoSQLRow, UserInfoUpdate, UserOAuth2ProviderSQLRow,
-    UserPhoneNumberSQLRow, UserSQLRow,
+  user::orm::{
+    UserEmailModel, UserInfoModel, UserInfoUpdate, UserOAuth2ProviderModel,
+    UserPhoneNumberModel, UserModel, UserEmailModelExt, UserPhoneNumberModelExt, UserModelExt,
   },
 };
+use os_model::entities::roles;
 
 #[derive(Serialize, ToSchema, Default)]
 pub struct CurrentUser {
@@ -29,8 +29,8 @@ pub struct CurrentUser {
   pub created_at: DateTime<Utc>,
 }
 
-impl From<UserSQLRow> for CurrentUser {
-  fn from(user_sql_row: UserSQLRow) -> Self {
+impl From<UserModel> for CurrentUser {
+  fn from(user_sql_row: UserModel) -> Self {
     Self {
       active: user_sql_row.is_active(),
       id: user_sql_row.id,
@@ -48,10 +48,10 @@ pub struct UserRole {
   pub permissions: Vec<String>,
 }
 
-impl From<RoleSQLRow> for UserRole {
-  fn from(role_sql_row: RoleSQLRow) -> Self {
+impl From<roles::Model> for UserRole {
+  fn from(role_model: roles::Model) -> Self {
     Self {
-      uri: role_sql_row.uri,
+      uri: role_model.uri,
       ..Self::default()
     }
   }
@@ -86,8 +86,8 @@ pub struct UserInfo {
   pub updated_at: DateTime<Utc>,
 }
 
-impl From<UserInfoSQLRow> for UserInfo {
-  fn from(user_info_sql_row: UserInfoSQLRow) -> Self {
+impl From<UserInfoModel> for UserInfo {
+  fn from(user_info_sql_row: UserInfoModel) -> Self {
     let name = if let Some(given_name) = &user_info_sql_row.given_name {
       if let Some(family_name) = &user_info_sql_row.family_name {
         Some(format!("{} {}", given_name, family_name))
@@ -129,8 +129,8 @@ pub struct UserEmail {
   pub created_at: DateTime<Utc>,
 }
 
-impl From<UserEmailSQLRow> for UserEmail {
-  fn from(user_email_sql_row: UserEmailSQLRow) -> Self {
+impl From<UserEmailModel> for UserEmail {
+  fn from(user_email_sql_row: UserEmailModel) -> Self {
     Self {
       primary: user_email_sql_row.is_primary(),
       verified: user_email_sql_row.is_verified(),
@@ -155,8 +155,8 @@ pub struct UserPhoneNumber {
   pub created_at: DateTime<Utc>,
 }
 
-impl From<UserPhoneNumberSQLRow> for UserPhoneNumber {
-  fn from(user_phone_number_sql_row: UserPhoneNumberSQLRow) -> Self {
+impl From<UserPhoneNumberModel> for UserPhoneNumber {
+  fn from(user_phone_number_sql_row: UserPhoneNumberModel) -> Self {
     Self {
       primary: user_phone_number_sql_row.is_primary(),
       verified: user_phone_number_sql_row.is_verified(),
@@ -182,12 +182,14 @@ pub struct UserOAuth2Provider {
   pub created_at: DateTime<Utc>,
 }
 
-impl From<UserOAuth2ProviderSQLRow> for UserOAuth2Provider {
-  fn from(user_oauth2_provider_sql_row: UserOAuth2ProviderSQLRow) -> Self {
+// Note: This From implementation should not be used directly.
+// Use the conversion logic in middleware/user_authorization.rs that joins with provider info.
+impl From<UserOAuth2ProviderModel> for UserOAuth2Provider {
+  fn from(user_oauth2_provider_sql_row: UserOAuth2ProviderModel) -> Self {
     Self {
-      id: user_oauth2_provider_sql_row.oauth2_provider_id,
-      uri: user_oauth2_provider_sql_row.uri,
-      name: user_oauth2_provider_sql_row.name,
+      id: user_oauth2_provider_sql_row.o_auth2_provider_id,
+      uri: String::new(), // Must be populated from o_auth2_providers table
+      name: String::new(), // Must be populated from o_auth2_providers table
       email: Some(user_oauth2_provider_sql_row.email),
       updated_at: DateTime::<Utc>::from_timestamp(user_oauth2_provider_sql_row.updated_at, 0)
         .unwrap_or_default(),

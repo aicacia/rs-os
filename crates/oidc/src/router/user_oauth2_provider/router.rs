@@ -6,7 +6,7 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  model::user::sql::{
+  model::user::orm::{
     delete_user_oauth2_provider, get_user_oauth2_provider_by_id, get_user_oauth2_providers,
     link_user_oauth2_provider,
   },
@@ -51,16 +51,31 @@ pub async fn list_user_oauth2_providers(
   };
 
   // Users can read their own OAuth2 providers, admins can read any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserRead) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  match get_user_oauth2_providers(&state.pool, user_id_parsed).await {
+  match get_user_oauth2_providers(&state.database, user_id_parsed).await {
     Ok(providers) => {
-      let providers: Vec<UserOAuth2Provider> = providers.into_iter().map(|p| p.into()).collect();
+      let providers: Vec<UserOAuth2Provider> = providers
+        .into_iter()
+        .filter_map(|(provider, provider_info_opt)| {
+          provider_info_opt.map(|provider_info| UserOAuth2Provider {
+            oauth2_provider_id: provider_info.id.to_string(),
+            user_id: provider.user_id.to_string(),
+            uri: provider_info.uri,
+            name: provider_info.description,
+            email: provider.email,
+            updated_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.updated_at, 0)
+              .unwrap_or_default(),
+            created_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.created_at, 0)
+              .unwrap_or_default(),
+          })
+        })
+        .collect();
       axum::Json(providers).into_response()
     }
     Err(e) => {
@@ -111,31 +126,44 @@ pub async fn get_user_oauth2_provider(
   };
 
   // Users can read their own OAuth2 providers, admins can read any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserRead) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  let provider_sql_row =
-    match get_user_oauth2_provider_by_id(&state.pool, user_id_parsed, provider_id_parsed).await {
-      Ok(Some(provider)) => provider,
-      Ok(None) => {
-        return HttpError::not_found()
+  match get_user_oauth2_provider_by_id(&state.database, user_id_parsed, provider_id_parsed).await {
+    Ok(Some((provider, provider_info_opt))) => {
+      if let Some(provider_info) = provider_info_opt {
+        let oauth2_provider = UserOAuth2Provider {
+          oauth2_provider_id: provider_info.id.to_string(),
+          user_id: provider.user_id.to_string(),
+          uri: provider_info.uri,
+          name: provider_info.description,
+          email: provider.email,
+          updated_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.updated_at, 0)
+            .unwrap_or_default(),
+          created_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.created_at, 0)
+            .unwrap_or_default(),
+        };
+        axum::Json(oauth2_provider).into_response()
+      } else {
+        HttpError::not_found()
           .with_error("oauth2_provider", NOT_FOUND_ERROR)
-          .into_response();
+          .into_response()
       }
-      Err(e) => {
-        log::error!("error fetching user oauth2 provider: {}", e);
-        return HttpError::internal_error()
-          .with_application_error(INTERNAL_ERROR)
-          .into_response();
-      }
-    };
-
-  let provider: UserOAuth2Provider = provider_sql_row.into();
-  axum::Json(provider).into_response()
+    }
+    Ok(None) => HttpError::not_found()
+      .with_error("oauth2_provider", NOT_FOUND_ERROR)
+      .into_response(),
+    Err(e) => {
+      log::error!("error fetching user oauth2 provider: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
+  }
 }
 
 #[utoipa::path(
@@ -170,15 +198,15 @@ pub async fn link_user_oauth2_provider_handler(
   };
 
   // Users can link their own OAuth2 providers, admins can link any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserWrite) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  let provider_sql_row = match link_user_oauth2_provider(
-    &state.pool,
+  match link_user_oauth2_provider(
+    &state.database,
     user_id_parsed,
     request.provider_id,
     &request.name,
@@ -186,17 +214,27 @@ pub async fn link_user_oauth2_provider_handler(
   )
   .await
   {
-    Ok(provider) => provider,
+    Ok(provider) => {
+      let oauth2_provider = UserOAuth2Provider {
+        oauth2_provider_id: request.provider_id.to_string(),
+        user_id: user_id_parsed.to_string(),
+        uri: String::new(), // TODO: Need to fetch provider info for URI
+        name: request.name,
+        email: request.email,
+        updated_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.updated_at, 0)
+          .unwrap_or_default(),
+        created_at: chrono::DateTime::<chrono::Utc>::from_timestamp(provider.created_at, 0)
+          .unwrap_or_default(),
+      };
+      (axum::http::StatusCode::CREATED, axum::Json(oauth2_provider)).into_response()
+    }
     Err(e) => {
       log::error!("error linking user oauth2 provider: {}", e);
-      return HttpError::internal_error()
+      HttpError::internal_error()
         .with_application_error(INTERNAL_ERROR)
-        .into_response();
+        .into_response()
     }
-  };
-
-  let provider: UserOAuth2Provider = provider_sql_row.into();
-  (axum::http::StatusCode::CREATED, axum::Json(provider)).into_response()
+  }
 }
 
 #[utoipa::path(
@@ -238,14 +276,14 @@ pub async fn unlink_user_oauth2_provider_handler(
   };
 
   // Users can unlink their own OAuth2 providers, admins can unlink any
-  if user_authorization.user_sql_row.id != user_id_parsed {
+  if user_authorization.user_model.id != user_id_parsed {
     match user_authorization.has_permission(Permission::UserWrite) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
   }
 
-  match delete_user_oauth2_provider(&state.pool, user_id_parsed, provider_id_parsed).await {
+  match delete_user_oauth2_provider(&state.database, user_id_parsed, provider_id_parsed).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("oauth2_provider", NOT_FOUND_ERROR)
