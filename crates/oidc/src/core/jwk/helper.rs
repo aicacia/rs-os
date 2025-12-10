@@ -15,7 +15,7 @@ use sea_orm::DatabaseConnection;
 
 use crate::core::{
   config::app_config,
-  jwk::orm::{JwkRow as JwkSQLRow, create_jwk, list_jwks},
+  jwk::orm::{create_jwk, list_jwks},
 };
 
 pub async fn init_jwk(
@@ -31,7 +31,9 @@ pub async fn init_jwk(
   Ok(())
 }
 
-fn generate_hmac_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Error>> {
+fn generate_hmac_jwk(
+  alg: Algorithm,
+) -> Result<os_model::entities::jwks::Model, Box<dyn std::error::Error>> {
   let (alg_name, key_len) = match alg {
     Algorithm::HS256 => ("HS256".to_owned(), 32), // 256-bit
     Algorithm::HS384 => ("HS384".to_owned(), 48), // 384-bit
@@ -44,38 +46,22 @@ fn generate_hmac_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Er
 
   let k = BASE64_URL_SAFE_NO_PAD.encode(&secret);
 
-  let jwk = JwkSQLRow {
-    kid: 0,
+  let jwk = os_model::entities::jwks::Model {
     active: 1,
     alg: alg_name,
     kty: "oct".to_owned(),
     r#use: Some("sig".to_owned()),
     key_ops: Some("[\"sign\",\"verify\"]".to_owned()),
     k: Some(k),
-    n: None,
-    e: None,
-    d: None,
-    p: None,
-    q: None,
-    dp: None,
-    dq: None,
-    qi: None,
-    crv: None,
-    x: None,
-    y: None,
-    d_ec: None,
-    x5u: None,
-    x5c: None,
-    x5t: None,
-    x5t_s256: None,
-    updated_at: 0,
-    created_at: 0,
+    ..Default::default()
   };
 
   Ok(jwk)
 }
 
-fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Error>> {
+fn generate_es_jwk(
+  alg: Algorithm,
+) -> Result<os_model::entities::jwks::Model, Box<dyn std::error::Error>> {
   match alg {
     Algorithm::ES256 => {
       use p256::elliptic_curve::sec1::ToEncodedPoint;
@@ -90,8 +76,7 @@ fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Erro
       let x = BASE64_URL_SAFE_NO_PAD.encode(&point.x().ok_or_else(|| "invalid x")?.to_vec());
       let y = BASE64_URL_SAFE_NO_PAD.encode(&point.y().ok_or_else(|| "invalid y")?.to_vec());
 
-      let jwk = JwkSQLRow {
-        kid: 0,
+      let jwk = os_model::entities::jwks::Model {
         active: 1,
         alg: "ES256".to_owned(),
         kty: "EC".to_owned(),
@@ -101,21 +86,7 @@ fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Erro
         d: Some(d),
         x: Some(x),
         y: Some(y),
-        n: None,
-        e: None,
-        p: None,
-        q: None,
-        dp: None,
-        dq: None,
-        qi: None,
-        d_ec: None,
-        k: None,
-        x5u: None,
-        x5c: None,
-        x5t: None,
-        x5t_s256: None,
-        updated_at: 0,
-        created_at: 0,
+        ..Default::default()
       };
 
       Ok(jwk)
@@ -133,8 +104,7 @@ fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Erro
       let x = BASE64_URL_SAFE_NO_PAD.encode(&point.x().ok_or_else(|| "invalid x")?.to_vec());
       let y = BASE64_URL_SAFE_NO_PAD.encode(&point.y().ok_or_else(|| "invalid y")?.to_vec());
 
-      let jwk = JwkSQLRow {
-        kid: 0,
+      let jwk = os_model::entities::jwks::Model {
         active: 1,
         alg: "ES384".to_owned(),
         kty: "EC".to_owned(),
@@ -144,21 +114,7 @@ fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Erro
         d: Some(d),
         x: Some(x),
         y: Some(y),
-        n: None,
-        e: None,
-        p: None,
-        q: None,
-        dp: None,
-        dq: None,
-        qi: None,
-        d_ec: None,
-        k: None,
-        x5u: None,
-        x5c: None,
-        x5t: None,
-        x5t_s256: None,
-        updated_at: 0,
-        created_at: 0,
+        ..Default::default()
       };
 
       Ok(jwk)
@@ -167,7 +123,9 @@ fn generate_es_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Erro
   }
 }
 
-fn generate_rsa_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Error>> {
+fn generate_rsa_jwk(
+  alg: Algorithm,
+) -> Result<os_model::entities::jwks::Model, Box<dyn std::error::Error>> {
   let (alg_name, key_size) = match alg {
     Algorithm::RS256 => ("RS256".to_owned(), 2048),
     Algorithm::RS384 => ("RS384".to_owned(), 3072),
@@ -198,8 +156,7 @@ fn generate_rsa_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Err
   let dq = BASE64_URL_SAFE_NO_PAD.encode(&dq.to_bytes_be());
   let qi = BASE64_URL_SAFE_NO_PAD.encode(&qi_bytes);
 
-  let jwk_sql_row = JwkSQLRow {
-    kid: 0,
+  let jwk_sql_row = os_model::entities::jwks::Model {
     active: 1,
     alg: alg_name,
     kty: "RSA".to_owned(),
@@ -213,23 +170,13 @@ fn generate_rsa_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Err
     dp: Some(dp),
     dq: Some(dq),
     qi: Some(qi),
-    crv: None,
-    x: None,
-    y: None,
-    d_ec: None,
-    k: None,
-    x5u: None,
-    x5c: None,
-    x5t: None,
-    x5t_s256: None,
-    updated_at: 0,
-    created_at: 0,
+    ..Default::default()
   };
 
   Ok(jwk_sql_row)
 }
 
-fn generate_ed_jwk() -> Result<JwkSQLRow, Box<dyn Error>> {
+fn generate_ed_jwk() -> Result<os_model::entities::jwks::Model, Box<dyn Error>> {
   use ed25519_dalek::SigningKey;
 
   let signing_key = SigningKey::generate(&mut rand::thread_rng());
@@ -240,8 +187,7 @@ fn generate_ed_jwk() -> Result<JwkSQLRow, Box<dyn Error>> {
   let x = BASE64_URL_SAFE_NO_PAD.encode(verifying_key.to_bytes());
 
   // Construct JWK row
-  let jwk = JwkSQLRow {
-    kid: 0,
+  let jwk = os_model::entities::jwks::Model {
     active: 1,
     alg: "EdDSA".to_owned(),
     kty: "OKP".to_owned(), // Octet Key Pair
@@ -250,28 +196,15 @@ fn generate_ed_jwk() -> Result<JwkSQLRow, Box<dyn Error>> {
     crv: Some("Ed25519".to_owned()),
     d: Some(d),
     x: Some(x),
-    n: None,
-    e: None,
-    p: None,
-    q: None,
-    dp: None,
-    dq: None,
-    qi: None,
-    y: None,
-    d_ec: None,
-    k: None,
-    x5u: None,
-    x5c: None,
-    x5t: None,
-    x5t_s256: None,
-    updated_at: 0,
-    created_at: 0,
+    ..Default::default()
   };
 
   Ok(jwk)
 }
 
-pub fn generate_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Error>> {
+pub fn generate_jwk(
+  alg: Algorithm,
+) -> Result<os_model::entities::jwks::Model, Box<dyn std::error::Error>> {
   match alg {
     Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => generate_hmac_jwk(alg),
     Algorithm::ES256 | Algorithm::ES384 => generate_es_jwk(alg),
@@ -285,12 +218,16 @@ pub fn generate_jwk(alg: Algorithm) -> Result<JwkSQLRow, Box<dyn std::error::Err
   }
 }
 
-fn encoding_key_hmac(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Error>> {
+fn encoding_key_hmac(
+  jwk_sql_row: &os_model::entities::jwks::Model,
+) -> Result<EncodingKey, Box<dyn Error>> {
   let secret = BASE64_URL_SAFE_NO_PAD.decode(jwk_sql_row.k.clone().unwrap_or_default())?;
   Ok(EncodingKey::from_secret(secret.as_ref()))
 }
 
-fn encoding_key_es256(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Error>> {
+fn encoding_key_es256(
+  jwk_sql_row: &os_model::entities::jwks::Model,
+) -> Result<EncodingKey, Box<dyn Error>> {
   let d = jwk_sql_row
     .d
     .as_ref()
@@ -304,7 +241,9 @@ fn encoding_key_es256(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Er
   ))
 }
 
-fn encoding_key_es384(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Error>> {
+fn encoding_key_es384(
+  jwk_sql_row: &os_model::entities::jwks::Model,
+) -> Result<EncodingKey, Box<dyn Error>> {
   let d = jwk_sql_row
     .d
     .as_ref()
@@ -318,7 +257,9 @@ fn encoding_key_es384(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Er
   ))
 }
 
-fn encoding_key_rsa(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Error>> {
+fn encoding_key_rsa(
+  jwk_sql_row: &os_model::entities::jwks::Model,
+) -> Result<EncodingKey, Box<dyn Error>> {
   use num_bigint_dig::BigUint;
 
   let n_b64 = jwk_sql_row.n.as_ref().ok_or("missing 'n' for RSA")?;
@@ -340,7 +281,9 @@ fn encoding_key_rsa(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Erro
   ))
 }
 
-fn encoding_key_ed(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Error>> {
+fn encoding_key_ed(
+  jwk_sql_row: &os_model::entities::jwks::Model,
+) -> Result<EncodingKey, Box<dyn Error>> {
   use ed25519_dalek::{SigningKey, pkcs8::EncodePrivateKey};
 
   let d = jwk_sql_row
@@ -360,7 +303,9 @@ fn encoding_key_ed(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Error
   Ok(EncodingKey::from_ed_der(der.as_bytes()))
 }
 
-pub fn to_encoding_key(jwk_sql_row: &JwkSQLRow) -> Result<EncodingKey, Box<dyn Error>> {
+pub fn to_encoding_key(
+  jwk_sql_row: &os_model::entities::jwks::Model,
+) -> Result<EncodingKey, Box<dyn Error>> {
   let alg = Algorithm::from_str(jwk_sql_row.alg.as_str())?;
 
   match alg {

@@ -8,7 +8,7 @@ use os_api::{
 use crate::{
   core::{
     config::app_config::AppConfig,
-    jwk::orm::{JwkRow, get_jwk_by_kid},
+    jwk::orm::{get_jwk_by_kid, model_to_jwt_jwk},
   },
   model::revoked_token::orm::is_token_revoked,
   router::{
@@ -56,7 +56,7 @@ pub async fn parse_authorization<T>(
   db: &sea_orm::DatabaseConnection,
   app_config: &AppConfig,
   authorization_string: &str,
-) -> Result<(jsonwebtoken::TokenData<T>, JwkRow), HttpError>
+) -> Result<(jsonwebtoken::TokenData<T>, os_model::entities::jwks::Model), HttpError>
 where
   T: Claims,
 {
@@ -90,7 +90,7 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
   };
-  let jwk = match jwk_row.clone().try_into() {
+  let jwk = match model_to_jwt_jwk(jwk_row.clone()) {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("invalid JWK unable to convert to token decoding key: {}", e);

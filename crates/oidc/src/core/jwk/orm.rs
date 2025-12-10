@@ -1,250 +1,219 @@
 use os_model::entities::{prelude::*, *};
 use sea_orm::*;
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 
-use crate::core::jwk::helper::is_public_key_op;
+pub fn model_to_jwt_jwk(model: jwks::Model) -> Result<jsonwebtoken::jwk::Jwk, serde_json::Error> {
+  use jsonwebtoken::jwk::*;
 
-fn serialize_i64_as_string<S>(value: &i64, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  serializer.serialize_str(&value.to_string())
-}
-
-fn deserialize_string_as_i64<'de, D>(deserializer: D) -> Result<i64, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  String::deserialize(deserializer)?
-    .parse()
-    .map_err(serde::de::Error::custom)
-}
-
-fn deserialize_optional_vec_of_strings_as_string<'de, D>(
-  deserializer: D,
-) -> Result<Option<String>, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  if let Some(vec_of_strings) = Option::<Vec<String>>::deserialize(deserializer)? {
-    let string = serde_json::to_string(&vec_of_strings).map_err(serde::de::Error::custom)?;
-    Ok(Some(string))
+  let key_algorithm = if !model.alg.is_empty() {
+    Some(match model.alg.as_str() {
+      "HS256" => KeyAlgorithm::HS256,
+      "HS384" => KeyAlgorithm::HS384,
+      "HS512" => KeyAlgorithm::HS512,
+      "RS256" => KeyAlgorithm::RS256,
+      "RS384" => KeyAlgorithm::RS384,
+      "RS512" => KeyAlgorithm::RS512,
+      "PS256" => KeyAlgorithm::PS256,
+      "PS384" => KeyAlgorithm::PS384,
+      "PS512" => KeyAlgorithm::PS512,
+      "ES256" => KeyAlgorithm::ES256,
+      "ES384" => KeyAlgorithm::ES384,
+      "EdDSA" => KeyAlgorithm::EdDSA,
+      _ => KeyAlgorithm::RS256,
+    })
   } else {
-    Ok(None)
-  }
-}
+    None
+  };
 
-#[derive(Clone, Default, Serialize, Deserialize)]
-pub struct JwkRow {
-  #[serde(default)]
-  #[serde(serialize_with = "serialize_i64_as_string")]
-  #[serde(deserialize_with = "deserialize_string_as_i64")]
-  pub kid: i64,
-  #[serde(default)]
-  pub active: i64,
+  let public_key_use = model.r#use.map(|u| match u.as_str() {
+    "sig" => PublicKeyUse::Signature,
+    "enc" => PublicKeyUse::Encryption,
+    other => PublicKeyUse::Other(other.to_string()),
+  });
 
-  pub kty: String,
-  pub alg: String,
-  pub r#use: Option<String>,
-  #[serde(deserialize_with = "deserialize_optional_vec_of_strings_as_string")]
-  pub key_ops: Option<String>,
-
-  // RSA fields
-  pub n: Option<String>,
-  pub e: Option<String>,
-  pub d: Option<String>,
-  pub p: Option<String>,
-  pub q: Option<String>,
-  pub dp: Option<String>,
-  pub dq: Option<String>,
-  pub qi: Option<String>,
-
-  // EC fields
-  pub crv: Option<String>,
-  pub x: Option<String>,
-  pub y: Option<String>,
-  pub d_ec: Option<String>,
-
-  // Symmetric (oct) fields
-  pub k: Option<String>,
-
-  // X.509 fields
-  pub x5u: Option<String>,
-  pub x5c: Option<String>,
-  pub x5t: Option<String>,
-  pub x5t_s256: Option<String>,
-
-  #[serde(default)]
-  pub updated_at: i64,
-  #[serde(default)]
-  pub created_at: i64,
-}
-
-impl From<jwks::Model> for JwkRow {
-  fn from(model: jwks::Model) -> Self {
-    Self {
-      kid: model.kid,
-      active: model.active,
-      kty: model.kty,
-      alg: model.alg,
-      r#use: model.r#use,
-      key_ops: model.key_ops,
-      n: model.n,
-      e: model.e,
-      d: model.d,
-      p: model.p,
-      q: model.q,
-      dp: model.dp,
-      dq: model.dq,
-      qi: model.qi,
-      crv: model.crv,
-      x: model.x,
-      y: model.y,
-      d_ec: model.d_ec,
-      k: model.k,
-      x5u: model.x5u,
-      x5c: model.x5c,
-      x5t: model.x5t,
-      x5t_s256: model.x5t_s256,
-      updated_at: model.updated_at,
-      created_at: model.created_at,
-    }
-  }
-}
-
-impl Into<jwks::Model> for JwkRow {
-  fn into(self) -> jwks::Model {
-    jwks::Model {
-      kid: self.kid,
-      active: self.active,
-      kty: self.kty,
-      alg: self.alg,
-      r#use: self.r#use,
-      key_ops: self.key_ops,
-      n: self.n,
-      e: self.e,
-      d: self.d,
-      p: self.p,
-      q: self.q,
-      dp: self.dp,
-      dq: self.dq,
-      qi: self.qi,
-      crv: self.crv,
-      x: self.x,
-      y: self.y,
-      d_ec: self.d_ec,
-      k: self.k,
-      x5u: self.x5u,
-      x5c: self.x5c,
-      x5t: self.x5t,
-      x5t_s256: self.x5t_s256,
-      updated_at: self.updated_at,
-      created_at: self.created_at,
-    }
-  }
-}
-
-impl JwkRow {
-  pub fn key_operations(&self) -> Vec<String> {
-    if let Some(key_ops) = self.key_ops.as_ref() {
-      match serde_json::from_str::<Vec<String>>(key_ops.as_str()) {
-        Ok(key_ops_array) => return key_ops_array,
-        Err(e) => {
-          log::error!("invalid key_ops JSON: {}", e);
-        }
+  let key_operations = model
+    .key_ops
+    .and_then(|ko| serde_json::from_str::<Vec<String>>(&ko).ok())
+    .and_then(|ops| {
+      let parsed: Vec<KeyOperations> = ops
+        .iter()
+        .filter_map(|op| match op.as_str() {
+          "sign" => Some(KeyOperations::Sign),
+          "verify" => Some(KeyOperations::Verify),
+          "encrypt" => Some(KeyOperations::Encrypt),
+          "decrypt" => Some(KeyOperations::Decrypt),
+          "wrapKey" => Some(KeyOperations::WrapKey),
+          "unwrapKey" => Some(KeyOperations::UnwrapKey),
+          "deriveKey" => Some(KeyOperations::DeriveKey),
+          "deriveBits" => Some(KeyOperations::DeriveBits),
+          _ => None,
+        })
+        .collect();
+      if parsed.is_empty() {
+        None
+      } else {
+        Some(parsed)
       }
+    });
+
+  let x509_chain = model
+    .x5c
+    .and_then(|chain| serde_json::from_str::<Vec<String>>(&chain).ok());
+
+  let common = CommonParameters {
+    public_key_use,
+    key_operations,
+    key_algorithm,
+    key_id: Some(model.kid.to_string()),
+    x509_url: model.x5u,
+    x509_chain,
+    x509_sha1_fingerprint: model.x5t,
+    x509_sha256_fingerprint: model.x5t_s256,
+  };
+
+  let algorithm = match model.kty.as_str() {
+    "EC" => {
+      let curve = model
+        .crv
+        .and_then(|c| match c.as_str() {
+          "P256" | "P-256" => Some(EllipticCurve::P256),
+          "P384" | "P-384" => Some(EllipticCurve::P384),
+          "P521" | "P-521" => Some(EllipticCurve::P521),
+          "Ed25519" => Some(EllipticCurve::Ed25519),
+          _ => None,
+        })
+        .unwrap_or(EllipticCurve::P256);
+
+      AlgorithmParameters::EllipticCurve(EllipticCurveKeyParameters {
+        key_type: EllipticCurveKeyType::EC,
+        curve,
+        x: model.x.unwrap_or_default(),
+        y: model.y.unwrap_or_default(),
+      })
     }
-    Vec::new()
-  }
+    "RSA" => AlgorithmParameters::RSA(RSAKeyParameters {
+      key_type: RSAKeyType::RSA,
+      n: model.n.unwrap_or_default(),
+      e: model.e.unwrap_or_default(),
+    }),
+    "oct" => AlgorithmParameters::OctetKey(OctetKeyParameters {
+      key_type: OctetKeyType::Octet,
+      value: model.k.unwrap_or_default(),
+    }),
+    "OKP" => {
+      let curve = model
+        .crv
+        .and_then(|c| match c.as_str() {
+          "Ed25519" => Some(EllipticCurve::Ed25519),
+          "P256" | "P-256" => Some(EllipticCurve::P256),
+          "P384" | "P-384" => Some(EllipticCurve::P384),
+          "P521" | "P-521" => Some(EllipticCurve::P521),
+          _ => None,
+        })
+        .unwrap_or(EllipticCurve::Ed25519);
 
-  pub fn public_key_operations(&self) -> Option<Vec<String>> {
-    let key_operations: Vec<String> = self
-      .key_operations()
-      .into_iter()
-      .filter(is_public_key_op)
-      .collect();
-
-    if key_operations.is_empty() {
-      return None;
+      AlgorithmParameters::OctetKeyPair(OctetKeyPairParameters {
+        key_type: OctetKeyPairType::OctetKeyPair,
+        curve,
+        x: model.x.unwrap_or_default(),
+      })
     }
-    Some(key_operations)
-  }
+    _ => AlgorithmParameters::RSA(RSAKeyParameters {
+      key_type: RSAKeyType::RSA,
+      n: model.n.unwrap_or_default(),
+      e: model.e.unwrap_or_default(),
+    }),
+  };
+
+  Ok(Jwk { common, algorithm })
 }
 
-pub trait JwkModelExt {
-  fn key_operations(&self) -> Vec<String>;
-  fn public_key_operations(&self) -> Option<Vec<String>>;
-}
+pub fn jwk_to_model(jwk: jsonwebtoken::jwk::Jwk) -> jwks::Model {
+  let now = chrono::Utc::now().timestamp();
+  let common_alg = jwk
+    .common
+    .key_algorithm
+    .map(|ka| format!("{:?}", ka))
+    .unwrap_or_default();
+  let common_use = jwk.common.public_key_use.map(|pku| match pku {
+    jsonwebtoken::jwk::PublicKeyUse::Signature => "sig".to_string(),
+    jsonwebtoken::jwk::PublicKeyUse::Encryption => "enc".to_string(),
+    jsonwebtoken::jwk::PublicKeyUse::Other(other) => other,
+  });
+  let common_key_ops = jwk
+    .common
+    .key_operations
+    .as_ref()
+    .map(|ko| serde_json::to_string(ko).unwrap_or_else(|_| "[]".to_string()));
+  let common_x5c = jwk
+    .common
+    .x509_chain
+    .map(|chain| serde_json::to_string(&chain).unwrap_or_default());
 
-impl JwkModelExt for JwkRow {
-  fn key_operations(&self) -> Vec<String> {
-    JwkRow::key_operations(self)
+  let mut model = jwks::Model {
+    active: 1,
+    alg: common_alg,
+    r#use: common_use,
+    key_ops: common_key_ops,
+    x5u: jwk.common.x509_url,
+    x5c: common_x5c,
+    x5t: jwk.common.x509_sha1_fingerprint,
+    x5t_s256: jwk.common.x509_sha256_fingerprint,
+    updated_at: now,
+    created_at: now,
+    ..Default::default()
+  };
+
+  match jwk.algorithm {
+    jsonwebtoken::jwk::AlgorithmParameters::EllipticCurve(ref ec_params) => {
+      model.kty = "EC".to_string();
+      model.crv = Some(format!("{:?}", ec_params.curve));
+      model.x = Some(ec_params.x.clone());
+      model.y = Some(ec_params.y.clone());
+    }
+    jsonwebtoken::jwk::AlgorithmParameters::RSA(ref rsa_params) => {
+      model.kty = "RSA".to_string();
+      model.n = Some(rsa_params.n.clone());
+      model.e = Some(rsa_params.e.clone());
+    }
+    jsonwebtoken::jwk::AlgorithmParameters::OctetKey(ref octet_key_parameters) => {
+      model.kty = "oct".to_string();
+      model.k = Some(octet_key_parameters.value.clone());
+    }
+    jsonwebtoken::jwk::AlgorithmParameters::OctetKeyPair(ref octet_key_pair_parameters) => {
+      model.kty = "OKP".to_string();
+      model.crv = Some(format!("{:?}", octet_key_pair_parameters.curve));
+      model.x = Some(octet_key_pair_parameters.x.clone());
+    }
   }
 
-  fn public_key_operations(&self) -> Option<Vec<String>> {
-    JwkRow::public_key_operations(self)
-  }
+  model
 }
 
-impl TryInto<jsonwebtoken::jwk::Jwk> for JwkRow {
-  type Error = serde_json::Error;
-
-  fn try_into(self) -> Result<jsonwebtoken::jwk::Jwk, Self::Error> {
-    let value = match serde_json::to_value(&self)? {
-      serde_json::Value::Object(mut map) => {
-        if let Some(serde_json::Value::String(key_ops)) = map.remove("key_ops") {
-          map.insert(
-            "key_ops".to_owned(),
-            serde_json::from_str(key_ops.as_str())?,
-          );
-        }
-        serde_json::Value::Object(map)
-      }
-      _ => {
-        return Err(serde_json::Error::custom(
-          "expected a JSON object but got a different type",
-        ));
-      }
-    };
-    Ok(serde_json::from_value(value)?)
-  }
-}
-
-impl TryFrom<jsonwebtoken::jwk::Jwk> for JwkRow {
-  type Error = serde_json::Error;
-
-  fn try_from(value: jsonwebtoken::jwk::Jwk) -> Result<Self, Self::Error> {
-    Ok(serde_json::from_value(serde_json::to_value(value)?)?)
-  }
-}
-
-pub async fn list_jwks(db: &DatabaseConnection) -> Result<Vec<JwkRow>, DbErr> {
-  let models = Jwks::find()
+pub async fn list_jwks(db: &DatabaseConnection) -> Result<Vec<jwks::Model>, DbErr> {
+  Jwks::find()
     .filter(jwks::Column::Active.ne(0))
     .all(db)
-    .await?;
-
-  Ok(models.into_iter().map(|m| m.into()).collect())
+    .await
 }
 
 pub async fn get_jwk_by_kid(
   db: &DatabaseConnection,
   kid: impl Into<String>,
-) -> Result<Option<JwkRow>, DbErr> {
+) -> Result<Option<jwks::Model>, DbErr> {
   let kid_str = kid.into();
   let kid_i64: i64 = kid_str
     .parse()
     .map_err(|_| DbErr::Custom("Invalid kid format".to_string()))?;
 
-  let model = Jwks::find_by_id(kid_i64)
+  Jwks::find_by_id(kid_i64)
     .filter(jwks::Column::Active.ne(0))
     .one(db)
-    .await?;
-
-  Ok(model.map(|m| m.into()))
+    .await
 }
 
-pub async fn get_jwk_for_sign_and_verify(db: &DatabaseConnection) -> Result<Option<JwkRow>, DbErr> {
+pub async fn get_jwk_for_sign_and_verify(
+  db: &DatabaseConnection,
+) -> Result<Option<jwks::Model>, DbErr> {
   let jwks = list_jwks(db).await?;
   Ok(jwks.into_iter().find(|jwk| {
     if let Some(key_ops) = jwk.key_ops.as_ref() {
@@ -255,7 +224,7 @@ pub async fn get_jwk_for_sign_and_verify(db: &DatabaseConnection) -> Result<Opti
   }))
 }
 
-pub async fn create_jwk(db: &DatabaseConnection, jwk: JwkRow) -> Result<JwkRow, DbErr> {
+pub async fn create_jwk(db: &DatabaseConnection, jwk: jwks::Model) -> Result<jwks::Model, DbErr> {
   let now = chrono::Utc::now().timestamp();
   let new_jwk = jwks::ActiveModel {
     kty: Set(jwk.kty),
@@ -285,11 +254,10 @@ pub async fn create_jwk(db: &DatabaseConnection, jwk: JwkRow) -> Result<JwkRow, 
     ..Default::default()
   };
 
-  let model = new_jwk.insert(db).await?;
-  Ok(model.into())
+  new_jwk.insert(db).await
 }
 
-// Convenience function for converting JwkRow to JWT Jwk
-pub fn jwk_model_to_jwt_jwk(row: JwkRow) -> Result<jsonwebtoken::jwk::Jwk, serde_json::Error> {
-  row.try_into()
+// Convenience function for converting jwks::Model to JWT Jwk
+pub fn jwk_model_to_jwt_jwk(row: jwks::Model) -> Result<jsonwebtoken::jwk::Jwk, serde_json::Error> {
+  model_to_jwt_jwk(row)
 }

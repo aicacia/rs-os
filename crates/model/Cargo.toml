@@ -15,6 +15,7 @@ name = "os_model"
 os-db = { version = "0.1", path = "../db", default-features = false }
 log = { version = "0.4", default-features = false }
 dotenvy = { version = "0.15", default-features = false }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
 tokio = { version = "1.48", features = [
   "rt",
   "rt-multi-thread",

@@ -1,6 +1,6 @@
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[derive(Clone, Default, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "jwks")]
 pub struct Model {
   #[sea_orm(primary_key, unique)]
@@ -38,3 +38,30 @@ pub struct Model {
 pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}
+
+impl Model {
+  pub fn key_operations(&self) -> Vec<String> {
+    if let Some(key_ops) = self.key_ops.as_ref() {
+      match serde_json::from_str::<Vec<String>>(key_ops.as_str()) {
+        Ok(key_ops_array) => return key_ops_array,
+        Err(e) => {
+          log::error!("invalid key_ops JSON: {}", e);
+        }
+      }
+    }
+    Vec::new()
+  }
+
+  pub fn public_key_operations(&self) -> Option<Vec<String>> {
+    let key_operations: Vec<String> = self
+      .key_operations()
+      .into_iter()
+      .filter(|op| matches!(op.as_str(), "verify" | "encrypt" | "wrapKey"))
+      .collect();
+
+    if key_operations.is_empty() {
+      return None;
+    }
+    Some(key_operations)
+  }
+}

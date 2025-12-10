@@ -2204,6 +2204,7 @@ dependencies = [
  "os-db",
  "sea-orm",
  "sea-orm-migration",
+ "serde_json",
  "tokio",
 ]
 

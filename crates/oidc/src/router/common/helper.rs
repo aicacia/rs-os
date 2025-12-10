@@ -6,7 +6,7 @@ use crate::{
     config::app_config::AppConfig,
     jwk::{
       helper::to_encoding_key,
-      orm::{JwkRow, get_jwk_for_sign_and_verify, jwk_model_to_jwt_jwk},
+      orm::{get_jwk_for_sign_and_verify, jwk_model_to_jwt_jwk},
     },
   },
   model::user::orm::{
@@ -32,7 +32,7 @@ use sea_orm::DatabaseConnection;
 pub(crate) async fn create_user_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
-  jwk_sql_row: JwkRow,
+  jwk_sql_row: os_model::entities::jwks::Model,
   user: UserModel,
   client_id: String,
   scope: String,
@@ -54,7 +54,7 @@ pub(crate) async fn create_user_token(
     scope: scope.clone(),
   };
 
-  let encoding_key = match to_encoding_key(&jwk_sql_row.clone().into()) {
+  let encoding_key = match to_encoding_key(&jwk_sql_row) {
     Ok(encoding_key) => encoding_key,
     Err(e) => {
       log::error!("error getting converting into jwt encoding key: {}", e);
@@ -251,7 +251,7 @@ pub(crate) async fn create_user_authorization_code_token(
     code_challenge_method,
   };
 
-  let encoding_key = match to_encoding_key(&jwk_sql_row.clone().into()) {
+  let encoding_key = match to_encoding_key(&jwk_sql_row) {
     Ok(encoding_key) => encoding_key,
     Err(e) => {
       log::error!("error getting converting into jwt encoding key: {}", e);
