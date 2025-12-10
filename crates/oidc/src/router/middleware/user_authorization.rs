@@ -6,7 +6,7 @@ use http::request::Parts;
 
 use crate::{
   model::{
-    rbac::sql::PermissionSQLRow,
+    rbac::orm::PermissionModel as PermissionSQLRow,
     user::orm::{
       UserModel, UserModelExt, UserEmailModelExt, UserPhoneNumberModelExt,
       get_user_by_id, get_user_info_by_user_id, get_user_oauth2_providers,

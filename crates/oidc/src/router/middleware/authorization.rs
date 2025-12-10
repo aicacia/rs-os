@@ -10,7 +10,7 @@ use crate::{
     config::app_config::AppConfig,
     jwk::orm::{JwkRow, get_jwk_by_kid},
   },
-  model::revoked_token::sql::is_token_revoked,
+  model::revoked_token::orm::is_token_revoked,
   router::{
     common::{entity::Claims, helper::parse_jwt},
     entity::RouterState,

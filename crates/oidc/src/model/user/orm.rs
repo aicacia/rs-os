@@ -840,3 +840,26 @@ pub async fn update_user_password(
 
   Ok(())
 }
+
+// Primary email and phone number functions
+pub async fn get_user_primary_email(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Option<user_emails::Model>, DbErr> {
+  UserEmails::find()
+    .filter(user_emails::Column::UserId.eq(user_id))
+    .filter(user_emails::Column::Primary.eq(1))
+    .one(db)
+    .await
+}
+
+pub async fn get_user_primary_phone_number(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Option<user_phone_numbers::Model>, DbErr> {
+  UserPhoneNumbers::find()
+    .filter(user_phone_numbers::Column::UserId.eq(user_id))
+    .filter(user_phone_numbers::Column::Primary.eq(1))
+    .one(db)
+    .await
+}

@@ -9,7 +9,7 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 use crate::{
   core::helper::json_to_string_vec,
   model::{
-    client::sql::{deactivate_client, get_client_by_client_id, list_clients, upsert_client},
+    client::orm::{deactivate_client, get_client_by_client_id, list_clients, upsert_client},
     user::orm::{get_user_client_by_client_id, upsert_user_client},
   },
   router::{

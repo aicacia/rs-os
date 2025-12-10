@@ -6,15 +6,13 @@ use crate::{
     config::app_config::AppConfig,
     jwk::{
       helper::to_encoding_key,
-      orm::{JwkRow, get_jwk_for_sign_and_verify},
-      sql::{jwk_model_to_jwt_jwk},
+      orm::{JwkRow, get_jwk_for_sign_and_verify, jwk_model_to_jwt_jwk},
     },
   },
   model::user::orm::{
-    UserModel, get_user_info_by_user_id,
-    UserEmailModelExt as _, UserPhoneNumberModelExt as _,
+    UserEmailModelExt as _, UserModel, UserPhoneNumberModelExt as _, get_user_info_by_user_id,
+    get_user_primary_email, get_user_primary_phone_number,
   },
-  model::user::sql::{get_user_primary_email, get_user_primary_phone_number},
   router::{
     common::{
       constants::{
@@ -143,7 +141,7 @@ pub(crate) async fn create_user_token(
           updated_at: now,
           created_at: now,
         }
-      },
+      }
       Err(e) => {
         log::error!("error fetching user info: {}", e);
         return Err(

@@ -16,14 +16,12 @@ use crate::{
     config::app_config::AppConfig,
     encryption::verify_password,
     helper::json_to_string_vec,
-    jwk::orm::get_jwk_for_sign_and_verify,
-    jwk::sql::{JwkModelExt, list_jwks},
+    jwk::orm::{get_jwk_for_sign_and_verify, list_jwks},
   },
   model::{
-    client::orm::{ClientModel, ClientModelExt},
-    client::sql::{get_client_by_client_id, upsert_client},
-    revoked_token::sql::revoke_token,
-    user::sql::{
+    client::orm::{ClientModel, ClientModelExt, get_client_by_client_id, upsert_client},
+    revoked_token::orm::revoke_token,
+    user::orm::{
       get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
     },
   },

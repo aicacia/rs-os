@@ -15,7 +15,7 @@ use sea_orm::DatabaseConnection;
 
 use crate::core::{
   config::app_config,
-  jwk::sql::{JwkSQLRow, create_jwk, list_jwks},
+  jwk::orm::{JwkRow as JwkSQLRow, create_jwk, list_jwks},
 };
 
 pub async fn init_jwk(

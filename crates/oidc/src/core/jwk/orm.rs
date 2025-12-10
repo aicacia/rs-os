@@ -171,6 +171,21 @@ impl JwkRow {
   }
 }
 
+pub trait JwkModelExt {
+  fn key_operations(&self) -> Vec<String>;
+  fn public_key_operations(&self) -> Option<Vec<String>>;
+}
+
+impl JwkModelExt for JwkRow {
+  fn key_operations(&self) -> Vec<String> {
+    JwkRow::key_operations(self)
+  }
+
+  fn public_key_operations(&self) -> Option<Vec<String>> {
+    JwkRow::public_key_operations(self)
+  }
+}
+
 impl TryInto<jsonwebtoken::jwk::Jwk> for JwkRow {
   type Error = serde_json::Error;
 
@@ -272,4 +287,9 @@ pub async fn create_jwk(db: &DatabaseConnection, jwk: JwkRow) -> Result<JwkRow, 
 
   let model = new_jwk.insert(db).await?;
   Ok(model.into())
+}
+
+// Convenience function for converting JwkRow to JWT Jwk
+pub fn jwk_model_to_jwt_jwk(row: JwkRow) -> Result<jsonwebtoken::jwk::Jwk, serde_json::Error> {
+  row.try_into()
 }

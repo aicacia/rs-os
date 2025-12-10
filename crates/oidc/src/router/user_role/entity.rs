@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{model::rbac::sql::RoleSQLRow, router::common::permissions::Permission};
+use crate::{model::rbac::orm::RoleModel as RoleSQLRow, router::common::permissions::Permission};
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct AssignUserRoleRequest {
