@@ -1,15 +1,15 @@
 <script lang="ts" module>
-	import type { AuthorizeRequest, User } from '$lib/common/openapi/oidc';
+	import type { AuthorizeRequest, OpenIdClaims } from '$lib/common/openapi/oidc';
 
 	export interface AuthorizeProps {
-		user: User;
+		userInfo: OpenIdClaims;
 		clientIdInfo: ClientInfo | null;
 		authorizeRequest: AuthorizeRequest;
 	}
 </script>
 
 <script lang="ts">
-	import { oidcApi, clientApi } from '$lib/common/openapi';
+	import { oidcApi } from '$lib/common/openapi';
 	import type { Client } from '$lib/common/openapi/oidc/models/Client';
 	import {
 		getClientDiff,
@@ -23,7 +23,7 @@
 	import AuthorizeClient from './_AuthorizeClient.svelte';
 	import { handleError } from '$lib/common/errors';
 
-	let { user, clientIdInfo, authorizeRequest }: AuthorizeProps = $props();
+	let { userInfo, clientIdInfo, authorizeRequest }: AuthorizeProps = $props();
 
 	let clientDiff = $state<Partial<ClientInfo> | false>(false);
 	let client = $state<Client | null>(null);
@@ -31,7 +31,7 @@
 	let loadingClient = $state(true);
 	$effect(() => {
 		loadingClient = true;
-		clientApi
+		oidcApi
 			.clientByClientId({ clientId: authorizeRequest.clientId })
 			.catch((_e) => {
 				return null;
@@ -60,7 +60,7 @@
 			return;
 		}
 		loadingUserAllowed = true;
-		clientApi
+		oidcApi
 			.clientUserAllowed({ clientId: authorizeRequest.clientId })
 			.then(onAuthorize)
 			.catch((_e) => {
@@ -84,7 +84,7 @@
 	}
 	async function onAllow() {
 		try {
-			await clientApi.clientUserApprove({ clientId: authorizeRequest.clientId });
+			await oidcApi.clientUserApprove({ clientId: authorizeRequest.clientId });
 			await onAuthorize();
 		} catch (e) {
 			handleError(e);
@@ -122,7 +122,7 @@
 {:else if client}
 	{#if clientDiff}
 		<AddClient
-			{user}
+			{userInfo}
 			client={{
 				name: client.name,
 				logoUri: client.logoUri,
@@ -134,11 +134,11 @@
 			onReject={onRejectClientUpdates}
 		/>
 	{:else}
-		<AuthorizeClient {user} {client} {disabled} {onAllow} {onDeny} />
+		<AuthorizeClient {userInfo} {client} {disabled} {onAllow} {onDeny} />
 	{/if}
 {:else if clientIdInfo}
 	<AddClient
-		{user}
+		{userInfo}
 		client={clientIdInfo}
 		{disabled}
 		isNew={true}

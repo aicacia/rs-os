@@ -4,21 +4,19 @@
 
 	const SignInSchema = () =>
 		v.object({
-			email: v.pipe(v.string(), v.nonEmpty(m.validation_email_required())),
+			email: v.pipe(v.string(), v.nonEmpty(m.errors_message_email_required())),
 			password: v.pipe(
 				v.string(),
-				v.nonEmpty(m.validation_password_required()),
-				v.minLength(1, m.validation_password_min_length({ characters: 1 }))
+				v.nonEmpty(m.errors_message_password_required()),
+				v.minLength(1, m.errors_message_password_min_length({ characters: 1 }))
 			)
 		});
 </script>
 
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import { signInUsernamePassword } from '$lib/common/state/currentUser.svelte';
+	import { signInUsernamePassword } from '$lib/common/state/auth.svelte';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
-	import { goto } from '$app/navigation';
 
 	const form = createForm(SignInSchema(), {
 		email: '',

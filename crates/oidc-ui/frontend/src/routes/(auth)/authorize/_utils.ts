@@ -1,4 +1,4 @@
-import { clientApi } from '$lib/common/openapi';
+import { oidcApi } from '$lib/common/openapi';
 import type { AuthorizeRequest, Client } from '$lib/common/openapi/oidc';
 import {
 	ClientRegisterRequestFromJSON,
@@ -77,7 +77,7 @@ export async function resolveAuthorizeRequest(authorizeRequest: AuthorizeRequest
 	if (authorizeRequest.nonce) {
 		url.searchParams.append('nonce', authorizeRequest.nonce);
 	}
-	const authorizeResponse = await clientApi.clientAuthorize({
+	const authorizeResponse = await oidcApi.clientAuthorize({
 		clientId: authorizeRequest.clientId,
 		clientAuthorizeRequest: authorizeRequest
 	});

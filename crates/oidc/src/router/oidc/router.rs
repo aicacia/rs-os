@@ -7,24 +7,17 @@ use axum::{
 };
 use base64::Engine;
 use http::{StatusCode, header};
+use os_model::entities::{
+  clients,
+  jwks::{get_jwk_for_sign_and_verify, list_jwks},
+  revoked_tokens, users,
+};
 use sha2::{Digest, Sha256};
 use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  core::{
-    config::app_config::AppConfig,
-    encryption::verify_password,
-    helper::json_to_string_vec,
-    jwk::orm::{get_jwk_for_sign_and_verify, list_jwks},
-  },
-  model::{
-    client::orm::{ClientModel, ClientModelExt, get_client_by_client_id, upsert_client},
-    revoked_token::orm::revoke_token,
-    user::orm::{
-      get_user_active_password_by_user_id, get_user_by_id, get_user_by_username_or_primary_email,
-    },
-  },
+  core::{config::AppConfig, encryption::verify_password, helper::json_to_string_vec},
   router::{
     Form, Json,
     common::{
@@ -246,8 +239,8 @@ pub async fn end_session(
     },
   };
 
-  let client_sql_row = match get_client_by_client_id(&state.database, &client_id).await {
-    Ok(Some(client_sql_row)) => client_sql_row,
+  let client_model = match clients::get_client_by_client_id(&state.database, &client_id).await {
+    Ok(Some(client_model)) => client_model,
     Ok(None) => {
       return HttpError::not_found()
         .with_error("client", NOT_FOUND_ERROR)
@@ -271,7 +264,7 @@ pub async fn end_session(
     }
   };
 
-  let post_logout_redirect_uri_string = if let Some(post_logout_redirect_uris) = client_sql_row
+  let post_logout_redirect_uri_string = if let Some(post_logout_redirect_uris) = client_model
     .post_logout_redirect_uris
     .as_ref()
     .map(json_to_string_vec)
@@ -352,7 +345,7 @@ async fn password_grant(
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let client_id = if let Some(client_id) = &client_auth.client_id {
-    let _client_sql_row = validate_client_authentication(
+    let _client_model = validate_client_authentication(
       &state.database,
       client_id,
       &client_auth,
@@ -365,7 +358,7 @@ async fn password_grant(
     state.config.api_url()
   };
 
-  let user = match get_user_by_username_or_primary_email(&state.database, &username).await {
+  let user = match users::get_user_by_username_or_primary_email(&state.database, &username).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR)),
     Err(e) => {
@@ -374,20 +367,22 @@ async fn password_grant(
     }
   };
 
-  let user_password = match get_user_active_password_by_user_id(&state.database, user.id).await {
-    Ok(Some(user_password)) => user_password,
-    Ok(None) => {
-      return Err(HttpError::forbidden().with_error(CREDENTIALS, TOKEN_ISSUE_TYPE_PASSWORD));
-    }
-    Err(e) => {
-      log::error!("error fetching user password from database: {}", e);
-      return Err(HttpError::unauthorized().with_application_error(INTERNAL_ERROR));
-    }
-  };
+  let user_password =
+    match users::get_user_active_password_by_user_id(&state.database, user.id).await {
+      Ok(Some(user_password)) => user_password,
+      Ok(None) => {
+        return Err(HttpError::forbidden().with_error(CREDENTIALS, TOKEN_ISSUE_TYPE_PASSWORD));
+      }
+      Err(e) => {
+        log::error!("error fetching user password from database: {}", e);
+        return Err(HttpError::unauthorized().with_application_error(INTERNAL_ERROR));
+      }
+    };
 
   match verify_password(&password, &user_password.encrypted_password) {
     Ok(true) => {}
     Ok(false) => {
+      log::info!("invalid password for user id {}", user.id);
       return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR));
     }
     Err(e) => {
@@ -425,7 +420,7 @@ async fn refresh_token_grant(
   refresh_token: String,
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
-  let (token_data, jwk_sql_row) =
+  let (token_data, jwk_model) =
     parse_authorization::<BasicClaims>(&state.database, &state.config, &refresh_token).await?;
 
   if token_data.claims.r#type != TOKEN_TYPE_REFRESH {
@@ -440,7 +435,7 @@ async fn refresh_token_grant(
   } else {
     token_data.claims.aud.to_owned()
   };
-  let _client_sql_row = validate_client_authentication(
+  let _client_model = validate_client_authentication(
     &state.database,
     &client_id,
     &client_auth,
@@ -460,7 +455,7 @@ async fn refresh_token_grant(
     }
   };
 
-  let user = match get_user_by_id(&state.database, user_id).await {
+  let user = match users::get_user_by_id(&state.database, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -472,7 +467,7 @@ async fn refresh_token_grant(
   create_user_token(
     &state.database,
     &state.config,
-    jwk_sql_row,
+    jwk_model,
     user,
     client_id,
     token_data.claims.scope,
@@ -487,7 +482,7 @@ async fn authorization_code_grant(
   code_verifier: Option<String>,
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
-  let (token_data, jwk_sql_row) =
+  let (token_data, jwk_model) =
     parse_authorization::<AuthorizationCodeClaims>(&state.database, &state.config, &code).await?;
 
   if token_data.claims.basic_claims.r#type != TOKEN_TYPE_AUTHORIZATION_CODE {
@@ -520,7 +515,7 @@ async fn authorization_code_grant(
   }
 
   let client_id = token_data.claims.basic_claims.aud;
-  let _client_sql_row = validate_client_authentication(
+  let _client_model = validate_client_authentication(
     &state.database,
     &client_id,
     &client_auth,
@@ -540,7 +535,7 @@ async fn authorization_code_grant(
     }
   };
 
-  let user = match get_user_by_id(&state.database, user_id).await {
+  let user = match users::get_user_by_id(&state.database, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -552,7 +547,7 @@ async fn authorization_code_grant(
   create_user_token(
     &state.database,
     &state.config,
-    jwk_sql_row,
+    jwk_model,
     user,
     client_id,
     token_data.claims.basic_claims.scope,
@@ -567,8 +562,8 @@ pub(crate) async fn validate_client_authentication(
   client_auth: &ClientAuthentication,
   grant_type: &str,
   scope: &str,
-) -> Result<ClientModel, HttpError> {
-  let client_sql_row = match get_client_by_client_id(db, client_id).await {
+) -> Result<clients::Model, HttpError> {
+  let client_model = match clients::get_client_by_client_id(db, client_id).await {
     Ok(Some(client)) => client,
     Ok(None) => {
       return Err(HttpError::not_found().with_error("client", NOT_FOUND_ERROR));
@@ -580,18 +575,18 @@ pub(crate) async fn validate_client_authentication(
   };
 
   if !ALWAYS_ALLOWED_GRANT_TYPES.contains(&grant_type) {
-    let grant_types_vec: Vec<String> = json_to_string_vec(&client_sql_row.grant_types);
+    let grant_types_vec: Vec<String> = json_to_string_vec(&client_model.grant_types);
     if !grant_types_vec.contains(&grant_type.to_string()) {
       return Err(HttpError::bad_request().with_error("grant_type", NOT_ALLOWED_ERROR));
     }
   }
 
-  if !client_sql_row.is_active() {
+  if !client_model.is_active() {
     return Err(HttpError::forbidden().with_error("client", NOT_ALLOWED_ERROR));
   }
 
   let requested_scopes: HashSet<&str> = scope.split_whitespace().collect();
-  let allowed_scopes_vec: Vec<String> = json_to_string_vec(&client_sql_row.scopes);
+  let allowed_scopes_vec: Vec<String> = json_to_string_vec(&client_model.scopes);
   let allowed_scopes: HashSet<&str> = allowed_scopes_vec.iter().map(|s| s.as_str()).collect();
 
   for requested_scope in &requested_scopes {
@@ -600,7 +595,7 @@ pub(crate) async fn validate_client_authentication(
     }
   }
 
-  match client_sql_row.auth_method.as_str() {
+  match client_model.auth_method.as_str() {
     "client_secret_post" | "client_secret_basic" => {
       if let Some(auth_client_id) = &client_auth.client_id {
         if auth_client_id != client_id {
@@ -610,7 +605,7 @@ pub(crate) async fn validate_client_authentication(
 
       match &client_auth.client_secret {
         Some(provided_secret) => {
-          if provided_secret != &client_sql_row.client_secret {
+          if provided_secret != &client_model.client_secret {
             return Err(HttpError::unauthorized().with_error("client_secret", INVALID_ERROR));
           }
         }
@@ -625,12 +620,12 @@ pub(crate) async fn validate_client_authentication(
       return Err(HttpError::bad_request().with_error("auth_method", NOT_SUPPORTED_ERROR));
     }
     _ => {
-      log::error!("unsupported auth_method: {}", client_sql_row.auth_method);
+      log::error!("unsupported auth_method: {}", client_model.auth_method);
       return Err(HttpError::bad_request().with_error("auth_method", NOT_ALLOWED_ERROR));
     }
   }
 
-  Ok(client_sql_row)
+  Ok(client_model)
 }
 
 #[utoipa::path(
@@ -768,35 +763,34 @@ pub async fn register_client(
     }
   };
 
-  let (client_sql_row, is_new) =
-    match upsert_client(&state.database, client_register_request.into()).await {
-      Ok(result) => result,
-      Err(e) => {
-        log::error!("error registering client: {}", e);
-        return HttpError::internal_error()
-          .with_application_error(INTERNAL_ERROR)
-          .into_response();
-      }
-    };
-
-  let client: Client = client_sql_row.into();
-
-  (
-    if is_new {
-      StatusCode::CREATED
-    } else {
-      StatusCode::OK
-    },
-    axum::Json(client),
+  let (client_model, is_new) = match clients::upsert_client(
+    &state.database,
+    client_register_request.into(),
+    crate::core::encryption::random_bytes,
   )
-    .into_response()
+  .await
+  {
+    Ok(r) => r,
+    Err(e) => {
+      log::error!("error upserting client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
+
+  let client: Client = client_model.into();
+  if is_new {
+    (axum::http::StatusCode::CREATED, axum::Json(client)).into_response()
+  } else {
+    axum::Json(client).into_response()
+  }
 }
 
 #[utoipa::path(
   get,
   path = "/user-info",
   tags = [TAG],
-  request_body(content = ClientRegisterRequest, content_type = "application/json"),
   responses(
     (status = 200, description = "Consented claims", body = OpenIdClaims),
     (status = 401, description = "Unauthorized", body = HttpError),
@@ -830,7 +824,7 @@ pub async fn revoke(
   State(state): State<RouterState>,
   Form(revoke_request): Form<RevokeRequest>,
 ) -> impl IntoResponse {
-  let (token_data, _jwk_sql_row) =
+  let (token_data, _jwk_model) =
     match parse_authorization::<BasicClaims>(&state.database, &state.config, &revoke_request.token)
       .await
     {
@@ -866,7 +860,7 @@ pub async fn revoke(
     }
   }
 
-  match revoke_token(
+  match revoked_tokens::revoke_token(
     &state.database,
     &revoke_request.token,
     token_data.claims.exp,

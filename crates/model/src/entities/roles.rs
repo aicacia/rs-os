@@ -52,3 +52,28 @@ impl Related<super::users::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+// Database operations for roles
+use super::{permissions, roles_permissions};
+
+pub async fn get_role_permissions_by_role_id(
+  db: &DatabaseConnection,
+  role_id: i64,
+) -> Result<Vec<permissions::Model>, DbErr> {
+  // Query permissions through the roles_permissions join table
+  let role_permissions = roles_permissions::Entity::find()
+    .filter(roles_permissions::Column::RoleId.eq(role_id))
+    .all(db)
+    .await?;
+
+  let permission_ids: Vec<i64> = role_permissions.iter().map(|rp| rp.permission_id).collect();
+
+  if permission_ids.is_empty() {
+    return Ok(Vec::new());
+  }
+
+  permissions::Entity::find()
+    .filter(permissions::Column::Id.is_in(permission_ids))
+    .all(db)
+    .await
+}

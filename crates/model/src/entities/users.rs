@@ -1,4 +1,3 @@
-
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
@@ -12,6 +11,12 @@ pub struct Model {
   pub username: String,
   pub updated_at: i64,
   pub created_at: i64,
+}
+
+impl Model {
+  pub fn is_active(&self) -> bool {
+    self.active != 0
+  }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -102,3 +107,431 @@ impl Related<super::roles::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+// Database operations for users
+use sea_orm::{ConnectionTrait, Order, QueryOrder, Set, TransactionTrait, sea_query::Expr};
+use std::collections::HashMap;
+
+use super::{
+  clients, permissions, roles, roles_permissions, user_clients, user_emails, user_infos,
+  user_passwords, user_roles,
+};
+
+#[derive(Default)]
+pub struct UserInfoUpdate {
+  pub given_name: Option<String>,
+  pub family_name: Option<String>,
+  pub middle_name: Option<String>,
+  pub nickname: Option<String>,
+  pub profile_picture: Option<String>,
+  pub website: Option<String>,
+  pub gender: Option<String>,
+  pub birthdate: Option<i64>,
+  pub zone_info: Option<String>,
+  pub locale: Option<String>,
+  pub address: Option<String>,
+}
+
+pub async fn get_user_by_id(db: &DatabaseConnection, id: i64) -> Result<Option<Model>, DbErr> {
+  Entity::find_by_id(id).one(db).await
+}
+
+pub async fn list_users(db: &DatabaseConnection) -> Result<Vec<Model>, DbErr> {
+  Entity::find()
+    .filter(Column::Active.ne(0))
+    .order_by(Column::CreatedAt, Order::Desc)
+    .all(db)
+    .await
+}
+
+pub async fn create_user(db: &DatabaseConnection, username: &str) -> Result<Model, DbErr> {
+  let now = chrono::Utc::now().timestamp();
+  let user = ActiveModel {
+    username: Set(username.to_owned()),
+    active: Set(1),
+    created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
+  };
+  user.insert(db).await
+}
+
+pub async fn update_user(
+  db: &DatabaseConnection,
+  user_id: i64,
+  username: &str,
+) -> Result<Model, DbErr> {
+  let user = Entity::find_by_id(user_id)
+    .filter(Column::Active.ne(0))
+    .one(db)
+    .await?
+    .ok_or(DbErr::RecordNotFound("User not found".to_string()))?;
+
+  let mut user: ActiveModel = user.into();
+  user.username = Set(username.to_owned());
+  user.updated_at = Set(chrono::Utc::now().timestamp());
+  user.update(db).await
+}
+
+pub async fn delete_user(db: &DatabaseConnection, user_id: i64) -> Result<Option<Model>, DbErr> {
+  let user = Entity::find_by_id(user_id)
+    .filter(Column::Active.ne(0))
+    .one(db)
+    .await?;
+
+  if let Some(user) = user {
+    let mut user: ActiveModel = user.into();
+    user.active = Set(0);
+    user.updated_at = Set(chrono::Utc::now().timestamp());
+    Ok(Some(user.update(db).await?))
+  } else {
+    Ok(None)
+  }
+}
+
+pub async fn get_user_by_username_or_primary_email(
+  db: &DatabaseConnection,
+  username_or_email: &str,
+) -> Result<Option<Model>, DbErr> {
+  // First try to find by username
+  if let Some(user) = Entity::find()
+    .filter(Column::Username.eq(username_or_email))
+    .one(db)
+    .await?
+  {
+    return Ok(Some(user));
+  }
+
+  // Then try to find by primary email
+  if let Some(email) = user_emails::Entity::find()
+    .filter(user_emails::Column::Email.eq(username_or_email))
+    .filter(user_emails::Column::Primary.ne(0))
+    .one(db)
+    .await?
+  {
+    return Entity::find_by_id(email.user_id).one(db).await;
+  }
+
+  Ok(None)
+}
+
+pub async fn get_user_by_username(
+  db: &DatabaseConnection,
+  username: &str,
+) -> Result<Option<Model>, DbErr> {
+  Entity::find()
+    .filter(Column::Username.eq(username))
+    .one(db)
+    .await
+}
+
+pub async fn get_user_active_password_by_user_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Option<user_passwords::Model>, DbErr> {
+  user_passwords::Entity::find()
+    .filter(user_passwords::Column::Active.ne(0))
+    .filter(user_passwords::Column::UserId.eq(user_id))
+    .one(db)
+    .await
+}
+
+async fn create_user_internal<C: ConnectionTrait>(
+  db: &C,
+  username: &str,
+  user_info: UserInfoUpdate,
+) -> Result<(Model, user_infos::Model), DbErr> {
+  let now = chrono::Utc::now().timestamp();
+  let user = ActiveModel {
+    username: Set(username.to_owned()),
+    active: Set(1),
+    created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
+  };
+  let user = user.insert(db).await?;
+
+  let nickname = user_info.nickname.unwrap_or_else(|| username.to_owned());
+
+  let user_info_model = user_infos::ActiveModel {
+    user_id: Set(user.id),
+    given_name: Set(user_info.given_name),
+    family_name: Set(user_info.family_name),
+    middle_name: Set(user_info.middle_name),
+    nickname: Set(Some(nickname)),
+    profile_picture: Set(user_info.profile_picture),
+    website: Set(user_info.website),
+    gender: Set(user_info.gender),
+    birthdate: Set(user_info.birthdate),
+    zone_info: Set(user_info.zone_info),
+    locale: Set(user_info.locale),
+    address: Set(user_info.address),
+    created_at: Set(now),
+    updated_at: Set(now),
+  };
+  let user_info_model = user_info_model.insert(db).await?;
+
+  Ok((user, user_info_model))
+}
+
+pub async fn create_user_with_password(
+  db: &DatabaseConnection,
+  username: &str,
+  password: &str,
+  encrypt_password_fn: impl Fn(&str) -> Result<String, Box<dyn std::error::Error>>,
+) -> Result<Model, DbErr> {
+  let encrypted_password = encrypt_password_fn(password)
+    .map_err(|e| DbErr::Custom(format!("Failed to encrypt password: {}", e)))?;
+
+  let txn = db.begin().await?;
+
+  let (user, _user_info) = create_user_internal(&txn, username, UserInfoUpdate::default()).await?;
+
+  let now = chrono::Utc::now().timestamp();
+  let password_model = user_passwords::ActiveModel {
+    user_id: Set(user.id),
+    encrypted_password: Set(encrypted_password),
+    active: Set(1),
+    created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
+  };
+  password_model.insert(&txn).await?;
+
+  txn.commit().await?;
+
+  Ok(user)
+}
+
+pub async fn create_user_with_email_and_password(
+  db: &DatabaseConnection,
+  username: &str,
+  email: &str,
+  password: &str,
+  user_info: UserInfoUpdate,
+  encrypt_password_fn: impl Fn(&str) -> Result<String, Box<dyn std::error::Error>>,
+) -> Result<Model, DbErr> {
+  let encrypted_password = encrypt_password_fn(password)
+    .map_err(|e| DbErr::Custom(format!("Failed to encrypt password: {}", e)))?;
+
+  let txn = db.begin().await?;
+
+  let (user, _user_info) = create_user_internal(&txn, username, user_info).await?;
+
+  let now = chrono::Utc::now().timestamp();
+  let password_model = user_passwords::ActiveModel {
+    user_id: Set(user.id),
+    encrypted_password: Set(encrypted_password),
+    active: Set(1),
+    created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
+  };
+  password_model.insert(&txn).await?;
+
+  let email_model = user_emails::ActiveModel {
+    user_id: Set(user.id),
+    email: Set(email.to_owned()),
+    verified: Set(0),
+    primary: Set(1),
+    created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
+  };
+  email_model.insert(&txn).await?;
+
+  txn.commit().await?;
+
+  Ok(user)
+}
+
+pub async fn get_user_client_by_client_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+  client_id: &str,
+) -> Result<Option<user_clients::Model>, DbErr> {
+  // First get the client to get its internal id
+  let client = clients::Entity::find()
+    .filter(clients::Column::ClientId.eq(client_id))
+    .one(db)
+    .await?;
+
+  if let Some(client) = client {
+    user_clients::Entity::find()
+      .filter(user_clients::Column::UserId.eq(user_id))
+      .filter(user_clients::Column::ClientId.eq(client.id))
+      .one(db)
+      .await
+  } else {
+    Ok(None)
+  }
+}
+
+pub async fn upsert_user_client(
+  db: &DatabaseConnection,
+  user_id: i64,
+  client_id: &str,
+  allowed_scopes: Vec<String>,
+) -> Result<user_clients::Model, DbErr> {
+  // First get the client to get its internal id
+  let client = clients::Entity::find()
+    .filter(clients::Column::ClientId.eq(client_id))
+    .one(db)
+    .await?
+    .ok_or(DbErr::RecordNotFound("Client not found".to_string()))?;
+
+  let allowed_scopes_json = serde_json::to_string(&allowed_scopes)
+    .map_err(|e| DbErr::Custom(format!("Failed to serialize scopes: {}", e)))?;
+
+  let now = chrono::Utc::now().timestamp();
+
+  // Try to find existing user_client
+  if let Some(existing) = user_clients::Entity::find()
+    .filter(user_clients::Column::UserId.eq(user_id))
+    .filter(user_clients::Column::ClientId.eq(client.id))
+    .one(db)
+    .await?
+  {
+    let mut active_model: user_clients::ActiveModel = existing.into();
+    active_model.allowed_scopes = Set(allowed_scopes_json);
+    active_model.updated_at = Set(now);
+    active_model.update(db).await
+  } else {
+    let new_model = user_clients::ActiveModel {
+      user_id: Set(user_id),
+      client_id: Set(client.id.to_string()),
+      allowed_scopes: Set(allowed_scopes_json),
+      created_at: Set(now),
+      updated_at: Set(now),
+    };
+    new_model.insert(db).await
+  }
+}
+
+pub async fn update_user_password(
+  db: &DatabaseConnection,
+  user_id: i64,
+  password: &str,
+  encrypt_password_fn: impl Fn(&str) -> Result<String, Box<dyn std::error::Error>>,
+) -> Result<(), DbErr> {
+  let encrypted_password = encrypt_password_fn(password)
+    .map_err(|e| DbErr::Custom(format!("Failed to encrypt password: {}", e)))?;
+
+  let txn = db.begin().await?;
+
+  // Deactivate any existing active passwords for this user
+  user_passwords::Entity::update_many()
+    .col_expr(user_passwords::Column::Active, Expr::value(0))
+    .filter(user_passwords::Column::UserId.eq(user_id))
+    .filter(user_passwords::Column::Active.ne(0))
+    .exec(&txn)
+    .await?;
+
+  // Insert new active password row
+  let now = chrono::Utc::now().timestamp();
+  let password_model = user_passwords::ActiveModel {
+    user_id: Set(user_id),
+    encrypted_password: Set(encrypted_password),
+    active: Set(1),
+    created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
+  };
+  password_model.insert(&txn).await?;
+
+  txn.commit().await?;
+
+  Ok(())
+}
+
+pub async fn get_user_roles_by_user_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Vec<(user_roles::Model, Option<roles::Model>)>, DbErr> {
+  user_roles::Entity::find()
+    .filter(user_roles::Column::UserId.eq(user_id))
+    .find_also_related(roles::Entity)
+    .all(db)
+    .await
+}
+
+pub async fn get_user_role_permissions_by_user_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<HashMap<i64, Vec<permissions::Model>>, DbErr> {
+  // First get all roles for the user
+  let user_roles_list = user_roles::Entity::find()
+    .filter(user_roles::Column::UserId.eq(user_id))
+    .all(db)
+    .await?;
+
+  let role_ids: Vec<i64> = user_roles_list.iter().map(|ur| ur.role_id).collect();
+
+  if role_ids.is_empty() {
+    return Ok(HashMap::default());
+  }
+
+  // Get all permissions for those roles
+  let roles_permissions = roles_permissions::Entity::find()
+    .filter(roles_permissions::Column::RoleId.is_in(role_ids))
+    .find_also_related(permissions::Entity)
+    .all(db)
+    .await?;
+
+  let mut permissions: HashMap<i64, Vec<permissions::Model>> = HashMap::default();
+
+  for (roles_permission, permission_opt) in roles_permissions {
+    if let Some(permission) = permission_opt {
+      permissions
+        .entry(roles_permission.role_id)
+        .or_insert_with(Vec::new)
+        .push(permission);
+    }
+  }
+
+  Ok(permissions)
+}
+
+pub async fn assign_user_role(
+  db: &DatabaseConnection,
+  user_id: i64,
+  role_id: i64,
+) -> Result<roles::Model, DbErr> {
+  // First insert the user_role relationship
+  let now = chrono::Utc::now().timestamp();
+  let user_role = user_roles::ActiveModel {
+    user_id: Set(user_id),
+    role_id: Set(role_id),
+    created_at: Set(now),
+    updated_at: Set(now),
+  };
+
+  // Try to insert, ignore if it already exists
+  let _ = user_role.insert(db).await;
+
+  // Then fetch and return the role
+  roles::Entity::find_by_id(role_id)
+    .one(db)
+    .await?
+    .ok_or(DbErr::RecordNotFound("Role not found".to_string()))
+}
+
+pub async fn remove_user_role(
+  db: &DatabaseConnection,
+  user_id: i64,
+  role_id: i64,
+) -> Result<Option<roles::Model>, DbErr> {
+  // Delete the relationship
+  let result = user_roles::Entity::delete_many()
+    .filter(user_roles::Column::UserId.eq(user_id))
+    .filter(user_roles::Column::RoleId.eq(role_id))
+    .exec(db)
+    .await?;
+
+  if result.rows_affected > 0 {
+    // Fetch and return the role
+    roles::Entity::find_by_id(role_id).one(db).await
+  } else {
+    Ok(None)
+  }
+}

@@ -4,13 +4,13 @@ use jsonwebtoken::DecodingKey;
 use os_api::{
   AUTHORIZATION_HEADER, HttpError, INVALID_ERROR, REQUIRED_ERROR, authorization_from_header,
 };
+use os_model::entities::{
+  jwks::{get_jwk_by_kid, model_to_jwt_jwk},
+  revoked_tokens,
+};
 
 use crate::{
-  core::{
-    config::app_config::AppConfig,
-    jwk::orm::{get_jwk_by_kid, model_to_jwt_jwk},
-  },
-  model::revoked_token::orm::is_token_revoked,
+  core::config::AppConfig,
   router::{
     common::{entity::Claims, helper::parse_jwt},
     entity::RouterState,
@@ -37,7 +37,7 @@ where
 
     if let Some(authorization_header_value) = parts.headers.get(AUTHORIZATION_HEADER) {
       let authorization_string = authorization_from_header(authorization_header_value)?;
-      let (token_data, _jwk_sql_row) = parse_authorization(
+      let (token_data, _jwk_model) = parse_authorization(
         &router_state.database,
         &router_state.config,
         authorization_string,
@@ -115,7 +115,7 @@ where
     }
   };
 
-  match is_token_revoked(db, authorization_string).await {
+  match revoked_tokens::is_token_revoked(db, authorization_string).await {
     Ok(true) => {
       log::error!("token has been revoked");
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));

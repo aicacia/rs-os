@@ -1,9 +1,9 @@
 <script lang="ts" module>
 	import type { ClientInfo } from './_utils';
-	import type { User } from '$lib/common/openapi/oidc';
+	import type { OpenIdClaims } from '$lib/common/openapi/oidc';
 
 	export interface ClientProps {
-		user: User;
+		userInfo: OpenIdClaims;
 		client: ClientInfo;
 		disabled?: boolean;
 		onAllow: () => Promise<void>;
@@ -15,7 +15,7 @@
 	import Avatar from '../../../lib/common/components/Avatar.svelte';
 	import { m } from '$lib/paraglide/messages';
 
-	let { user, client, disabled, onAllow, onDeny }: ClientProps = $props();
+	let { userInfo, client, disabled, onAllow, onDeny }: ClientProps = $props();
 
 	let loading = $state(false);
 
@@ -49,7 +49,7 @@
 	</div>
 
 	<p class="text-center">
-		{m.authorize_wants_to_access({ username: user.username })} <strong>{user.username}</strong>
+		{m.authorize_wants_to_access({ username: userInfo.username })} <strong>{user.username}</strong>
 	</p>
 </div>
 

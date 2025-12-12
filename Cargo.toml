@@ -11,7 +11,9 @@ default-run = "os"
 
 [workspace]
 members = [
-  "crates/db",
+  "crates/admin",
+  "crates/admin-ui",
+  "crates/admin-ui/embed",
   "crates/oidc",
   "crates/oidc-ui/embed",
   "crates/oidc-ui",
@@ -40,7 +42,9 @@ dotenvy = { version = "0.15", default-features = false }
 log = { version = "0.4", default-features = false }
 os-cli = { version = "0.1", path = "./crates/cli", default-features = false }
 os-model = { version = "0.1", path = "./crates/model", default-features = false }
-os-db = { version = "0.1", path = "./crates/db", default-features = false }
+os-admin = { version = "0.1", path = "./crates/admin", default-features = false }
+os-admin-ui = { version = "0.1", path = "./crates/admin-ui", default-features = false, optional = true }
+os-admin-ui-embed = { version = "0.1", path = "./crates/admin-ui/embed", default-features = false }
 os-oidc = { version = "0.1", path = "./crates/oidc", default-features = false }
 os-oidc-ui = { version = "0.1", path = "./crates/oidc-ui", default-features = false, optional = true }
 os-oidc-ui-embed = { version = "0.1", path = "./crates/oidc-ui/embed", default-features = false }

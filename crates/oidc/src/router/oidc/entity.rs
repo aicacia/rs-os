@@ -1,7 +1,8 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::{core::helper::type_to_json_value, model::client::orm::ClientCommon};
+use crate::core::helper::{json_to_string_vec, string_vec_to_json};
 
 #[derive(Default, Serialize, ToSchema)]
 pub struct JWK {
@@ -236,7 +237,63 @@ pub struct AuthorizeRequest {
   pub code_challenge_method: Option<String>,
 }
 
-pub type Client = crate::router::client::entity::Client;
+#[derive(Serialize, ToSchema, Default)]
+pub struct Client {
+  pub id: i64,
+  pub active: bool,
+  pub name: String,
+  pub client_id: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub client_secret: Option<String>,
+  pub redirect_uris: Option<Vec<String>>,
+  pub post_logout_redirect_uris: Option<Vec<String>>,
+  pub logo_uri: Option<String>,
+  pub client_uri: Option<String>,
+  pub policy_uri: Option<String>,
+  pub terms_of_service_uri: Option<String>,
+  pub application_type: String,
+  pub auth_method: String,
+  pub grant_types: Vec<String>,
+  pub response_types: Vec<String>,
+  pub scopes: Vec<String>,
+  pub audience: Option<Vec<String>>,
+  pub access_token_expires_in_seconds: i64,
+  pub id_token_expires_in_seconds: i64,
+  pub refresh_expires_in_seconds: i64,
+  pub updated_at: DateTime<Utc>,
+  pub created_at: DateTime<Utc>,
+}
+
+impl From<os_model::entities::clients::Model> for Client {
+  fn from(client_model: os_model::entities::clients::Model) -> Self {
+    Self {
+      active: client_model.is_active(),
+      id: client_model.id,
+      name: client_model.name,
+      client_id: client_model.client_id,
+      client_secret: Some(client_model.client_secret),
+      redirect_uris: client_model.redirect_uris.map(json_to_string_vec),
+      post_logout_redirect_uris: client_model
+        .post_logout_redirect_uris
+        .map(json_to_string_vec),
+      logo_uri: client_model.logo_uri,
+      client_uri: client_model.client_uri,
+      policy_uri: client_model.policy_uri,
+      terms_of_service_uri: client_model.terms_of_service_uri,
+      application_type: client_model.application_type,
+      auth_method: client_model.auth_method,
+      grant_types: json_to_string_vec(client_model.grant_types),
+      response_types: json_to_string_vec(client_model.response_types),
+      scopes: json_to_string_vec(client_model.scopes),
+      audience: client_model.audience.map(json_to_string_vec),
+      access_token_expires_in_seconds: client_model.access_token_expires_in_seconds,
+      id_token_expires_in_seconds: client_model.id_token_expires_in_seconds,
+      refresh_expires_in_seconds: client_model.refresh_expires_in_seconds,
+      updated_at: DateTime::<Utc>::from_timestamp(client_model.updated_at, 0).unwrap_or_default(),
+      created_at: DateTime::<Utc>::from_timestamp(client_model.created_at, 0).unwrap_or_default(),
+    }
+  }
+}
 
 #[derive(Deserialize, ToSchema)]
 pub struct ClientRegisterRequest {
@@ -265,30 +322,39 @@ pub struct ClientRegisterRequest {
   pub refresh_expires_in_seconds: i64,
 }
 
-impl Into<ClientCommon> for ClientRegisterRequest {
-  fn into(self) -> ClientCommon {
-    ClientCommon {
-      name: self.name,
-      client_id: self.client_id,
-      redirect_uris: self
-        .redirect_uris
-        .map(|v| type_to_json_value(&v).to_string()),
-      post_logout_redirect_uris: self
-        .post_logout_redirect_uris
-        .map(|v| type_to_json_value(&v).to_string()),
-      logo_uri: self.logo_uri,
-      client_uri: self.client_uri,
-      policy_uri: self.policy_uri,
-      terms_of_service_uri: self.terms_of_service_uri,
-      application_type: self.application_type,
-      auth_method: self.auth_method,
-      grant_types: type_to_json_value(&self.grant_types).to_string(),
-      response_types: type_to_json_value(&self.response_types).to_string(),
-      scopes: type_to_json_value(&self.scopes).to_string(),
-      audience: self.audience.map(|v| type_to_json_value(&v).to_string()),
-      access_token_expires_in_seconds: self.access_token_expires_in_seconds,
-      id_token_expires_in_seconds: self.id_token_expires_in_seconds,
-      refresh_expires_in_seconds: self.refresh_expires_in_seconds,
+impl From<ClientRegisterRequest> for os_model::entities::clients::ActiveModel {
+  fn from(request: ClientRegisterRequest) -> Self {
+    use sea_orm::Set;
+
+    let now = chrono::Utc::now().timestamp();
+    Self {
+      name: Set(request.name),
+      client_id: Set(request.client_id),
+      client_secret: Set(hex::encode(crate::core::encryption::random_bytes(64))),
+      redirect_uris: Set(request.redirect_uris.as_ref().map(string_vec_to_json)),
+      post_logout_redirect_uris: Set(
+        request
+          .post_logout_redirect_uris
+          .as_ref()
+          .map(string_vec_to_json),
+      ),
+      logo_uri: Set(request.logo_uri),
+      client_uri: Set(request.client_uri),
+      policy_uri: Set(request.policy_uri),
+      terms_of_service_uri: Set(request.terms_of_service_uri),
+      application_type: Set(request.application_type),
+      auth_method: Set(request.auth_method),
+      grant_types: Set(string_vec_to_json(&request.grant_types)),
+      response_types: Set(string_vec_to_json(&request.response_types)),
+      scopes: Set(string_vec_to_json(&request.scopes)),
+      audience: Set(request.audience.as_ref().map(string_vec_to_json)),
+      access_token_expires_in_seconds: Set(request.access_token_expires_in_seconds),
+      id_token_expires_in_seconds: Set(request.id_token_expires_in_seconds),
+      refresh_expires_in_seconds: Set(request.refresh_expires_in_seconds),
+      active: Set(1),
+      created_at: Set(now),
+      updated_at: Set(now),
+      ..Default::default()
     }
   }
 }

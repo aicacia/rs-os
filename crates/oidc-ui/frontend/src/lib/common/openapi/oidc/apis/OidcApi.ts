@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * os-oidc
- * Aicacia OS API.
+ * Aicacia OS OIDC API.
  *
  * The version of the OpenAPI document: 0.1.0
  * 
@@ -97,10 +97,6 @@ export interface TokenRequest {
     refreshToken?: string;
     code?: string;
     codeVerifier?: string | null;
-}
-
-export interface UserInfoRequest {
-    clientRegisterRequest: ClientRegisterRequest;
 }
 
 /**
@@ -264,16 +260,15 @@ export interface OidcApiInterface {
 
     /**
      * 
-     * @param {ClientRegisterRequest} clientRegisterRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OidcApiInterface
      */
-    userInfoRaw(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>>;
+    userInfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>>;
 
     /**
      */
-    userInfo(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims>;
+    userInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims>;
 
 }
 
@@ -775,19 +770,10 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async userInfoRaw(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>> {
-        if (requestParameters['clientRegisterRequest'] == null) {
-            throw new runtime.RequiredError(
-                'clientRegisterRequest',
-                'Required parameter "clientRegisterRequest" was null or undefined when calling userInfo().'
-            );
-        }
-
+    async userInfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -805,7 +791,6 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-            body: ClientRegisterRequestToJSON(requestParameters['clientRegisterRequest']),
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => OpenIdClaimsFromJSON(jsonValue));
@@ -813,8 +798,8 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async userInfo(requestParameters: UserInfoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims> {
-        const response = await this.userInfoRaw(requestParameters, initOverrides);
+    async userInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims> {
+        const response = await this.userInfoRaw(initOverrides);
         return await response.value();
     }
 

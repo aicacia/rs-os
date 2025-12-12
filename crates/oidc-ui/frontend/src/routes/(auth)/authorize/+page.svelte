@@ -115,7 +115,7 @@
 	<div class="m-8 flex grow flex-col items-center justify-center">
 		<div class="card w-md">
 			{#if authorizeRequest}
-				<Authorize user={data.user} {clientIdInfo} {authorizeRequest} />
+				<Authorize userInfo={data.userInfo} {clientIdInfo} {authorizeRequest} />
 			{:else}
 				<section>
 					<h5>{m.authorize_invalid_request()}</h5>

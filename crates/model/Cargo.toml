@@ -12,10 +12,50 @@ rust-version = "1.91"
 name = "os_model"
 
 [dependencies]
-os-db = { version = "0.1", path = "../db", default-features = false }
 log = { version = "0.4", default-features = false }
 dotenvy = { version = "0.15", default-features = false }
+serde = { version = "1.0", features = ["derive"], default-features = false }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
+chrono = { version = "0.4", default-features = false }
+hashbrown = { version = "0.16", default-features = false, features = [
+  "default-hasher",
+  "allocator-api2",
+] }
+hex = { version = "0.4", default-features = false, features = ["alloc"] }
+rsa = { version = "0.9", features = ["pem", "serde"], default-features = false }
+sha2 = { version = "0.10", default-features = false }
+base64 = { version = "0.22", default-features = false }
+p256 = { version = "0.13", features = [
+  "arithmetic",
+  "ecdsa",
+  "pkcs8",
+], default-features = false }
+p384 = { version = "0.13", features = [
+  "arithmetic",
+  "ecdsa",
+  "pkcs8",
+], default-features = false }
+ed25519-dalek = { version = "2.2", features = [
+  "alloc",
+  "pkcs8",
+  "rand_core",
+], default-features = false }
+elliptic-curve = { version = "0.13", features = [
+  "arithmetic",
+  "pkcs8",
+  "serde",
+], default-features = false }
+rand = { version = "0.8", features = [
+  "std",
+  "std_rng",
+], default-features = false }
+num-bigint = { version = "0.4", features = ["std"], default-features = false }
+num-bigint-dig = { version = "0.8", default-features = false, features = [
+  "std",
+] }
+jsonwebtoken = { version = "9.3", features = [
+  "use_pem",
+], default-features = false }
 tokio = { version = "1.48", features = [
   "rt",
   "rt-multi-thread",

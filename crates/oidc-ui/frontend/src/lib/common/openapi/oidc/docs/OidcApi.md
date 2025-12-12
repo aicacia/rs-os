@@ -749,7 +749,7 @@ No authorization required
 
 ## userInfo
 
-> OpenIdClaims userInfo(clientRegisterRequest)
+> OpenIdClaims userInfo()
 
 
 
@@ -770,13 +770,8 @@ async function example() {
   });
   const api = new OidcApi(config);
 
-  const body = {
-    // ClientRegisterRequest
-    clientRegisterRequest: ...,
-  } satisfies UserInfoRequest;
-
   try {
-    const data = await api.userInfo(body);
+    const data = await api.userInfo();
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -789,10 +784,7 @@ example().catch(console.error);
 
 ### Parameters
 
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **clientRegisterRequest** | [ClientRegisterRequest](ClientRegisterRequest.md) |  | |
+This endpoint does not need any parameter.
 
 ### Return type
 
@@ -804,7 +796,7 @@ example().catch(console.error);
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
+- **Content-Type**: Not defined
 - **Accept**: `application/json`
 
 

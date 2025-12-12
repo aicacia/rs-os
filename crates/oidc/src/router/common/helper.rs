@@ -1,18 +1,12 @@
 use chrono::{DateTime, Utc};
 use http::StatusCode;
+use os_model::entities::{
+  jwks::{get_jwk_for_sign_and_verify, model_to_jwt_jwk, to_encoding_key},
+  user_emails, user_infos, user_phone_numbers, users,
+};
 
 use crate::{
-  core::{
-    config::app_config::AppConfig,
-    jwk::{
-      helper::to_encoding_key,
-      orm::{get_jwk_for_sign_and_verify, jwk_model_to_jwt_jwk},
-    },
-  },
-  model::user::orm::{
-    UserEmailModelExt as _, UserModel, UserPhoneNumberModelExt as _, get_user_info_by_user_id,
-    get_user_primary_email, get_user_primary_phone_number,
-  },
+  core::config::AppConfig,
   router::{
     common::{
       constants::{
@@ -32,8 +26,8 @@ use sea_orm::DatabaseConnection;
 pub(crate) async fn create_user_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
-  jwk_sql_row: os_model::entities::jwks::Model,
-  user: UserModel,
+  jwk_model: os_model::entities::jwks::Model,
+  user: users::Model,
   client_id: String,
   scope: String,
   issued_token_type: String,
@@ -54,7 +48,7 @@ pub(crate) async fn create_user_token(
     scope: scope.clone(),
   };
 
-  let encoding_key = match to_encoding_key(&jwk_sql_row) {
+  let encoding_key = match to_encoding_key(&jwk_model) {
     Ok(encoding_key) => encoding_key,
     Err(e) => {
       log::error!("error getting converting into jwt encoding key: {}", e);
@@ -63,7 +57,7 @@ pub(crate) async fn create_user_token(
       );
     }
   };
-  let jwk = match jwk_model_to_jwt_jwk(jwk_sql_row.clone().into()) {
+  let jwk = match model_to_jwt_jwk(jwk_model.clone().into()) {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("error getting converting into json web key: {}", e);
@@ -120,7 +114,7 @@ pub(crate) async fn create_user_token(
     };
     id_claims.basic_claims.r#type = TOKEN_TYPE_ID.to_owned();
 
-    let user_info = match get_user_info_by_user_id(db, user.id).await {
+    let user_info = match user_infos::get_user_info_by_user_id(db, user.id).await {
       Ok(Some(user_info)) => user_info,
       Ok(None) => {
         // Create a default user info model
@@ -154,7 +148,7 @@ pub(crate) async fn create_user_token(
     id_claims.profile.preferred_username = Some(user.username.clone());
 
     if show_email {
-      match get_user_primary_email(db, user.id).await {
+      match user_emails::get_user_primary_email(db, user.id).await {
         Ok(Some(email)) => {
           id_claims.profile.email_verified = Some(email.is_verified());
           id_claims.profile.email = Some(email.email);
@@ -170,7 +164,7 @@ pub(crate) async fn create_user_token(
       }
     }
     if show_phone_number {
-      match get_user_primary_phone_number(db, user.id).await {
+      match user_phone_numbers::get_user_primary_phone_number(db, user.id).await {
         Ok(Some(phone_number)) => {
           id_claims.profile.phone_verified = Some(phone_number.is_verified());
           id_claims.profile.phone = Some(phone_number.phone_number);
@@ -219,8 +213,8 @@ pub(crate) async fn create_user_authorization_code_token(
   code_challenge: String,
   code_challenge_method: String,
 ) -> Result<String, HttpError> {
-  let jwk_sql_row = match get_jwk_for_sign_and_verify(db).await {
-    Ok(Some(jwk_sql_row)) => jwk_sql_row,
+  let jwk_model = match get_jwk_for_sign_and_verify(db).await {
+    Ok(Some(jwk_model)) => jwk_model,
     Ok(None) => {
       log::error!("error no valid jwk for signing and verifying jwts");
       return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
@@ -251,7 +245,7 @@ pub(crate) async fn create_user_authorization_code_token(
     code_challenge_method,
   };
 
-  let encoding_key = match to_encoding_key(&jwk_sql_row) {
+  let encoding_key = match to_encoding_key(&jwk_model) {
     Ok(encoding_key) => encoding_key,
     Err(e) => {
       log::error!("error getting converting into jwt encoding key: {}", e);
@@ -260,7 +254,7 @@ pub(crate) async fn create_user_authorization_code_token(
       );
     }
   };
-  let jwk = match jwk_model_to_jwt_jwk(jwk_sql_row.clone().into()) {
+  let jwk = match model_to_jwt_jwk(jwk_model.clone().into()) {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("error getting converting into json web key: {}", e);

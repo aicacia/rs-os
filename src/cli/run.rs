@@ -9,18 +9,17 @@ use std::{
 use axum::Router;
 use clap::Parser;
 use os_cli::{run::shutdown_signal, serve::serve};
-use tokio::{runtime::Handle, task::block_in_place};
+use os_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use tokio_util::sync::CancellationToken;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[cfg(feature = "completions")]
 use crate::cli::completions;
 use crate::{
-  app_config::{
-    AppConfig, DOCUMENT_STORE_API_URL_PREFIX, FS_API_URL_PREFIX, OIDC_API_URL_PREFIX,
-    OIDC_UI_URL_PREFIX,
-  },
   cli::args::{CliArgs, CliCommand},
+  config::{
+    ADMIN_API_URL_PREFIX, ADMIN_UI_URL_PREFIX, AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX,
+  },
 };
 
 pub async fn run() -> io::Result<()> {
@@ -57,15 +56,47 @@ pub async fn run() -> io::Result<()> {
 
   let cancellation_token = CancellationToken::new();
 
-  let (oidc_cleanup, oidc_router) = init_oidc(app_config.oidc.clone()).await?;
+  let database_connection = match os_model::create_database_connection(&app_config.database).await {
+    Ok(db) => db,
+    Err(e) => return Err(io::Error::other(e)),
+  };
+
+  if list_jwks(&database_connection)
+    .await
+    .map_err(io::Error::other)?
+    .is_empty()
+  {
+    let _ = create_jwk(
+      &database_connection,
+      generate_jwk(app_config.oidc.token.default_jwt_algorithm).map_err(io::Error::other)?,
+    )
+    .await
+    .map_err(io::Error::other)?;
+  }
+
+  let oidc_router = os_oidc::router::create_router(
+    os_oidc::router::entity::RouterState {
+      database: database_connection.clone(),
+      config: Arc::new(app_config.oidc.clone()),
+    },
+    Some(OIDC_API_URL_PREFIX),
+  );
   let oidc_ui_router = os_oidc_ui_embed::router::create_router(Some(OIDC_UI_URL_PREFIX));
-  let document_store_router = init_document_store(app_config.document_store.clone()).await?;
-  let fs_router = init_fs(app_config.fs.clone()).await?;
+
+  let admin_router = os_admin::router::create_router(
+    os_admin::router::entity::RouterState {
+      database: database_connection.clone(),
+      config: Arc::new(app_config.admin.clone()),
+    },
+    Some(ADMIN_API_URL_PREFIX),
+  );
+  let admin_ui_router = os_admin_ui_embed::router::create_router(Some(ADMIN_UI_URL_PREFIX));
+
   let router = Router::new()
     .merge(oidc_router)
     .merge(oidc_ui_router)
-    .merge(document_store_router)
-    .merge(fs_router);
+    .merge(admin_router)
+    .merge(admin_ui_router);
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {
     let addr = SocketAddr::from((
@@ -95,66 +126,10 @@ pub async fn run() -> io::Result<()> {
     }
   }
 
-  oidc_cleanup();
-
-  Ok(())
-}
-
-async fn init_oidc(
-  app_config: os_oidc::core::config::app_config::AppConfig,
-) -> io::Result<(impl FnOnce(), Router)> {
-  let oidc_database = match os_model::create_database_connection(&app_config.database).await {
-    Ok(db) => db,
-    Err(e) => return Err(io::Error::other(e)),
-  };
-
-  match os_oidc::core::jwk::helper::init_jwk(&oidc_database, &app_config).await {
+  match os_model::connection::close_database_connection(database_connection).await {
     Ok(_) => {}
-    Err(e) => return Err(io::Error::other(e.to_string())),
+    Err(e) => log::error!("failed to close pool: {}", e),
   }
 
-  let oidc_router = os_oidc::router::create_router(
-    os_oidc::router::entity::RouterState {
-      database: oidc_database.clone(),
-      config: Arc::new(app_config),
-    },
-    Some(OIDC_API_URL_PREFIX),
-  );
-
-  let close_pool = move || {
-    block_in_place(move || {
-      Handle::current().block_on(async move {
-        match os_db::connection::close(oidc_database).await {
-          Ok(_) => {}
-          Err(e) => log::error!("failed to close pool: {}", e),
-        }
-      });
-    });
-  };
-
-  Ok((close_pool, oidc_router))
-}
-
-async fn init_document_store(
-  app_config: os_document_store::core::config::app_config::AppConfig,
-) -> io::Result<Router> {
-  let os_document_store_router = os_document_store::router::create_router(
-    os_document_store::router::entity::RouterState {
-      config: Arc::new(app_config),
-    },
-    Some(DOCUMENT_STORE_API_URL_PREFIX),
-  );
-
-  Ok(os_document_store_router)
-}
-
-async fn init_fs(app_config: os_fs::core::config::app_config::AppConfig) -> io::Result<Router> {
-  let os_fs_router = os_fs::router::create_router(
-    os_fs::router::entity::RouterState {
-      config: Arc::new(app_config),
-    },
-    Some(FS_API_URL_PREFIX),
-  );
-
-  Ok(os_fs_router)
+  Ok(())
 }

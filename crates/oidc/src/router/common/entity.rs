@@ -3,7 +3,7 @@ pub use os_api::claims::{BasicClaims, Claims};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{model::user::orm::UserInfoModel, router::common::helper::to_public_jwk};
+use crate::router::common::helper::to_public_jwk;
 
 #[derive(Serialize, ToSchema)]
 pub struct Token {
@@ -94,15 +94,15 @@ pub struct OpenIdProfile {
   pub address: Option<String>,
 }
 
-impl From<UserInfoModel> for OpenIdProfile {
-  fn from(user_info_sql_row: UserInfoModel) -> Self {
-    let name: Option<String> = if let Some(given_name) = &user_info_sql_row.given_name {
-      if let Some(family_name) = &user_info_sql_row.family_name {
+impl From<os_model::entities::user_infos::Model> for OpenIdProfile {
+  fn from(user_info_model: os_model::entities::user_infos::Model) -> Self {
+    let name: Option<String> = if let Some(given_name) = &user_info_model.given_name {
+      if let Some(family_name) = &user_info_model.family_name {
         Some(format!("{} {}", given_name, family_name))
       } else {
         Some(given_name.clone())
       }
-    } else if let Some(family_name) = &user_info_sql_row.family_name {
+    } else if let Some(family_name) = &user_info_model.family_name {
       Some(family_name.clone())
     } else {
       None
@@ -110,20 +110,20 @@ impl From<UserInfoModel> for OpenIdProfile {
 
     Self {
       name,
-      given_name: user_info_sql_row.given_name,
-      family_name: user_info_sql_row.family_name,
-      middle_name: user_info_sql_row.middle_name,
-      nickname: user_info_sql_row.nickname,
+      given_name: user_info_model.given_name,
+      family_name: user_info_model.family_name,
+      middle_name: user_info_model.middle_name,
+      nickname: user_info_model.nickname,
       preferred_username: None,
-      profile_picture: user_info_sql_row.profile_picture,
-      website: user_info_sql_row.website,
-      gender: user_info_sql_row.gender,
-      birthdate: user_info_sql_row
+      profile_picture: user_info_model.profile_picture,
+      website: user_info_model.website,
+      gender: user_info_model.gender,
+      birthdate: user_info_model
         .birthdate
         .and_then(|birthdate| DateTime::<Utc>::from_timestamp(birthdate, 0)),
-      zone_info: user_info_sql_row.zone_info,
-      locale: user_info_sql_row.locale,
-      address: user_info_sql_row.address,
+      zone_info: user_info_model.zone_info,
+      locale: user_info_model.locale,
+      address: user_info_model.address,
       email: None,
       email_verified: None,
       phone: None,

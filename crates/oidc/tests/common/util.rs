@@ -1,8 +1,12 @@
 use std::{error::Error, path::Path, str::FromStr, sync::Arc};
 
 use axum::Router;
+use os_model::{
+  create_database_connection,
+  entities::jwks::{create_jwk, generate_jwk, list_jwks},
+};
 use os_oidc::{
-  core::{config::app_config::AppConfig, jwk::helper::init_jwk},
+  core::config::AppConfig,
   router::{create_router, entity::RouterState},
 };
 use tokio::{fs::remove_file, runtime::Handle, task::block_in_place};
@@ -39,12 +43,11 @@ pub async fn setup() -> Result<
     .with(tracing_subscriber::fmt::layer())
     .init();
 
-  let db = sea_orm::Database::connect(&config.database.url).await?;
+  let db = create_database_connection(&config.database).await?;
 
-  // If you need to run migrations, use sea_orm_migration or a custom solution here
-  // let _ = run_migrations(&db).await?;
-
-  let _ = init_jwk(&db, &config).await?;
+  if list_jwks(&db).await?.is_empty() {
+    let _ = create_jwk(&db, generate_jwk(config.token.default_jwt_algorithm)?).await?;
+  }
 
   let cancellation_token = CancellationToken::new();
   let router = create_router(
