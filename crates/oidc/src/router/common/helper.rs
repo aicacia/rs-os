@@ -114,6 +114,22 @@ pub(crate) async fn create_user_token(
     };
     id_claims.basic_claims.r#type = TOKEN_TYPE_ID.to_owned();
 
+    let permissions = match users::get_user_role_permissions_by_user_id(db, user.id).await {
+      Ok(roles_permissions) => roles_permissions
+        .into_values()
+        .flat_map(|permissions| permissions.into_iter().map(|permission| permission.uri))
+        .collect::<Vec<_>>(),
+      Err(e) => {
+        log::error!("error fetching user permissions for client: {}", e);
+        return Err(
+          HttpError::from(StatusCode::INTERNAL_SERVER_ERROR).with_application_error(INTERNAL_ERROR),
+        );
+      }
+    };
+
+    id_claims.basic_claims.scope =
+      format!("{} {}", id_claims.basic_claims.scope, permissions.join(" "));
+
     let user_info = match user_infos::get_user_info_by_user_id(db, user.id).await {
       Ok(Some(user_info)) => user_info,
       Ok(None) => {

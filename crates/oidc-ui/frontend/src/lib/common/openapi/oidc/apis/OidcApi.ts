@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   AuthorizeRequest,
   Client,
+  ClientAllowed,
   ClientRegisterRequest,
   HttpError,
   JWKs,
@@ -31,6 +32,8 @@ import {
     AuthorizeRequestToJSON,
     ClientFromJSON,
     ClientToJSON,
+    ClientAllowedFromJSON,
+    ClientAllowedToJSON,
     ClientRegisterRequestFromJSON,
     ClientRegisterRequestToJSON,
     HttpErrorFromJSON,
@@ -60,6 +63,14 @@ export interface AuthorizeRequest {
     registration?: string | null;
     codeChallenge?: string | null;
     codeChallengeMethod?: string | null;
+}
+
+export interface ClientByClientIdRequest {
+    clientId: string;
+}
+
+export interface ClientUserAllowedRequest {
+    clientId: string;
 }
 
 export interface EndSessionRequest {
@@ -127,6 +138,32 @@ export interface OidcApiInterface {
     /**
      */
     authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
+
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    clientByClientIdRaw(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>>;
+
+    /**
+     */
+    clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
+
+    /**
+     * 
+     * @param {string} clientId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OidcApiInterface
+     */
+    clientUserAllowedRaw(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ClientAllowed>>;
+
+    /**
+     */
+    clientUserAllowed(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ClientAllowed>;
 
     /**
      * 
@@ -376,6 +413,92 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
      */
     async authorize(requestParameters: AuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.authorizeRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     */
+    async clientByClientIdRaw(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling clientByClientId().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", ["client:read"]);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/client/{client_id}`;
+        urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
+        const response = await this.clientByClientIdRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async clientUserAllowedRaw(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ClientAllowed>> {
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling clientUserAllowed().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Authorization", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/oidc/api/clients/{client_id}/allowed`;
+        urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ClientAllowedFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async clientUserAllowed(requestParameters: ClientUserAllowedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ClientAllowed> {
+        const response = await this.clientUserAllowedRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**

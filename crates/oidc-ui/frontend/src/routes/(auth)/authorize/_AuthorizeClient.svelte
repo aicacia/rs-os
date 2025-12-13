@@ -49,7 +49,7 @@
 	</div>
 
 	<p class="text-center">
-		{m.authorize_wants_to_access({ username: userInfo.username })} <strong>{user.username}</strong>
+		{m.authorize_wants_to_access({ username: userInfo.nickname })}
 	</p>
 </div>
 

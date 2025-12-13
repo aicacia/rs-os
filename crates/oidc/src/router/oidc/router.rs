@@ -2,7 +2,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use axum::{
   body::Body,
-  extract::{Query, State},
+  extract::{Path, Query, State},
   response::{IntoResponse, Response},
 };
 use base64::Engine;
@@ -10,7 +10,8 @@ use http::{StatusCode, header};
 use os_model::entities::{
   clients,
   jwks::{get_jwk_for_sign_and_verify, list_jwks},
-  revoked_tokens, users,
+  revoked_tokens,
+  users::{self, get_user_client_by_client_id},
 };
 use sha2::{Digest, Sha256};
 use url::Url;
@@ -45,8 +46,8 @@ use crate::{
         GRANT_TYPE_REFRESH_TOKEN, GRANT_TYPE_REVOKE, TAG,
       },
       entity::{
-        AuthorizeRequest, Client, ClientAuthentication, ClientRegisterRequest, EndSessionRequest,
-        JWK, JWKs, OpenIdConfiguration, RevokeRequest, TokenRequest,
+        AuthorizeRequest, Client, ClientAllowed, ClientAuthentication, ClientRegisterRequest,
+        EndSessionRequest, JWK, JWKs, OpenIdConfiguration, RevokeRequest, TokenRequest,
       },
     },
   },
@@ -914,6 +915,94 @@ pub async fn device_authorize(State(_state): State<RouterState>) -> impl IntoRes
   (StatusCode::NOT_IMPLEMENTED, "Not implemented").into_response()
 }
 
+#[utoipa::path(
+  get,
+  path = "/client/{client_id}",
+  tags = [TAG],
+  responses(
+    (status = 200, description = "Client fetched", body = Client),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 403, description = "Forbidden", body = HttpError),
+    (status = 404, description = "Not Found", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = ["client:read"])
+  )
+)]
+pub async fn client_by_client_id(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Path(client_id): Path<String>,
+) -> impl IntoResponse {
+  match user_authorization.has_permission(Permission::ClientRead) {
+    Ok(_) => {}
+    Err(e) => return e.into_response(),
+  };
+
+  let client_model = match clients::get_client_by_client_id(&state.database, &client_id).await {
+    Ok(Some(client_model)) => client_model,
+    Ok(None) => {
+      return HttpError::not_found()
+        .with_error("client", NOT_FOUND_ERROR)
+        .into_response();
+    }
+    Err(e) => {
+      log::error!("error fetching client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
+
+  let client: Client = client_model.into();
+  axum::Json(client).into_response()
+}
+
+#[utoipa::path(
+  get,
+  path = "/clients/{client_id}/allowed",
+  tags = [TAG],
+  responses(
+    (status = 200, content_type = "application/json", body = ClientAllowed),
+    (status = 400, content_type = "application/json", body = HttpError),
+    (status = 401, content_type = "application/json", body = HttpError),
+    (status = 403, content_type = "application/json", body = HttpError),
+    (status = 404, content_type = "application/json", body = HttpError),
+    (status = 500, content_type = "application/json", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
+  )
+)]
+pub async fn client_user_allowed(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Path(client_id): Path<String>,
+) -> impl IntoResponse {
+  match get_user_client_by_client_id(
+    &state.database,
+    user_authorization.user_model.id,
+    &client_id,
+  )
+  .await
+  {
+    Ok(Some(user_client_model)) => axum::Json(ClientAllowed {
+      allowed_scopes: json_to_string_vec(user_client_model.allowed_scopes),
+    })
+    .into_response(),
+    Ok(None) => HttpError::forbidden()
+      .with_error("client", NOT_ALLOWED_ERROR)
+      .into_response(),
+    Err(e) => {
+      log::error!("error fetching user client: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
+  }
+}
+
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(jwks))
@@ -927,5 +1016,7 @@ pub fn create_router(state: RouterState) -> OpenApiRouter {
     .routes(routes!(revoke))
     .routes(routes!(introspect))
     .routes(routes!(device_authorize))
+    .routes(routes!(client_by_client_id))
+    .routes(routes!(client_user_allowed))
     .with_state(state)
 }

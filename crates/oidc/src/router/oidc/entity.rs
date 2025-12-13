@@ -358,3 +358,8 @@ impl From<ClientRegisterRequest> for os_model::entities::clients::ActiveModel {
     }
   }
 }
+
+#[derive(Serialize, ToSchema, Default)]
+pub struct ClientAllowed {
+  pub allowed_scopes: Vec<String>,
+}

@@ -67,8 +67,8 @@
 	"authorize_id_token_expires": "ID Token Expires: {seconds}s",
 	"authorize_refresh_token_expires": "Refresh Token Expires: {seconds}s",
 	"authorize_legal_label": "Legal",
-	"authorize_new_client_request": "This client is requesting to be added to your OIDC provider. Review the details before approving.",
-	"authorize_updated_client_request": "This client has updated its configuration and is requesting changes to your OIDC provider. Review the details before approving.",
+	"authorize_new_client_request": "This client is requesting to be added to your OIDC provider. Review the details.",
+	"authorize_updated_client_request": "This client has updated its configuration and is requesting changes to your OIDC provider. Review the details.",
 	"authorize_access_denied_reason": "Access to the requested resource was denied.",
 	"authorize_unauthorized_client_reason": "The client is not authorized to request an authorization code using this method.",
 	"policy_title": "Privacy Policy",
@@ -224,5 +224,7 @@
 	"errors_message_email_required": "Please enter your email.",
 	"errors_message_email_invalid": "The email address is badly formatted.",
 	"errors_message_password_required": "Please enter your password.",
-	"errors_message_password_min_length": "You password must have {characters} characters or more."
+	"errors_message_password_min_length": "You password must have {characters} characters or more.",
+	"client_not_allowed_to_approve": "Not allowed to approve this client.",
+	"client_close": "Close"
 }

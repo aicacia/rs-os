@@ -55,14 +55,21 @@
 <hr />
 
 <section>
-	<div class="mt-4 flex flex-row justify-center gap-4">
-		<button class="btn secondary" disabled={disabled || loading} onclick={onRejectInternal}
-			>{m.client_reject()}</button
-		>
-		{#if hasPermission(userInfo, Permission.ClientCreate)}
+	{#if hasPermission(userInfo, Permission.ClientWrite)}
+		<div class="mt-4 flex flex-row justify-center gap-4">
+			<button class="btn secondary" disabled={disabled || loading} onclick={onRejectInternal}
+				>{m.client_reject()}</button
+			>
 			<button class="btn danger" disabled={disabled || loading} onclick={onAcceptInternal}
 				>{m.client_accept()}</button
 			>
-		{/if}
-	</div>
+		</div>
+	{:else}
+		<p>{m.client_not_allowed_to_approve()}</p>
+		<div class="mt-4 flex flex-row justify-center gap-4">
+			<button class="btn secondary" disabled={disabled || loading} onclick={onRejectInternal}
+				>{m.client_close()}</button
+			>
+		</div>
+	{/if}
 </section>
