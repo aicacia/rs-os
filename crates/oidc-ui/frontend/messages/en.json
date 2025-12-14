@@ -10,7 +10,7 @@
 	"errors_name_username": "Username",
 	"errors_name_password": "Password",
 	"errors_name_password_confirmation": "Password confirmation",
-	"errors_message_application": "if it presists please contact support",
+	"errors_message_internal": "if it presists please contact support",
 	"errors_message_too_many_requests": "Too many requests",
 	"errors_message_not_found": "Not found",
 	"errors_message_invalid": "Invalid",

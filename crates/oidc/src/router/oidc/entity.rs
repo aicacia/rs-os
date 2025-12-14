@@ -359,6 +359,23 @@ impl From<ClientRegisterRequest> for os_model::entities::clients::ActiveModel {
   }
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct ClientAuthorizeRequest {
+  pub scope: String,
+  pub redirect_uri: String,
+  pub response_type: ResponseType,
+  pub code_challenge: Option<String>,
+  pub code_challenge_method: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+#[serde(tag = "type")]
+pub enum ClientAuthorization {
+  #[serde(rename = "authorization_code")]
+  #[schema(title = "AuthorizationCode")]
+  AuthorizationCode { code: String },
+}
+
 #[derive(Serialize, ToSchema, Default)]
 pub struct ClientAllowed {
   pub allowed_scopes: Vec<String>,

@@ -108,7 +108,6 @@ impl Related<super::roles::Entity> for Entity {
 
 impl ActiveModelBehavior for ActiveModel {}
 
-// Database operations for users
 use sea_orm::{ConnectionTrait, Order, QueryOrder, Set, TransactionTrait, sea_query::Expr};
 use std::collections::HashMap;
 
@@ -193,7 +192,6 @@ pub async fn get_user_by_username_or_primary_email(
   db: &DatabaseConnection,
   username_or_email: &str,
 ) -> Result<Option<Model>, DbErr> {
-  // First try to find by username
   if let Some(user) = Entity::find()
     .filter(Column::Username.eq(username_or_email))
     .one(db)
@@ -202,7 +200,6 @@ pub async fn get_user_by_username_or_primary_email(
     return Ok(Some(user));
   }
 
-  // Then try to find by primary email
   if let Some(email) = user_emails::Entity::find()
     .filter(user_emails::Column::Email.eq(username_or_email))
     .filter(user_emails::Column::Primary.ne(0))
@@ -350,7 +347,6 @@ pub async fn get_user_client_by_client_id(
   user_id: i64,
   client_id: &str,
 ) -> Result<Option<user_clients::Model>, DbErr> {
-  // First get the client to get its internal id
   let client = clients::Entity::find()
     .filter(clients::Column::ClientId.eq(client_id))
     .one(db)
@@ -359,7 +355,7 @@ pub async fn get_user_client_by_client_id(
   if let Some(client) = client {
     user_clients::Entity::find()
       .filter(user_clients::Column::UserId.eq(user_id))
-      .filter(user_clients::Column::ClientId.eq(client.id))
+      .filter(user_clients::Column::ClientId.eq(client.client_id))
       .one(db)
       .await
   } else {
@@ -373,7 +369,6 @@ pub async fn upsert_user_client(
   client_id: &str,
   allowed_scopes: Vec<String>,
 ) -> Result<user_clients::Model, DbErr> {
-  // First get the client to get its internal id
   let client = clients::Entity::find()
     .filter(clients::Column::ClientId.eq(client_id))
     .one(db)
@@ -385,10 +380,9 @@ pub async fn upsert_user_client(
 
   let now = chrono::Utc::now().timestamp();
 
-  // Try to find existing user_client
   if let Some(existing) = user_clients::Entity::find()
     .filter(user_clients::Column::UserId.eq(user_id))
-    .filter(user_clients::Column::ClientId.eq(client.id))
+    .filter(user_clients::Column::ClientId.eq(&client.client_id))
     .one(db)
     .await?
   {
@@ -399,7 +393,7 @@ pub async fn upsert_user_client(
   } else {
     let new_model = user_clients::ActiveModel {
       user_id: Set(user_id),
-      client_id: Set(client.id.to_string()),
+      client_id: Set(client.client_id),
       allowed_scopes: Set(allowed_scopes_json),
       created_at: Set(now),
       updated_at: Set(now),
@@ -419,7 +413,6 @@ pub async fn update_user_password(
 
   let txn = db.begin().await?;
 
-  // Deactivate any existing active passwords for this user
   user_passwords::Entity::update_many()
     .col_expr(user_passwords::Column::Active, Expr::value(0))
     .filter(user_passwords::Column::UserId.eq(user_id))
@@ -427,7 +420,6 @@ pub async fn update_user_password(
     .exec(&txn)
     .await?;
 
-  // Insert new active password row
   let now = chrono::Utc::now().timestamp();
   let password_model = user_passwords::ActiveModel {
     user_id: Set(user_id),
@@ -459,7 +451,6 @@ pub async fn get_user_role_permissions_by_user_id(
   db: &DatabaseConnection,
   user_id: i64,
 ) -> Result<HashMap<i64, Vec<permissions::Model>>, DbErr> {
-  // First get all roles for the user
   let user_roles_list = user_roles::Entity::find()
     .filter(user_roles::Column::UserId.eq(user_id))
     .all(db)
@@ -471,7 +462,6 @@ pub async fn get_user_role_permissions_by_user_id(
     return Ok(HashMap::default());
   }
 
-  // Get all permissions for those roles
   let roles_permissions = roles_permissions::Entity::find()
     .filter(roles_permissions::Column::RoleId.is_in(role_ids))
     .find_also_related(permissions::Entity)
@@ -497,7 +487,6 @@ pub async fn assign_user_role(
   user_id: i64,
   role_id: i64,
 ) -> Result<roles::Model, DbErr> {
-  // First insert the user_role relationship
   let now = chrono::Utc::now().timestamp();
   let user_role = user_roles::ActiveModel {
     user_id: Set(user_id),
@@ -506,10 +495,8 @@ pub async fn assign_user_role(
     updated_at: Set(now),
   };
 
-  // Try to insert, ignore if it already exists
   let _ = user_role.insert(db).await;
 
-  // Then fetch and return the role
   roles::Entity::find_by_id(role_id)
     .one(db)
     .await?
@@ -521,7 +508,6 @@ pub async fn remove_user_role(
   user_id: i64,
   role_id: i64,
 ) -> Result<Option<roles::Model>, DbErr> {
-  // Delete the relationship
   let result = user_roles::Entity::delete_many()
     .filter(user_roles::Column::UserId.eq(user_id))
     .filter(user_roles::Column::RoleId.eq(role_id))
@@ -529,7 +515,6 @@ pub async fn remove_user_role(
     .await?;
 
   if result.rows_affected > 0 {
-    // Fetch and return the role
     roles::Entity::find_by_id(role_id).one(db).await
   } else {
     Ok(None)

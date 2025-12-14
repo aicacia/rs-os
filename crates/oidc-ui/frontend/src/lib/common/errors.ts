@@ -36,12 +36,23 @@ export function translateErrors(errors: Errors) {
 	const translatedErrors: [name: string, message: string][] = [];
 	for (const [nameKey, messages] of Object.entries(errors)) {
 		for (const message of messages) {
-			const errorsNameKey = `errors_name_${nameKey.replaceAll('-', '_')}`;
-			const errorsMessageKey = `errors_message_${message.code.replaceAll('-', '_')}`;
-			// @ts-expect-error not gonna be type safe
-			const name = m[errorsNameKey]();
-			// @ts-expect-error not gonna be type safe
-			const body = m[errorsMessageKey](message.parameters);
+			const errorsNameKey = `errors_name_${nameKey.replaceAll('-', '_')}` as keyof typeof m;
+			const errorsMessageKey =
+				`errors_message_${message.code.replaceAll('-', '_')}` as keyof typeof m;
+			const nameFn = m[errorsNameKey];
+			if (typeof nameFn !== 'function') {
+				console.error('Unknown error name key:', errorsNameKey);
+				continue;
+			}
+			const bodyFn = m[errorsMessageKey];
+			if (typeof bodyFn !== 'function') {
+				console.error('Unknown error message key:', errorsMessageKey);
+				continue;
+			}
+			// @ts-expect-error - nameFn should not have parameters
+			const name = nameFn();
+			// @ts-expect-error - bodyFn parameters are dynamic
+			const body = bodyFn(message.parameters);
 			translatedErrors.push([name, body]);
 		}
 	}

@@ -4,6 +4,8 @@ export * from './AuthorizeRequest';
 export * from './BasicClaims';
 export * from './Client';
 export * from './ClientAllowed';
+export * from './ClientAuthorization';
+export * from './ClientAuthorizeRequest';
 export * from './ClientRegisterRequest';
 export * from './Health';
 export * from './HttpError';
