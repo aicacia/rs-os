@@ -224,7 +224,7 @@ pub(crate) async fn create_user_authorization_code_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
   user_id: i64,
-  client_id: String,
+  audience: String,
   scope: String,
   code_challenge: String,
   code_challenge_method: String,
@@ -248,7 +248,7 @@ pub(crate) async fn create_user_authorization_code_token(
     basic_claims: BasicClaims {
       r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
       sub: user_id.to_string(),
-      aud: client_id,
+      aud: audience,
       iat: now.timestamp(),
       nbf: now.timestamp(),
       exp: now

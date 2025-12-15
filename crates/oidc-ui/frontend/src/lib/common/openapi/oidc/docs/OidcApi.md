@@ -5,8 +5,8 @@ All URIs are relative to *http://localhost:3000*
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
 | [**authorize**](OidcApi.md#authorize) | **GET** /oidc/api/authorize |  |
-| [**clientAuthorize**](OidcApi.md#clientauthorizeoperation) | **POST** /oidc/api/client/{client_id}/authorize |  |
-| [**clientByClientId**](OidcApi.md#clientbyclientid) | **GET** /oidc/api/client/{client_id} |  |
+| [**clientAuthorize**](OidcApi.md#clientauthorizeoperation) | **POST** /oidc/api/clients/{client_id}/authorize |  |
+| [**clientByClientId**](OidcApi.md#clientbyclientid) | **GET** /oidc/api/clients/{client_id} |  |
 | [**clientUserAllowed**](OidcApi.md#clientuserallowed) | **GET** /oidc/api/clients/{client_id}/allowed |  |
 | [**clientUserApprove**](OidcApi.md#clientuserapprove) | **POST** /oidc/api/clients/{client_id}/approve |  |
 | [**deviceAuthorize**](OidcApi.md#deviceauthorize) | **POST** /oidc/api/device-authorize |  |

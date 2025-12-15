@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::core::helper::json_to_string_vec;
+use crate::core::helper::{json_to_string_vec, unordered_vec_equals};
 use os_model::entities::clients;
 
 #[derive(Serialize, ToSchema, Default)]
@@ -24,7 +24,7 @@ pub struct Client {
   pub grant_types: Vec<String>,
   pub response_types: Vec<String>,
   pub scopes: Vec<String>,
-  pub audience: Option<Vec<String>>,
+  pub audience: Vec<String>,
   pub access_token_expires_in_seconds: i64,
   pub id_token_expires_in_seconds: i64,
   pub refresh_expires_in_seconds: i64,
@@ -53,7 +53,7 @@ impl From<clients::Model> for Client {
       grant_types: json_to_string_vec(client_model.grant_types),
       response_types: json_to_string_vec(client_model.response_types),
       scopes: json_to_string_vec(client_model.scopes),
-      audience: client_model.audience.map(json_to_string_vec),
+      audience: json_to_string_vec(client_model.audience),
       access_token_expires_in_seconds: client_model.access_token_expires_in_seconds,
       id_token_expires_in_seconds: client_model.id_token_expires_in_seconds,
       refresh_expires_in_seconds: client_model.refresh_expires_in_seconds,
@@ -84,7 +84,7 @@ pub struct ClientUpsertRequest {
   pub grant_types: Vec<String>,
   pub response_types: Vec<String>,
   pub scopes: Vec<String>,
-  pub audience: Option<Vec<String>>,
+  pub audience: Vec<String>,
   pub access_token_expires_in_seconds: i64,
   pub id_token_expires_in_seconds: i64,
   pub refresh_expires_in_seconds: i64,
@@ -113,89 +113,10 @@ pub fn client_upsert_request_changed(
     || string_vec_to_json(&request.grant_types) != model.grant_types
     || string_vec_to_json(&request.response_types) != model.response_types
     || string_vec_to_json(&request.scopes) != model.scopes
-    || request.audience.as_ref().map(string_vec_to_json) != model.audience
+    || unordered_vec_equals(&request.audience, &json_to_string_vec(&model.audience))
     || request.access_token_expires_in_seconds != model.access_token_expires_in_seconds
     || request.id_token_expires_in_seconds != model.id_token_expires_in_seconds
     || request.refresh_expires_in_seconds != model.refresh_expires_in_seconds
-}
-
-#[derive(Serialize, ToSchema, Default)]
-pub struct ClientAllowed {
-  pub allowed_scopes: Vec<String>,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub enum ResponseType {
-  #[serde(rename = "none")]
-  None,
-  #[serde(rename = "code")]
-  Code,
-  #[serde(rename = "token")]
-  Token,
-  #[serde(rename = "id_token")]
-  IdToken,
-  #[serde(rename = "code token")]
-  CodeToken,
-  #[serde(rename = "code id_token")]
-  CodeIdToken,
-  #[serde(rename = "id_token token")]
-  IdTokenToken,
-  #[serde(rename = "code id_token token")]
-  CodeIdTokenToken,
-}
-
-impl ResponseType {
-  pub fn as_str(&self) -> &str {
-    match self {
-      ResponseType::None => "none",
-      ResponseType::Code => "code",
-      ResponseType::Token => "token",
-      ResponseType::IdToken => "id_token",
-      ResponseType::CodeToken => "code token",
-      ResponseType::CodeIdToken => "code id_token",
-      ResponseType::IdTokenToken => "id_token token",
-      ResponseType::CodeIdTokenToken => "code id_token token",
-    }
-  }
-
-  pub fn needs_code(&self) -> bool {
-    matches!(
-      self,
-      ResponseType::Code
-        | ResponseType::CodeToken
-        | ResponseType::CodeIdToken
-        | ResponseType::CodeIdTokenToken
-    )
-  }
-
-  pub fn needs_id_token(&self) -> bool {
-    matches!(
-      self,
-      ResponseType::IdToken
-        | ResponseType::CodeIdToken
-        | ResponseType::IdTokenToken
-        | ResponseType::CodeIdTokenToken
-    )
-  }
-
-  pub fn needs_token(&self) -> bool {
-    matches!(
-      self,
-      ResponseType::Token
-        | ResponseType::CodeToken
-        | ResponseType::IdTokenToken
-        | ResponseType::CodeIdTokenToken
-    )
-  }
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct ClientAuthorizeRequest {
-  pub scope: String,
-  pub redirect_uri: String,
-  pub response_type: ResponseType,
-  pub code_challenge: Option<String>,
-  pub code_challenge_method: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -232,7 +153,7 @@ impl From<ClientUpsertRequest> for os_model::entities::clients::ActiveModel {
       grant_types: Set(string_vec_to_json(&request.grant_types)),
       response_types: Set(string_vec_to_json(&request.response_types)),
       scopes: Set(string_vec_to_json(&request.scopes)),
-      audience: Set(request.audience.as_ref().map(string_vec_to_json)),
+      audience: Set(string_vec_to_json(&request.audience)),
       access_token_expires_in_seconds: Set(request.access_token_expires_in_seconds),
       id_token_expires_in_seconds: Set(request.id_token_expires_in_seconds),
       refresh_expires_in_seconds: Set(request.refresh_expires_in_seconds),

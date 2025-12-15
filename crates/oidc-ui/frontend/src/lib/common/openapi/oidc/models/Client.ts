@@ -42,7 +42,7 @@ export interface Client {
      * @type {Array<string>}
      * @memberof Client
      */
-    audience?: Array<string> | null;
+    audience: Array<string>;
     /**
      * 
      * @type {string}
@@ -160,6 +160,7 @@ export function instanceOfClient(value: object): value is Client {
     if (!('accessTokenExpiresInSeconds' in value) || value['accessTokenExpiresInSeconds'] === undefined) return false;
     if (!('active' in value) || value['active'] === undefined) return false;
     if (!('applicationType' in value) || value['applicationType'] === undefined) return false;
+    if (!('audience' in value) || value['audience'] === undefined) return false;
     if (!('authMethod' in value) || value['authMethod'] === undefined) return false;
     if (!('clientId' in value) || value['clientId'] === undefined) return false;
     if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
@@ -187,7 +188,7 @@ export function ClientFromJSONTyped(json: any, ignoreDiscriminator: boolean): Cl
         'accessTokenExpiresInSeconds': json['access_token_expires_in_seconds'],
         'active': json['active'],
         'applicationType': json['application_type'],
-        'audience': json['audience'] == null ? undefined : json['audience'],
+        'audience': json['audience'],
         'authMethod': json['auth_method'],
         'clientId': json['client_id'],
         'clientSecret': json['client_secret'] == null ? undefined : json['client_secret'],

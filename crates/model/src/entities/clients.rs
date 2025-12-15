@@ -1,4 +1,5 @@
 use sea_orm::entity::prelude::*;
+use sea_orm::{ConnectionTrait, Order, QueryOrder, Set, TransactionTrait};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "clients")]
@@ -22,7 +23,7 @@ pub struct Model {
   pub grant_types: String,
   pub response_types: String,
   pub scopes: String,
-  pub audience: Option<String>,
+  pub audience: String,
   pub access_token_expires_in_seconds: i64,
   pub id_token_expires_in_seconds: i64,
   pub refresh_expires_in_seconds: i64,
@@ -59,8 +60,15 @@ impl Related<super::users::Entity> for Entity {
 
 impl ActiveModelBehavior for ActiveModel {}
 
-// Database operations for clients
-use sea_orm::{ConnectionTrait, Order, QueryOrder, Set, TransactionTrait};
+pub async fn get_client_by_id(
+  db: &DatabaseConnection,
+  client_id: i64,
+) -> Result<Option<Model>, DbErr> {
+  Entity::find()
+    .filter(Column::Id.eq(client_id))
+    .one(db)
+    .await
+}
 
 pub async fn get_client_by_client_id(
   db: &DatabaseConnection,

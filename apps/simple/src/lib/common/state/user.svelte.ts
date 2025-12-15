@@ -6,16 +6,16 @@ import { PUBLIC_URL } from '$env/static/public';
 
 const userSettings = browser
 	? ({
-			client_id: `${window.location.origin}`,
-			redirect_uri: `${window.location.origin}/callback`,
-			post_logout_redirect_uri: `${window.location.origin}/logout`,
+			client_id: `${PUBLIC_URL}`,
+			redirect_uri: `${PUBLIC_URL}/callback`,
+			post_logout_redirect_uri: `${PUBLIC_URL}/logout`,
 			response_type: 'code',
 			scope: 'openid profile offline',
 			response_mode: 'query',
 			loadUserInfo: true,
-			popup_redirect_uri: `${window.location.origin}/popup-callback`,
-			popup_post_logout_redirect_uri: `${window.location.origin}/popup-callback`,
-			silent_redirect_uri: `${window.location.origin}/silent-callback`,
+			popup_redirect_uri: `${PUBLIC_URL}/popup-callback`,
+			popup_post_logout_redirect_uri: `${PUBLIC_URL}/popup-callback`,
+			silent_redirect_uri: `${PUBLIC_URL}/silent-callback`,
 			automaticSilentRenew: true,
 			filterProtocolClaims: true,
 			extraQueryParams: {

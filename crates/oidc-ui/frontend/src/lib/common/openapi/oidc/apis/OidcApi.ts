@@ -489,7 +489,7 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             }
         }
 
-        let urlPath = `/oidc/api/client/{client_id}/authorize`;
+        let urlPath = `/oidc/api/clients/{client_id}/authorize`;
         urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
 
         const response = await this.request({
@@ -533,7 +533,7 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             }
         }
 
-        let urlPath = `/oidc/api/client/{client_id}`;
+        let urlPath = `/oidc/api/clients/{client_id}`;
         urlPath = urlPath.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId'])));
 
         const response = await this.request({

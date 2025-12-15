@@ -918,7 +918,7 @@ pub async fn device_authorize(State(_state): State<RouterState>) -> impl IntoRes
 
 #[utoipa::path(
   get,
-  path = "/client/{client_id}",
+  path = "/clients/{client_id}",
   tags = [TAG],
   responses(
     (status = 200, description = "Client fetched", body = Client),
@@ -962,7 +962,7 @@ pub async fn client_by_client_id(
 
 #[utoipa::path(
   post,
-  path = "/client/{client_id}/authorize",
+  path = "/clients/{client_id}/authorize",
   tags = [TAG],
   request_body(content = ClientAuthorizeRequest, content_type = "application/json"),
   responses(
@@ -1000,7 +1000,7 @@ pub async fn client_authorize(
   match get_user_client_by_client_id(
     &state.database,
     user_authorization.user_model.id,
-    &client_model.client_id,
+    &client_id,
   )
   .await
   {
@@ -1058,7 +1058,7 @@ pub async fn client_authorize(
       &state.database,
       &state.config,
       user_authorization.user_model.id,
-      client_id,
+      client_model.audience,
       authorization_request.scope,
       code_challenge,
       code_challenge_method,
