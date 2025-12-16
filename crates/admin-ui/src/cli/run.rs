@@ -6,7 +6,7 @@ use std::{
 };
 
 use clap::Parser;
-use os_admin_ui_embed::config::UIConfig;
+use os_admin_ui_embed::config::AppConfig;
 use os_cli::{run::shutdown_signal, serve::serve};
 use tokio_util::sync::CancellationToken;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -23,7 +23,7 @@ pub async fn run() -> io::Result<()> {
     Err(e) => return Err(io::Error::other(e)),
   }
 
-  let ui_config = match UIConfig::try_from(Path::new(&args.config)) {
+  let ui_config = match AppConfig::try_from(Path::new(&args.config)) {
     Ok(app_config) => app_config,
     Err(e) => return Err(io::Error::other(e)),
   };

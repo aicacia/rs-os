@@ -1,3 +1,4 @@
+use hashbrown::HashSet;
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
@@ -519,4 +520,26 @@ pub async fn remove_user_role(
   } else {
     Ok(None)
   }
+}
+
+pub async fn get_user_permissions(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Vec<permissions::Model>, sea_orm::DbErr> {
+  let role_permissions = get_user_role_permissions_by_user_id(db, user_id).await?;
+
+  let mut permissions = Vec::new();
+  let mut seen = HashSet::new();
+
+  for (_role_id, permission_list) in role_permissions {
+    for permission in permission_list {
+      if seen.contains(&permission.uri) {
+        continue;
+      }
+      seen.insert(permission.uri.clone());
+      permissions.push(permission);
+    }
+  }
+
+  Ok(permissions)
 }

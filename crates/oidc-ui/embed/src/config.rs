@@ -25,12 +25,12 @@ impl Default for ServerConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
-pub struct UIConfig {
+pub struct AppConfig {
   pub server: ServerConfig,
   pub log_level: String,
 }
 
-impl Default for UIConfig {
+impl Default for AppConfig {
   fn default() -> Self {
     Self {
       server: ServerConfig::default(),
@@ -39,7 +39,7 @@ impl Default for UIConfig {
   }
 }
 
-impl<'a> TryFrom<&'a Path> for UIConfig {
+impl<'a> TryFrom<&'a Path> for AppConfig {
   type Error = config::ConfigError;
 
   fn try_from(config_path: &'a Path) -> Result<Self, Self::Error> {

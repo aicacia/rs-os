@@ -77,8 +77,7 @@ export async function resolveAuthorizeRequest(authorizeRequest: AuthorizeRequest
 	if (authorizeRequest.nonce) {
 		url.searchParams.append('nonce', authorizeRequest.nonce);
 	}
-	const authorizeResponse = await oidcApi.clientAuthorize({
-		clientId: authorizeRequest.clientId,
+	const authorizeResponse = await oidcApi.authorizeClient({
 		clientAuthorizeRequest: authorizeRequest
 	});
 	switch (authorizeRequest.responseMode) {

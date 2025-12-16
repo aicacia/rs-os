@@ -9,7 +9,6 @@ pub const OIDC_UI_URL_PREFIX: &str = "/oidc";
 pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
 
 pub const ADMIN_UI_URL_PREFIX: &str = "/admin";
-pub const ADMIN_API_URL_PREFIX: &str = "/admin/api";
 
 pub const DOCUMENT_STORE_API_URL_PREFIX: &str = "/document-store/api";
 
@@ -38,8 +37,9 @@ impl Default for ServerConfig {
 pub struct AppConfig {
   pub server: ServerConfig,
   pub database: os_model::DatabaseConfig,
-  pub oidc: os_oidc::core::config::AppConfig,
-  pub admin: os_admin::core::config::AppConfig,
+  pub oidc_api: os_oidc::core::config::AppConfig,
+  pub oidc_ui: os_oidc_ui_embed::config::AppConfig,
+  pub admin_ui: os_admin_ui_embed::config::AppConfig,
   pub document_store: os_document_store::core::config::AppConfig,
   pub fs: os_fs::core::config::AppConfig,
   pub log_level: String,
@@ -51,8 +51,9 @@ impl Default for AppConfig {
     Self {
       server: Default::default(),
       database: Default::default(),
-      oidc: Default::default(),
-      admin: Default::default(),
+      oidc_api: Default::default(),
+      oidc_ui: Default::default(),
+      admin_ui: Default::default(),
       document_store: Default::default(),
       fs: Default::default(),
       log_level: "DEBUG".to_owned(),
@@ -73,42 +74,34 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
       .build()?
       .try_deserialize()?;
 
-    // OIDC Config Adjustments
-    app_config.oidc.server.host = app_config.server.host;
-    app_config.oidc.server.port = app_config.server.port;
-    app_config.oidc.server.gzip = app_config.server.gzip;
+    // OIDC API Config Adjustments
+    app_config.oidc_api.server.host = app_config.server.host;
+    app_config.oidc_api.server.port = app_config.server.port;
+    app_config.oidc_api.server.gzip = app_config.server.gzip;
+    app_config.oidc_api.log_level = app_config.log_level.clone();
 
-    app_config.oidc.database = app_config.database.clone();
+    app_config.oidc_api.database = app_config.database.clone();
 
     if let Some(url) = &app_config.url {
-      if app_config.oidc.api_url.is_none() {
-        app_config.oidc.api_url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
+      if app_config.oidc_api.api_url.is_none() {
+        app_config.oidc_api.api_url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
       }
-      if app_config.oidc.ui_url.is_none() {
-        app_config.oidc.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
+      if app_config.oidc_api.ui_url.is_none() {
+        app_config.oidc_api.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
       }
     }
 
-    // Admin Config Adjustments
-    app_config.admin.server.host = app_config.server.host;
-    app_config.admin.server.port = app_config.server.port;
-    app_config.admin.server.gzip = app_config.server.gzip;
-
-    app_config.admin.database = app_config.database.clone();
-
-    if let Some(url) = &app_config.url {
-      if app_config.admin.api_url.is_none() {
-        app_config.admin.api_url = Some(format!("{}{}", url, ADMIN_API_URL_PREFIX));
-      }
-      if app_config.admin.ui_url.is_none() {
-        app_config.admin.ui_url = Some(format!("{}{}", url, ADMIN_UI_URL_PREFIX));
-      }
-    }
+    // OIDC UI Config Adjustments
+    app_config.oidc_ui.server.host = app_config.server.host;
+    app_config.oidc_ui.server.port = app_config.server.port;
+    app_config.oidc_ui.server.gzip = app_config.server.gzip;
+    app_config.oidc_ui.log_level = app_config.log_level.clone();
 
     // Document Store Config Adjustments
     app_config.document_store.server.host = app_config.server.host;
     app_config.document_store.server.port = app_config.server.port;
     app_config.document_store.server.gzip = app_config.server.gzip;
+    app_config.document_store.log_level = app_config.log_level.clone();
 
     if let Some(url) = &app_config.url
       && app_config.document_store.api_url.is_none()
@@ -120,6 +113,7 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.fs.server.host = app_config.server.host;
     app_config.fs.server.port = app_config.server.port;
     app_config.fs.server.gzip = app_config.server.gzip;
+    app_config.fs.log_level = app_config.log_level.clone();
 
     if let Some(url) = &app_config.url
       && app_config.fs.api_url.is_none()

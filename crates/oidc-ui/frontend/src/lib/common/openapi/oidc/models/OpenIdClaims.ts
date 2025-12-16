@@ -27,6 +27,12 @@ export interface OpenIdClaims {
     aud: string;
     /**
      * 
+     * @type {string}
+     * @memberof OpenIdClaims
+     */
+    client: string;
+    /**
+     * 
      * @type {number}
      * @memberof OpenIdClaims
      */
@@ -176,6 +182,7 @@ export interface OpenIdClaims {
  */
 export function instanceOfOpenIdClaims(value: object): value is OpenIdClaims {
     if (!('aud' in value) || value['aud'] === undefined) return false;
+    if (!('client' in value) || value['client'] === undefined) return false;
     if (!('exp' in value) || value['exp'] === undefined) return false;
     if (!('iat' in value) || value['iat'] === undefined) return false;
     if (!('iss' in value) || value['iss'] === undefined) return false;
@@ -197,6 +204,7 @@ export function OpenIdClaimsFromJSONTyped(json: any, ignoreDiscriminator: boolea
     return {
         
         'aud': json['aud'],
+        'client': json['client'],
         'exp': json['exp'],
         'iat': json['iat'],
         'iss': json['iss'],
@@ -236,6 +244,7 @@ export function OpenIdClaimsToJSONTyped(value?: OpenIdClaims | null, ignoreDiscr
     return {
         
         'aud': value['aud'],
+        'client': value['client'],
         'exp': value['exp'],
         'iat': value['iat'],
         'iss': value['iss'],

@@ -32,7 +32,7 @@
 	$effect(() => {
 		loadingClient = true;
 		oidcApi
-			.clientByClientId({ clientId: authorizeRequest.clientId })
+			.client({ clientId: authorizeRequest.clientId })
 			.catch((_e) => {
 				return null;
 			})
@@ -61,7 +61,7 @@
 		}
 		loadingUserAllowed = true;
 		oidcApi
-			.clientUserAllowed({ clientId: authorizeRequest.clientId })
+			.isClientAllowedForUser({ clientId: authorizeRequest.clientId })
 			.then(onAuthorize)
 			.catch((_e) => {
 				return null;
@@ -84,7 +84,7 @@
 	}
 	async function onAllow() {
 		try {
-			await oidcApi.clientUserApprove({ clientId: authorizeRequest.clientId });
+			await oidcApi.approveClientForUser({ clientId: authorizeRequest.clientId });
 			await onAuthorize();
 		} catch (e) {
 			handleError(e);

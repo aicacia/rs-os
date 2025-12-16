@@ -7,6 +7,7 @@
 Name | Type
 ------------ | -------------
 `aud` | string
+`client` | string
 `exp` | number
 `iat` | number
 `iss` | string
@@ -40,6 +41,7 @@ import type { OpenIdClaims } from ''
 // TODO: Update the object below with actual values
 const example = {
   "aud": null,
+  "client": null,
   "exp": null,
   "iat": null,
   "iss": null,

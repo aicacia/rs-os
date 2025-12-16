@@ -6,6 +6,7 @@
 
 Name | Type
 ------------ | -------------
+`clientId` | string
 `codeChallenge` | string
 `codeChallengeMethod` | string
 `redirectUri` | string
@@ -19,6 +20,7 @@ import type { ClientAuthorizeRequest } from ''
 
 // TODO: Update the object below with actual values
 const example = {
+  "clientId": null,
   "codeChallenge": null,
   "codeChallengeMethod": null,
   "redirectUri": null,

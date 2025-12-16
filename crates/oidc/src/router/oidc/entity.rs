@@ -361,6 +361,7 @@ impl From<ClientRegisterRequest> for os_model::entities::clients::ActiveModel {
 
 #[derive(Deserialize, ToSchema)]
 pub struct ClientAuthorizeRequest {
+  pub client_id: String,
   pub scope: String,
   pub redirect_uri: String,
   pub response_type: ResponseType,
@@ -379,4 +380,19 @@ pub enum ClientAuthorization {
 #[derive(Serialize, ToSchema, Default)]
 pub struct ClientAllowed {
   pub allowed_scopes: Vec<String>,
+}
+
+#[derive(Deserialize, IntoParams, ToSchema)]
+pub struct ClientByClientIdQuery {
+  pub client_id: String,
+}
+
+#[derive(Deserialize, IntoParams, ToSchema)]
+pub struct ClientAllowedQuery {
+  pub client_id: String,
+}
+
+#[derive(Deserialize, IntoParams, ToSchema)]
+pub struct ApproveClientQuery {
+  pub client_id: String,
 }

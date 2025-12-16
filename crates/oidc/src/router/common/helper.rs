@@ -29,6 +29,7 @@ pub(crate) async fn create_user_token(
   jwk_model: os_model::entities::jwks::Model,
   user: users::Model,
   client_id: String,
+  audience: String,
   scope: String,
   issued_token_type: String,
 ) -> Result<Token, HttpError> {
@@ -38,7 +39,8 @@ pub(crate) async fn create_user_token(
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id.to_string(),
-    aud: client_id,
+    aud: audience,
+    client: client_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
     exp: now
@@ -224,6 +226,7 @@ pub(crate) async fn create_user_authorization_code_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
   user_id: i64,
+  client_id: String,
   audience: String,
   scope: String,
   code_challenge: String,
@@ -249,6 +252,7 @@ pub(crate) async fn create_user_authorization_code_token(
       r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
       sub: user_id.to_string(),
       aud: audience,
+      client: client_id.clone(),
       iat: now.timestamp(),
       nbf: now.timestamp(),
       exp: now

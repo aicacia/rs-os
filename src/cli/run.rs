@@ -17,9 +17,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::cli::completions;
 use crate::{
   cli::args::{CliArgs, CliCommand},
-  config::{
-    ADMIN_API_URL_PREFIX, ADMIN_UI_URL_PREFIX, AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX,
-  },
+  config::{ADMIN_UI_URL_PREFIX, AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX},
 };
 
 pub async fn run() -> io::Result<()> {
@@ -39,7 +37,7 @@ pub async fn run() -> io::Result<()> {
   });
 
   let level =
-    tracing::Level::from_str(&app_config.as_ref().oidc.log_level).unwrap_or(tracing::Level::DEBUG);
+    tracing::Level::from_str(&app_config.as_ref().log_level).unwrap_or(tracing::Level::DEBUG);
   tracing_subscriber::registry()
     .with(
       tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -68,7 +66,7 @@ pub async fn run() -> io::Result<()> {
   {
     let _ = create_jwk(
       &database_connection,
-      generate_jwk(app_config.oidc.token.default_jwt_algorithm).map_err(io::Error::other)?,
+      generate_jwk(app_config.oidc_api.token.default_jwt_algorithm).map_err(io::Error::other)?,
     )
     .await
     .map_err(io::Error::other)?;
@@ -77,25 +75,17 @@ pub async fn run() -> io::Result<()> {
   let oidc_router = os_oidc::router::create_router(
     os_oidc::router::entity::RouterState {
       database: database_connection.clone(),
-      config: Arc::new(app_config.oidc.clone()),
+      config: Arc::new(app_config.oidc_api.clone()),
     },
     Some(OIDC_API_URL_PREFIX),
   );
   let oidc_ui_router = os_oidc_ui_embed::router::create_router(Some(OIDC_UI_URL_PREFIX));
 
-  let admin_router = os_admin::router::create_router(
-    os_admin::router::entity::RouterState {
-      database: database_connection.clone(),
-      config: Arc::new(app_config.admin.clone()),
-    },
-    Some(ADMIN_API_URL_PREFIX),
-  );
   let admin_ui_router = os_admin_ui_embed::router::create_router(Some(ADMIN_UI_URL_PREFIX));
 
   let router = Router::new()
     .merge(oidc_router)
     .merge(oidc_ui_router)
-    .merge(admin_router)
     .merge(admin_ui_router);
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {

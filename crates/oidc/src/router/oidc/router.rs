@@ -2,7 +2,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use axum::{
   body::Body,
-  extract::{Path, Query, State},
+  extract::{Query, State},
   response::{IntoResponse, Response},
 };
 use base64::Engine;
@@ -18,7 +18,11 @@ use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-  core::{config::AppConfig, encryption::verify_password, helper::json_to_string_vec},
+  core::{
+    config::AppConfig,
+    encryption::verify_password,
+    helper::{json_to_string_vec, string_vec_to_json},
+  },
   router::{
     Form, Json,
     common::{
@@ -46,9 +50,10 @@ use crate::{
         GRANT_TYPE_REFRESH_TOKEN, GRANT_TYPE_REVOKE, TAG,
       },
       entity::{
-        AuthorizeRequest, Client, ClientAllowed, ClientAuthentication, ClientAuthorization,
-        ClientAuthorizeRequest, ClientRegisterRequest, EndSessionRequest, JWK, JWKs,
-        OpenIdConfiguration, RevokeRequest, TokenRequest,
+        ApproveClientQuery, AuthorizeRequest, Client, ClientAllowed, ClientAllowedQuery,
+        ClientAuthentication, ClientAuthorization, ClientAuthorizeRequest, ClientByClientIdQuery,
+        ClientRegisterRequest, EndSessionRequest, JWK, JWKs, OpenIdConfiguration, RevokeRequest,
+        TokenRequest,
       },
     },
   },
@@ -346,8 +351,8 @@ async fn password_grant(
   password: String,
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
-  let client_id = if let Some(client_id) = &client_auth.client_id {
-    let _client_model = validate_client_authentication(
+  let (client_id, audience) = if let Some(client_id) = &client_auth.client_id {
+    let client_model = validate_client_authentication(
       &state.database,
       client_id,
       &client_auth,
@@ -355,9 +360,12 @@ async fn password_grant(
       &scope,
     )
     .await?;
-    client_id.to_owned()
+    (client_id.to_owned(), client_model.audience.clone())
   } else {
-    state.config.api_url()
+    (
+      state.config.api_url(),
+      string_vec_to_json(&vec![state.config.api_url()]),
+    )
   };
 
   let user = match users::get_user_by_username_or_primary_email(&state.database, &username).await {
@@ -411,6 +419,7 @@ async fn password_grant(
     jwk,
     user,
     client_id,
+    audience,
     scope,
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
   )
@@ -437,7 +446,7 @@ async fn refresh_token_grant(
   } else {
     token_data.claims.aud.to_owned()
   };
-  let _client_model = validate_client_authentication(
+  let client_model = validate_client_authentication(
     &state.database,
     &client_id,
     &client_auth,
@@ -472,6 +481,7 @@ async fn refresh_token_grant(
     jwk_model,
     user,
     client_id,
+    client_model.audience,
     token_data.claims.scope,
     TOKEN_ISSUE_TYPE_REFRESH_TOKEN.to_owned(),
   )
@@ -516,10 +526,9 @@ async fn authorization_code_grant(
     return Err(HttpError::unauthorized().with_error("code_verifier", INVALID_ERROR));
   }
 
-  let client_id = token_data.claims.basic_claims.aud;
-  let _client_model = validate_client_authentication(
+  let client_model = validate_client_authentication(
     &state.database,
-    &client_id,
+    &token_data.claims.basic_claims.client,
     &client_auth,
     GRANT_TYPE_AUTHORIZATION_CODE,
     &token_data.claims.basic_claims.scope,
@@ -551,7 +560,8 @@ async fn authorization_code_grant(
     &state.config,
     jwk_model,
     user,
-    client_id,
+    client_model.client_id,
+    client_model.audience,
     token_data.claims.basic_claims.scope,
     TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
   )
@@ -918,8 +928,9 @@ pub async fn device_authorize(State(_state): State<RouterState>) -> impl IntoRes
 
 #[utoipa::path(
   get,
-  path = "/clients/{client_id}",
+  path = "/client",
   tags = [TAG],
+  params(ClientByClientIdQuery),
   responses(
     (status = 200, description = "Client fetched", body = Client),
     (status = 401, description = "Unauthorized", body = HttpError),
@@ -931,10 +942,10 @@ pub async fn device_authorize(State(_state): State<RouterState>) -> impl IntoRes
     ("Authorization" = ["client:read"])
   )
 )]
-pub async fn client_by_client_id(
+pub async fn client(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(client_id): Path<String>,
+  Query(ClientByClientIdQuery { client_id }): Query<ClientByClientIdQuery>,
 ) -> impl IntoResponse {
   match user_authorization.has_permission(Permission::ClientRead) {
     Ok(_) => {}
@@ -962,7 +973,7 @@ pub async fn client_by_client_id(
 
 #[utoipa::path(
   post,
-  path = "/clients/{client_id}/authorize",
+  path = "/authorize-client",
   tags = [TAG],
   request_body(content = ClientAuthorizeRequest, content_type = "application/json"),
   responses(
@@ -976,31 +987,32 @@ pub async fn client_by_client_id(
     ("Authorization" = [])
   )
 )]
-pub async fn client_authorize(
+pub async fn authorize_client(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(client_id): Path<String>,
   Json(authorization_request): Json<ClientAuthorizeRequest>,
 ) -> impl IntoResponse {
-  let client_model = match clients::get_client_by_client_id(&state.database, &client_id).await {
-    Ok(Some(client_model)) => client_model,
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("client", NOT_FOUND_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("failed to fetch client: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let client_model =
+    match clients::get_client_by_client_id(&state.database, &authorization_request.client_id).await
+    {
+      Ok(Some(client_model)) => client_model,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("client", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("failed to fetch client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   match get_user_client_by_client_id(
     &state.database,
     user_authorization.user_model.id,
-    &client_id,
+    &authorization_request.client_id,
   )
   .await
   {
@@ -1058,6 +1070,7 @@ pub async fn client_authorize(
       &state.database,
       &state.config,
       user_authorization.user_model.id,
+      client_model.client_id,
       client_model.audience,
       authorization_request.scope,
       code_challenge,
@@ -1088,8 +1101,9 @@ pub async fn client_authorize(
 
 #[utoipa::path(
   get,
-  path = "/clients/{client_id}/allowed",
+  path = "/client-allowed",
   tags = [TAG],
+  params(ClientAllowedQuery),
   responses(
     (status = 200, content_type = "application/json", body = ClientAllowed),
     (status = 400, content_type = "application/json", body = HttpError),
@@ -1102,10 +1116,10 @@ pub async fn client_authorize(
     ("Authorization" = [])
   )
 )]
-pub async fn client_user_allowed(
+pub async fn is_client_allowed_for_user(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(client_id): Path<String>,
+  Query(ClientAllowedQuery { client_id }): Query<ClientAllowedQuery>,
 ) -> impl IntoResponse {
   match get_user_client_by_client_id(
     &state.database,
@@ -1132,8 +1146,9 @@ pub async fn client_user_allowed(
 
 #[utoipa::path(
   post,
-  path = "/clients/{client_id}/approve",
+  path = "/approve-client",
   tags = [TAG],
+  params(ApproveClientQuery),
   responses(
     (status = 204, content_type = "application/json"),
     (status = 400, content_type = "application/json", body = HttpError),
@@ -1146,10 +1161,10 @@ pub async fn client_user_allowed(
     ("Authorization" = [])
   )
 )]
-pub async fn client_user_approve(
+pub async fn approve_client_for_user(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(client_id): Path<String>,
+  Query(ApproveClientQuery { client_id }): Query<ApproveClientQuery>,
 ) -> impl IntoResponse {
   let client_model = match clients::get_client_by_client_id(&state.database, &client_id).await {
     Ok(Some(client)) => client,
@@ -1200,9 +1215,9 @@ pub fn create_router(state: RouterState) -> OpenApiRouter {
     .routes(routes!(revoke))
     .routes(routes!(introspect))
     .routes(routes!(device_authorize))
-    .routes(routes!(client_by_client_id))
-    .routes(routes!(client_authorize))
-    .routes(routes!(client_user_allowed))
-    .routes(routes!(client_user_approve))
+    .routes(routes!(client))
+    .routes(routes!(authorize_client))
+    .routes(routes!(is_client_allowed_for_user))
+    .routes(routes!(approve_client_for_user))
     .with_state(state)
 }
