@@ -9,8 +9,9 @@ export interface CommonField<V extends v.BaseSchema<unknown, unknown, v.BaseIssu
 	validate(): Promise<Result<v.InferOutput<V>, v.ValiError<V>>>;
 }
 
-export interface PrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>
-	extends CommonField<V> {
+export interface PrimitiveField<
+	V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
+> extends CommonField<V> {
 	value: v.InferInput<V> | undefined;
 	issues: v.InferIssue<V>[];
 }
@@ -40,7 +41,7 @@ export type Field<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
 			? ObjectField<V>
 			: PrimitiveField<V>;
 
-function createObjectField<
+export function createObjectField<
 	V extends v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>
 >(schema: V, initialValue: v.InferInput<V> = {}): ObjectField<V> {
 	const objectField: ObjectField<V> = {
@@ -100,7 +101,7 @@ function createObjectField<
 	return objectField;
 }
 
-function createArrayField<
+export function createArrayField<
 	V extends v.ArraySchema<
 		v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 		v.ErrorMessage<v.ArrayIssue> | undefined
@@ -152,10 +153,9 @@ function createArrayField<
 	return arrayField;
 }
 
-function createPrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
-	schema: V,
-	initialValue: v.InferInput<V> = undefined
-): PrimitiveField<V> {
+export function createPrimitiveField<
+	V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
+>(schema: V, initialValue: v.InferInput<V> = undefined): PrimitiveField<V> {
 	let value = $state(initialValue);
 	const issues = $state<v.InferIssue<V>[]>([]);
 
@@ -198,7 +198,7 @@ function createPrimitiveField<V extends v.BaseSchema<unknown, unknown, v.BaseIss
 	};
 }
 
-function createField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
+export function createField<V extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
 	schema: V,
 	initialValue: v.InferInput<V> = undefined
 ): Field<V> {

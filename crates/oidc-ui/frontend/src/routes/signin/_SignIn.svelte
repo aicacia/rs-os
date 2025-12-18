@@ -26,13 +26,13 @@
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault();
 
-		const [value, err] = await form.validate();
+		const [_input, output, error] = await form.validate();
 
-		if (err) {
+		if (error) {
 			return;
 		}
 
-		await signInUsernamePassword(value.email, value.password);
+		await signInUsernamePassword(output.email, output.password);
 	}
 </script>
 
