@@ -39,7 +39,7 @@ pub async fn current_user(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
 ) -> impl IntoResponse {
-  match user_authorization.get_user(&state.database).await {
+  match user_authorization.get_user(&state.database_connection).await {
     Ok(user) => axum::Json(user).into_response(),
     Err(e) => return e.into_response(),
   }
@@ -66,7 +66,7 @@ pub async fn update_username(
   Json(update): Json<UpdateUsernameRequest>,
 ) -> impl IntoResponse {
   match update_user(
-    &state.database,
+    &state.database_connection,
     user_authorization.user_model.id,
     &update.username,
   )
@@ -102,7 +102,7 @@ pub async fn update_password(
 ) -> impl IntoResponse {
   let app_config = state.config.clone();
   match update_user_password(
-    &state.database,
+    &state.database_connection,
     user_authorization.user_model.id,
     update.password.as_str(),
     |password| crate::core::encryption::encrypt_password(&app_config, password).map_err(|e| e.into()),
@@ -138,7 +138,7 @@ pub async fn update_user_info(
   Json(update): Json<UpdateUserInfoRequest>,
 ) -> impl IntoResponse {
   match update_user_info_orm(
-    &state.database,
+    &state.database_connection,
     user_authorization.user_model.id,
     update.into(),
   )

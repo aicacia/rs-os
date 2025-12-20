@@ -33,13 +33,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+
       - name: Cache node modules (frontend only)
         uses: actions/cache@v3
         with:
-          path: crates/oidc-ui/frontend/node_modulesf
-          key: ${{ runner.os }}-node-${{ hashFiles('crates/oidc-ui/frontend/pnpm-lock.yaml') }}
+          path: |
+            crates/admin-ui/frontend/node_modules
+            crates/oidc-ui/frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('crates/**/*/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
+
+      # oidc-ui
       - name: Create .env file for frontend
         working-directory: crates/oidc-ui/frontend
         env:
@@ -56,5 +61,24 @@ jobs:
       - name: Build frontend
         working-directory: crates/oidc-ui/frontend
         run: pnpm build
+
+      # admin-ui
+      - name: Create .env file for frontend
+        working-directory: crates/admin-ui/frontend
+        env:
+          PUBLIC_OS_ADMIN_API_URL: "http://localhost:3000/admin/api"
+          PUBLIC_URL: "http://localhost:5173/admin"
+          VITE_BASE_PATH: "/admin"
+        run: |
+          echo "PUBLIC_OS_ADMIN_API_URL=${PUBLIC_OS_ADMIN_API_URL}" > .env
+          echo "PUBLIC_URL=${PUBLIC_URL}" >> .env
+          echo "VITE_BASE_PATH=${VITE_BASE_PATH}" >> .env
+      - name: Install frontend dependencies
+        working-directory: crates/admin-ui/frontend
+        run: pnpm install --frozen-lockfile
+      - name: Build frontend
+        working-directory: crates/admin-ui/frontend
+        run: pnpm build
+
       - name: Run tests
         run: cargo test --all --verbose

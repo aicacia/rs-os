@@ -5,21 +5,19 @@ use axum::{
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 
+use crate::router::{
+  common::permissions::Permission,
+  entity::RouterState,
+  error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
+  middleware::user_authorization::UserAuthorization,
+  user_phone_number::{
+    constants::TAG,
+    entity::{CreateUserPhoneNumberRequest, UpdateUserPhoneNumberRequest, UserPhoneNumber},
+  },
+};
 use os_model::entities::user_phone_numbers::{
   create_user_phone_number, delete_user_phone_number, get_user_phone_number_by_id,
   list_user_phone_numbers_by_user_id, update_user_phone_number_primary, verify_user_phone_number,
-};
-use crate::{
-  router::{
-    common::permissions::Permission,
-    entity::RouterState,
-    error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
-    middleware::user_authorization::UserAuthorization,
-    user_phone_number::{
-      constants::TAG,
-      entity::{CreateUserPhoneNumberRequest, UpdateUserPhoneNumberRequest, UserPhoneNumber},
-    },
-  },
 };
 
 #[utoipa::path(
@@ -58,7 +56,7 @@ pub async fn list_user_phone_numbers(
     }
   }
 
-  match list_user_phone_numbers_by_user_id(&state.database, user_id_parsed).await {
+  match list_user_phone_numbers_by_user_id(&state.database_connection, user_id_parsed).await {
     Ok(phone_numbers) => {
       let phone_numbers: Vec<UserPhoneNumber> =
         phone_numbers.into_iter().map(|p| p.into()).collect();
@@ -119,27 +117,28 @@ pub async fn get_user_phone_number(
     }
   }
 
-  let phone_model = match get_user_phone_number_by_id(&state.database, phone_id_parsed).await {
-    Ok(Some(phone)) => {
-      if phone.user_id != user_id_parsed {
+  let phone_model =
+    match get_user_phone_number_by_id(&state.database_connection, phone_id_parsed).await {
+      Ok(Some(phone)) => {
+        if phone.user_id != user_id_parsed {
+          return HttpError::not_found()
+            .with_error("phone_number", NOT_FOUND_ERROR)
+            .into_response();
+        }
+        phone
+      }
+      Ok(None) => {
         return HttpError::not_found()
           .with_error("phone_number", NOT_FOUND_ERROR)
           .into_response();
       }
-      phone
-    }
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("phone_number", NOT_FOUND_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("error fetching user phone number: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+      Err(e) => {
+        log::error!("error fetching user phone number: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let phone: UserPhoneNumber = phone_model.into();
   axum::Json(phone).into_response()
@@ -184,16 +183,21 @@ pub async fn create_user_phone_number_handler(
     }
   }
 
-  let phone_model =
-    match create_user_phone_number(&state.database, user_id_parsed, &request.phone_number).await {
-      Ok(phone) => phone,
-      Err(e) => {
-        log::error!("error creating user phone number: {}", e);
-        return HttpError::internal_error()
-          .with_application_error(INTERNAL_ERROR)
-          .into_response();
-      }
-    };
+  let phone_model = match create_user_phone_number(
+    &state.database_connection,
+    user_id_parsed,
+    &request.phone_number,
+  )
+  .await
+  {
+    Ok(phone) => phone,
+    Err(e) => {
+      log::error!("error creating user phone number: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
 
   let phone: UserPhoneNumber = phone_model.into();
   (axum::http::StatusCode::CREATED, axum::Json(phone)).into_response()
@@ -251,7 +255,7 @@ pub async fn update_user_phone_number_handler(
   if let Some(is_primary) = request.is_primary {
     if is_primary {
       let phone_model = match update_user_phone_number_primary(
-        &state.database,
+        &state.database_connection,
         user_id_parsed,
         phone_id_parsed,
       )
@@ -277,7 +281,7 @@ pub async fn update_user_phone_number_handler(
   }
 
   // If no changes, just return the current phone number
-  match get_user_phone_number_by_id(&state.database, phone_id_parsed).await {
+  match get_user_phone_number_by_id(&state.database_connection, phone_id_parsed).await {
     Ok(Some(phone)) => {
       if phone.user_id != user_id_parsed {
         return HttpError::not_found()
@@ -345,7 +349,8 @@ pub async fn delete_user_phone_number_handler(
     }
   }
 
-  match delete_user_phone_number(&state.database, user_id_parsed, phone_id_parsed).await {
+  match delete_user_phone_number(&state.database_connection, user_id_parsed, phone_id_parsed).await
+  {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("phone_number", NOT_FOUND_ERROR)
@@ -404,7 +409,9 @@ pub async fn verify_user_phone_number_handler(
   }
 
   let phone_model =
-    match verify_user_phone_number(&state.database, user_id_parsed, phone_id_parsed).await {
+    match verify_user_phone_number(&state.database_connection, user_id_parsed, phone_id_parsed)
+      .await
+    {
       Ok(Some(phone)) => phone,
       Ok(None) => {
         return HttpError::not_found()

@@ -58,7 +58,7 @@ pub async fn list_user_oauth2_providers(
     }
   }
 
-  match get_user_oauth2_providers(&state.database, user_id_parsed).await {
+  match get_user_oauth2_providers(&state.database_connection, user_id_parsed).await {
     Ok(providers) => {
       let providers: Vec<UserOAuth2Provider> = providers
         .into_iter()
@@ -133,7 +133,7 @@ pub async fn get_user_oauth2_provider(
     }
   }
 
-  match get_user_oauth2_provider_by_id(&state.database, user_id_parsed, provider_id_parsed).await {
+  match get_user_oauth2_provider_by_id(&state.database_connection, user_id_parsed, provider_id_parsed).await {
     Ok(Some((provider, provider_info_opt))) => {
       if let Some(provider_info) = provider_info_opt {
         let oauth2_provider = UserOAuth2Provider {
@@ -206,7 +206,7 @@ pub async fn link_user_oauth2_provider_handler(
   }
 
   match link_user_oauth2_provider(
-    &state.database,
+    &state.database_connection,
     user_id_parsed,
     request.provider_id,
     &request.name,
@@ -283,7 +283,7 @@ pub async fn unlink_user_oauth2_provider_handler(
     }
   }
 
-  match delete_user_oauth2_provider(&state.database, user_id_parsed, provider_id_parsed).await {
+  match delete_user_oauth2_provider(&state.database_connection, user_id_parsed, provider_id_parsed).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("oauth2_provider", NOT_FOUND_ERROR)

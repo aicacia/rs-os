@@ -9,6 +9,7 @@ pub const OIDC_UI_URL_PREFIX: &str = "/oidc";
 pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
 
 pub const ADMIN_UI_URL_PREFIX: &str = "/admin";
+pub const ADMIN_API_URL_PREFIX: &str = "/admin/api";
 
 pub const DOCUMENT_STORE_API_URL_PREFIX: &str = "/document-store/api";
 
@@ -37,11 +38,10 @@ impl Default for ServerConfig {
 pub struct AppConfig {
   pub server: ServerConfig,
   pub database: os_model::DatabaseConfig,
-  pub oidc_api: os_oidc::core::config::AppConfig,
+  pub oidc_api: os_oidc::config::AppConfig,
   pub oidc_ui: os_oidc_ui_embed::config::AppConfig,
+  pub admin_api: os_admin::core::config::AppConfig,
   pub admin_ui: os_admin_ui_embed::config::AppConfig,
-  pub document_store: os_document_store::core::config::AppConfig,
-  pub fs: os_fs::core::config::AppConfig,
   pub log_level: String,
   pub url: Option<String>,
 }
@@ -53,9 +53,8 @@ impl Default for AppConfig {
       database: Default::default(),
       oidc_api: Default::default(),
       oidc_ui: Default::default(),
+      admin_api: Default::default(),
       admin_ui: Default::default(),
-      document_store: Default::default(),
-      fs: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: None,
     }
@@ -97,29 +96,28 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.oidc_ui.server.gzip = app_config.server.gzip;
     app_config.oidc_ui.log_level = app_config.log_level.clone();
 
-    // Document Store Config Adjustments
-    app_config.document_store.server.host = app_config.server.host;
-    app_config.document_store.server.port = app_config.server.port;
-    app_config.document_store.server.gzip = app_config.server.gzip;
-    app_config.document_store.log_level = app_config.log_level.clone();
+    // Admin API Config Adjustments
+    app_config.admin_api.server.host = app_config.server.host;
+    app_config.admin_api.server.port = app_config.server.port;
+    app_config.admin_api.server.gzip = app_config.server.gzip;
+    app_config.admin_api.log_level = app_config.log_level.clone();
 
-    if let Some(url) = &app_config.url
-      && app_config.document_store.api_url.is_none()
-    {
-      app_config.document_store.api_url = Some(format!("{}{}", url, DOCUMENT_STORE_API_URL_PREFIX));
+    app_config.admin_api.database = app_config.database.clone();
+
+    if let Some(url) = &app_config.url {
+      if app_config.admin_api.api_url.is_none() {
+        app_config.admin_api.api_url = Some(format!("{}{}", url, ADMIN_API_URL_PREFIX));
+      }
+      if app_config.admin_api.ui_url.is_none() {
+        app_config.admin_api.ui_url = Some(format!("{}{}", url, ADMIN_UI_URL_PREFIX));
+      }
     }
 
-    // FS Config Adjustments
-    app_config.fs.server.host = app_config.server.host;
-    app_config.fs.server.port = app_config.server.port;
-    app_config.fs.server.gzip = app_config.server.gzip;
-    app_config.fs.log_level = app_config.log_level.clone();
-
-    if let Some(url) = &app_config.url
-      && app_config.fs.api_url.is_none()
-    {
-      app_config.fs.api_url = Some(format!("{}{}", url, FS_API_URL_PREFIX));
-    }
+    // Admin UI Config Adjustments
+    app_config.admin_ui.server.host = app_config.server.host;
+    app_config.admin_ui.server.port = app_config.server.port;
+    app_config.admin_ui.server.gzip = app_config.server.gzip;
+    app_config.admin_ui.log_level = app_config.log_level.clone();
 
     Ok(app_config)
   }

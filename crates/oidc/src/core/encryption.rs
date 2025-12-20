@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::core::config::AppConfig;
+use crate::config::AppConfig;
 
 pub fn random_bytes(size: usize) -> Vec<u8> {
   let mut bytes = Vec::with_capacity(size);

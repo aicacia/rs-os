@@ -57,7 +57,7 @@ pub async fn list_user_roles(
     }
   }
 
-  match get_user_roles_by_user_id(&state.database, user_id_parsed).await {
+  match get_user_roles_by_user_id(&state.database_connection, user_id_parsed).await {
     Ok(role_tuples) => {
       let roles: Vec<UserRole> = role_tuples
         .into_iter()
@@ -110,15 +110,16 @@ pub async fn list_user_permissions(
     }
   }
 
-  let permission_models = match users::get_user_permissions(&state.database, user_id_parsed).await {
-    Ok(permissions) => permissions,
-    Err(e) => {
-      log::error!("error listing user permissions: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let permission_models =
+    match users::get_user_permissions(&state.database_connection, user_id_parsed).await {
+      Ok(permissions) => permissions,
+      Err(e) => {
+        log::error!("error listing user permissions: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let mut permissions = Vec::with_capacity(permission_models.len());
   for permission_model in permission_models {
@@ -178,15 +179,16 @@ pub async fn assign_user_role_handler(
     }
   };
 
-  let role_model = match assign_user_role(&state.database, user_id_parsed, request.role_id).await {
-    Ok(role) => role,
-    Err(e) => {
-      log::error!("error assigning user role: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let role_model =
+    match assign_user_role(&state.database_connection, user_id_parsed, request.role_id).await {
+      Ok(role) => role,
+      Err(e) => {
+        log::error!("error assigning user role: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let role: UserRole = role_model.into();
   (axum::http::StatusCode::CREATED, axum::Json(role)).into_response()
@@ -236,7 +238,7 @@ pub async fn remove_user_role_handler(
     }
   };
 
-  match remove_user_role(&state.database, user_id_parsed, role_id_parsed).await {
+  match remove_user_role(&state.database_connection, user_id_parsed, role_id_parsed).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("role", NOT_FOUND_ERROR)

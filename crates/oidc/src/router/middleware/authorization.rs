@@ -10,7 +10,7 @@ use os_model::entities::{
 };
 
 use crate::{
-  core::config::AppConfig,
+  config::AppConfig,
   router::{
     common::{entity::Claims, helper::parse_jwt},
     entity::RouterState,
@@ -38,7 +38,7 @@ where
     if let Some(authorization_header_value) = parts.headers.get(AUTHORIZATION_HEADER) {
       let authorization_string = authorization_from_header(authorization_header_value)?;
       let (token_data, _jwk_model) = parse_authorization(
-        &router_state.database,
+        &router_state.database_connection,
         &router_state.config,
         authorization_string,
       )

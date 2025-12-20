@@ -18,8 +18,8 @@ use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
+  config::AppConfig,
   core::{
-    config::AppConfig,
     encryption::verify_password,
     helper::{json_to_string_vec, string_vec_to_json},
   },
@@ -69,7 +69,7 @@ use crate::{
   )
 )]
 pub async fn jwks(State(state): State<RouterState>) -> impl IntoResponse {
-  let jwks = match list_jwks(&state.database).await {
+  let jwks = match list_jwks(&state.database_connection).await {
     Ok(jwks) => jwks,
     Err(e) => {
       log::error!("error getting jwks: {}", e);
@@ -118,7 +118,7 @@ pub async fn jwks(State(state): State<RouterState>) -> impl IntoResponse {
 pub async fn openid_configuration(State(state): State<RouterState>) -> impl IntoResponse {
   let api_url = state.config.api_url();
 
-  let jwks = match list_jwks(&state.database).await {
+  let jwks = match list_jwks(&state.database_connection).await {
     Ok(jwks) => jwks,
     Err(e) => {
       log::error!("error getting jwks: {}", e);
@@ -227,8 +227,12 @@ pub async fn end_session(
     Some(client_id) => client_id,
     None => match end_session_request.id_token_hint {
       Some(id_token_hint) => {
-        match parse_authorization::<BasicClaims>(&state.database, &state.config, &id_token_hint)
-          .await
+        match parse_authorization::<BasicClaims>(
+          &state.database_connection,
+          &state.config,
+          &id_token_hint,
+        )
+        .await
         {
           Ok((token, _jwk)) => token.claims.aud,
           Err(e) => {
@@ -246,20 +250,21 @@ pub async fn end_session(
     },
   };
 
-  let client_model = match clients::get_client_by_client_id(&state.database, &client_id).await {
-    Ok(Some(client_model)) => client_model,
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("client", NOT_FOUND_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("failed to fetch client: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let client_model =
+    match clients::get_client_by_client_id(&state.database_connection, &client_id).await {
+      Ok(Some(client_model)) => client_model,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("client", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("failed to fetch client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let post_logout_redirect_uri = match Url::parse(&end_session_request.post_logout_redirect_uri) {
     Ok(post_logout_redirect_uri) => post_logout_redirect_uri,
@@ -353,7 +358,7 @@ async fn password_grant(
 ) -> Result<Token, HttpError> {
   let (client_id, audience) = if let Some(client_id) = &client_auth.client_id {
     let client_model = validate_client_authentication(
-      &state.database,
+      &state.database_connection,
       client_id,
       &client_auth,
       GRANT_TYPE_PASSWORD,
@@ -368,23 +373,28 @@ async fn password_grant(
     )
   };
 
-  let user = match users::get_user_by_username_or_primary_email(&state.database, &username).await {
-    Ok(Some(user)) => user,
-    Ok(None) => return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR)),
-    Err(e) => {
-      log::error!("error getting user: {}", e);
-      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
-    }
-  };
+  let user =
+    match users::get_user_by_username_or_primary_email(&state.database_connection, &username).await
+    {
+      Ok(Some(user)) => user,
+      Ok(None) => return Err(HttpError::unauthorized().with_error(CREDENTIALS, INVALID_ERROR)),
+      Err(e) => {
+        log::error!("error getting user: {}", e);
+        return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+      }
+    };
 
   let user_password =
-    match users::get_user_active_password_by_user_id(&state.database, user.id).await {
+    match users::get_user_active_password_by_user_id(&state.database_connection, user.id).await {
       Ok(Some(user_password)) => user_password,
       Ok(None) => {
         return Err(HttpError::forbidden().with_error(CREDENTIALS, TOKEN_ISSUE_TYPE_PASSWORD));
       }
       Err(e) => {
-        log::error!("error fetching user password from database: {}", e);
+        log::error!(
+          "error fetching user password from database_connection: {}",
+          e
+        );
         return Err(HttpError::unauthorized().with_application_error(INTERNAL_ERROR));
       }
     };
@@ -401,7 +411,7 @@ async fn password_grant(
     }
   }
 
-  let jwk = match get_jwk_for_sign_and_verify(&state.database).await {
+  let jwk = match get_jwk_for_sign_and_verify(&state.database_connection).await {
     Ok(Some(jwk)) => jwk,
     Ok(None) => {
       log::error!("error no valid jwk for signing and verifying jwts");
@@ -414,7 +424,7 @@ async fn password_grant(
   };
 
   create_user_token(
-    &state.database,
+    &state.database_connection,
     &state.config,
     jwk,
     user,
@@ -432,7 +442,8 @@ async fn refresh_token_grant(
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
   let (token_data, jwk_model) =
-    parse_authorization::<BasicClaims>(&state.database, &state.config, &refresh_token).await?;
+    parse_authorization::<BasicClaims>(&state.database_connection, &state.config, &refresh_token)
+      .await?;
 
   if token_data.claims.r#type != TOKEN_TYPE_REFRESH {
     return Err(HttpError::unauthorized());
@@ -447,7 +458,7 @@ async fn refresh_token_grant(
     token_data.claims.aud.to_owned()
   };
   let client_model = validate_client_authentication(
-    &state.database,
+    &state.database_connection,
     &client_id,
     &client_auth,
     GRANT_TYPE_REFRESH_TOKEN,
@@ -466,7 +477,7 @@ async fn refresh_token_grant(
     }
   };
 
-  let user = match users::get_user_by_id(&state.database, user_id).await {
+  let user = match users::get_user_by_id(&state.database_connection, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -476,7 +487,7 @@ async fn refresh_token_grant(
   };
 
   create_user_token(
-    &state.database,
+    &state.database_connection,
     &state.config,
     jwk_model,
     user,
@@ -494,8 +505,12 @@ async fn authorization_code_grant(
   code_verifier: Option<String>,
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
-  let (token_data, jwk_model) =
-    parse_authorization::<AuthorizationCodeClaims>(&state.database, &state.config, &code).await?;
+  let (token_data, jwk_model) = parse_authorization::<AuthorizationCodeClaims>(
+    &state.database_connection,
+    &state.config,
+    &code,
+  )
+  .await?;
 
   if token_data.claims.basic_claims.r#type != TOKEN_TYPE_AUTHORIZATION_CODE {
     return Err(HttpError::unauthorized());
@@ -527,7 +542,7 @@ async fn authorization_code_grant(
   }
 
   let client_model = validate_client_authentication(
-    &state.database,
+    &state.database_connection,
     &token_data.claims.basic_claims.client,
     &client_auth,
     GRANT_TYPE_AUTHORIZATION_CODE,
@@ -546,7 +561,7 @@ async fn authorization_code_grant(
     }
   };
 
-  let user = match users::get_user_by_id(&state.database, user_id).await {
+  let user = match users::get_user_by_id(&state.database_connection, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => return Err(HttpError::unauthorized()),
     Err(e) => {
@@ -556,7 +571,7 @@ async fn authorization_code_grant(
   };
 
   create_user_token(
-    &state.database,
+    &state.database_connection,
     &state.config,
     jwk_model,
     user,
@@ -657,7 +672,7 @@ pub async fn authorize(
   State(state): State<RouterState>,
   Query(authorize_request): Query<AuthorizeRequest>,
 ) -> impl IntoResponse {
-  authorize_internal(state.database, state.config, authorize_request).await
+  authorize_internal(state.database_connection, state.config, authorize_request).await
 }
 
 #[utoipa::path(
@@ -677,7 +692,7 @@ pub async fn post_authorize(
   State(state): State<RouterState>,
   Json(authorize_request): Json<AuthorizeRequest>,
 ) -> impl IntoResponse {
-  authorize_internal(state.database, state.config, authorize_request).await
+  authorize_internal(state.database_connection, state.config, authorize_request).await
 }
 
 async fn authorize_internal(
@@ -776,7 +791,7 @@ pub async fn register_client(
   };
 
   let (client_model, is_new) = match clients::upsert_client(
-    &state.database,
+    &state.database_connection,
     client_register_request.into(),
     crate::core::encryption::random_bytes,
   )
@@ -836,16 +851,19 @@ pub async fn revoke(
   State(state): State<RouterState>,
   Form(revoke_request): Form<RevokeRequest>,
 ) -> impl IntoResponse {
-  let (token_data, _jwk_model) =
-    match parse_authorization::<BasicClaims>(&state.database, &state.config, &revoke_request.token)
-      .await
-    {
-      Ok(result) => result,
-      Err(e) => {
-        log::error!("failed to parse token for revocation: {}", e);
-        return StatusCode::OK.into_response();
-      }
-    };
+  let (token_data, _jwk_model) = match parse_authorization::<BasicClaims>(
+    &state.database_connection,
+    &state.config,
+    &revoke_request.token,
+  )
+  .await
+  {
+    Ok(result) => result,
+    Err(e) => {
+      log::error!("failed to parse token for revocation: {}", e);
+      return StatusCode::OK.into_response();
+    }
+  };
 
   if let Some(client_id) = &revoke_request.client_auth.client_id {
     if &token_data.claims.aud != client_id {
@@ -856,7 +874,7 @@ pub async fn revoke(
     }
 
     match validate_client_authentication(
-      &state.database,
+      &state.database_connection,
       client_id,
       &revoke_request.client_auth,
       GRANT_TYPE_REVOKE,
@@ -873,7 +891,7 @@ pub async fn revoke(
   }
 
   match revoked_tokens::revoke_token(
-    &state.database,
+    &state.database_connection,
     &revoke_request.token,
     token_data.claims.exp,
   )
@@ -952,20 +970,21 @@ pub async fn client(
     Err(e) => return e.into_response(),
   };
 
-  let client_model = match clients::get_client_by_client_id(&state.database, &client_id).await {
-    Ok(Some(client_model)) => client_model,
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("client", NOT_FOUND_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("error fetching client: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let client_model =
+    match clients::get_client_by_client_id(&state.database_connection, &client_id).await {
+      Ok(Some(client_model)) => client_model,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("client", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("error fetching client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let client: Client = client_model.into();
   axum::Json(client).into_response()
@@ -992,25 +1011,28 @@ pub async fn authorize_client(
   user_authorization: UserAuthorization,
   Json(authorization_request): Json<ClientAuthorizeRequest>,
 ) -> impl IntoResponse {
-  let client_model =
-    match clients::get_client_by_client_id(&state.database, &authorization_request.client_id).await
-    {
-      Ok(Some(client_model)) => client_model,
-      Ok(None) => {
-        return HttpError::not_found()
-          .with_error("client", NOT_FOUND_ERROR)
-          .into_response();
-      }
-      Err(e) => {
-        log::error!("failed to fetch client: {}", e);
-        return HttpError::internal_error()
-          .with_application_error(INTERNAL_ERROR)
-          .into_response();
-      }
-    };
+  let client_model = match clients::get_client_by_client_id(
+    &state.database_connection,
+    &authorization_request.client_id,
+  )
+  .await
+  {
+    Ok(Some(client_model)) => client_model,
+    Ok(None) => {
+      return HttpError::not_found()
+        .with_error("client", NOT_FOUND_ERROR)
+        .into_response();
+    }
+    Err(e) => {
+      log::error!("failed to fetch client: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
 
   match get_user_client_by_client_id(
-    &state.database,
+    &state.database_connection,
     user_authorization.user_model.id,
     &authorization_request.client_id,
   )
@@ -1067,7 +1089,7 @@ pub async fn authorize_client(
     };
 
     match create_user_authorization_code_token(
-      &state.database,
+      &state.database_connection,
       &state.config,
       user_authorization.user_model.id,
       client_model.client_id,
@@ -1122,7 +1144,7 @@ pub async fn is_client_allowed_for_user(
   Query(ClientAllowedQuery { client_id }): Query<ClientAllowedQuery>,
 ) -> impl IntoResponse {
   match get_user_client_by_client_id(
-    &state.database,
+    &state.database_connection,
     user_authorization.user_model.id,
     &client_id,
   )
@@ -1166,24 +1188,25 @@ pub async fn approve_client_for_user(
   user_authorization: UserAuthorization,
   Query(ApproveClientQuery { client_id }): Query<ApproveClientQuery>,
 ) -> impl IntoResponse {
-  let client_model = match clients::get_client_by_client_id(&state.database, &client_id).await {
-    Ok(Some(client)) => client,
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("client", NOT_FOUND_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("error fetching client: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let client_model =
+    match clients::get_client_by_client_id(&state.database_connection, &client_id).await {
+      Ok(Some(client)) => client,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("client", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("error fetching client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let scopes = json_to_string_vec(&client_model.scopes);
   match users::upsert_user_client(
-    &state.database,
+    &state.database_connection,
     user_authorization.user_model.id,
     &client_id,
     scopes,

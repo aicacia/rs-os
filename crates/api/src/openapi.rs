@@ -8,11 +8,7 @@ use utoipa::{
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::{
-  error::{HttpError, INTERNAL_ERROR},
-  middleware::AUTHORIZATION_HEADER,
-  state::RouterState,
-};
+use crate::{INTERNAL_ERROR, error::HttpError, middleware::AUTHORIZATION_HEADER};
 
 pub const TAG: &str = "openapi";
 pub const DESCRIPTION: &str = "Open API endpoints";
@@ -65,13 +61,13 @@ impl Modify for ServersAddon {
     (status = 500, description = "Internal server error", body = HttpError)
   )
 )]
-pub async fn get_openapi<C>(
-  State((state, mut openapi)): State<(RouterState<C>, OpenApiSpec)>,
+pub async fn get_openapi<F>(
+  State((base_api_url, mut openapi)): State<(F, OpenApiSpec)>,
 ) -> impl IntoResponse
 where
-  C: crate::config::AppConfig,
+  F: Fn() -> Result<String, url::ParseError>,
 {
-  let base_api_url = match state.config.base_api_url() {
+  let base_api_url = match base_api_url() {
     Ok(base_api_url) => base_api_url,
     Err(e) => {
       log::error!("Failed to get base_api_url from config: {}", e);
@@ -84,13 +80,13 @@ where
   axum::Json(openapi).into_response()
 }
 
-pub fn create_router<C>(
-  router_state: RouterState<C>,
+pub fn create_router<F>(
+  base_api_url: F,
   mut openapi_spec: OpenApiSpec,
   prefix_optional: Option<&str>,
 ) -> OpenApiRouter
 where
-  C: crate::config::AppConfig + 'static,
+  F: Fn() -> Result<String, url::ParseError> + Clone + Send + Sync + 'static,
 {
   let mut schemas = Vec::<(String, RefOr<Schema>)>::new();
   let (path, item, types) = routes!(@resolve_types get_openapi : schemas);
@@ -103,7 +99,7 @@ where
 
   let mut openapi_router = OpenApiRouter::new()
     .routes(routes!(get_openapi))
-    .with_state((router_state, openapi_spec));
+    .with_state((base_api_url, openapi_spec));
 
   if let Some(prefix) = prefix_optional {
     openapi_router = OpenApiRouter::new().nest(prefix, openapi_router)

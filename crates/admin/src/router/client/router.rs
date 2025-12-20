@@ -45,7 +45,7 @@ pub async fn client_by_client_id(
     Err(e) => return e.into_response(),
   }
 
-  let client_model = match get_client_by_id(&state.database, client_id).await {
+  let client_model = match get_client_by_id(&state.database_connection, client_id).await {
     Ok(Some(client)) => client,
     Ok(None) => {
       return HttpError::not_found()
@@ -88,7 +88,7 @@ pub async fn client_list(
     Err(e) => return e.into_response(),
   }
 
-  match list_clients(&state.database).await {
+  match list_clients(&state.database_connection).await {
     Ok(clients) => {
       let clients: Vec<Client> = clients.into_iter().map(|c| c.into()).collect();
       axum::Json(clients).into_response()
@@ -130,7 +130,7 @@ pub async fn client_create(
   }
 
   let (client_model, is_new) = match upsert_client(
-    &state.database,
+    &state.database_connection,
     client_upsert_request.into(),
     crate::core::encryption::random_bytes,
   )
@@ -181,7 +181,7 @@ pub async fn client_update(
     Err(e) => return e.into_response(),
   }
 
-  let existing_client = match get_client_by_id(&state.database, client_id).await {
+  let existing_client = match get_client_by_id(&state.database_connection, client_id).await {
     Ok(Some(client)) => client,
     Ok(None) => {
       return HttpError::not_found()
@@ -202,7 +202,7 @@ pub async fn client_update(
   }
 
   let (client_model, _is_new) = match upsert_client(
-    &state.database,
+    &state.database_connection,
     client_upsert_request.into(),
     crate::core::encryption::random_bytes,
   )
@@ -247,7 +247,7 @@ pub async fn client_delete(
     Err(e) => return e.into_response(),
   }
 
-  match deactivate_client(&state.database, &client_id).await {
+  match deactivate_client(&state.database_connection, &client_id).await {
     Ok(Some(_client_model)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("client", NOT_FOUND_ERROR)

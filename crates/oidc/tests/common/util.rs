@@ -6,8 +6,8 @@ use os_model::{
   entities::jwks::{create_jwk, generate_jwk, list_jwks},
 };
 use os_oidc::{
-  core::config::AppConfig,
-  router::{create_router, entity::RouterState},
+  config::AppConfig,
+  router::{create_openapi_router, entity::RouterState},
 };
 use tokio::{fs::remove_file, runtime::Handle, task::block_in_place};
 use tokio_util::sync::CancellationToken;
@@ -50,13 +50,14 @@ pub async fn setup() -> Result<
   }
 
   let cancellation_token = CancellationToken::new();
-  let router = create_router(
+  let router = create_openapi_router(
     RouterState {
-      database: db.clone(),
+      database_connection: db.clone(),
       config: config.clone(),
     },
     None,
-  );
+  )
+  .into();
 
   let teardown_config = config.clone();
   let teardown_db = db.clone();

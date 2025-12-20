@@ -8,7 +8,7 @@ pub mod state;
 pub mod util;
 
 pub use claims::{BasicClaims, Claims};
-pub use config::{AppConfig, Environment, ServerConfig};
+pub use config::{Environment, ServerConfig};
 pub use error::{
   ALREADY_EXISTS_ERROR, ALREADY_USED_ERROR, APPLICATION, CREDENTIALS, Errors, HttpError,
   HttpErrorMessage, HttpErrorMessages, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR,

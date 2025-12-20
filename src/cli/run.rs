@@ -11,13 +11,16 @@ use clap::Parser;
 use os_cli::{run::shutdown_signal, serve::serve};
 use os_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use tokio_util::sync::CancellationToken;
+use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[cfg(feature = "completions")]
 use crate::cli::completions;
 use crate::{
   cli::args::{CliArgs, CliCommand},
-  config::{ADMIN_UI_URL_PREFIX, AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX},
+  config::{
+    ADMIN_API_URL_PREFIX, ADMIN_UI_URL_PREFIX, AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX,
+  },
 };
 
 pub async fn run() -> io::Result<()> {
@@ -72,21 +75,33 @@ pub async fn run() -> io::Result<()> {
     .map_err(io::Error::other)?;
   }
 
-  let oidc_router = os_oidc::router::create_router(
+  let oidc_openapi_router = os_oidc::router::create_openapi_router(
     os_oidc::router::entity::RouterState {
-      database: database_connection.clone(),
+      database_connection: database_connection.clone(),
       config: Arc::new(app_config.oidc_api.clone()),
     },
     Some(OIDC_API_URL_PREFIX),
   );
   let oidc_ui_router = os_oidc_ui_embed::router::create_router(Some(OIDC_UI_URL_PREFIX));
 
+  let admin_openapi_router = os_admin::router::create_openapi_router(
+    os_admin::router::entity::RouterState {
+      database_connection: database_connection.clone(),
+      config: Arc::new(app_config.admin_api.clone()),
+    },
+    Some(ADMIN_API_URL_PREFIX),
+  );
   let admin_ui_router = os_admin_ui_embed::router::create_router(Some(ADMIN_UI_URL_PREFIX));
 
   let router = Router::new()
-    .merge(oidc_router)
-    .merge(oidc_ui_router)
-    .merge(admin_ui_router);
+    .merge(oidc_openapi_router)
+    .merge(admin_openapi_router)
+    .layer(CorsLayer::very_permissive())
+    .layer(TraceLayer::new_for_http())
+    .merge(oidc_ui_router.reset_fallback())
+    .merge(admin_ui_router.reset_fallback())
+    .layer(CompressionLayer::new().gzip(app_config.server.gzip))
+    .into();
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {
     let addr = SocketAddr::from((

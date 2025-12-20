@@ -5,21 +5,19 @@ use axum::{
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 
+use crate::router::{
+  common::permissions::Permission,
+  entity::RouterState,
+  error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
+  middleware::user_authorization::UserAuthorization,
+  user_email::{
+    constants::TAG,
+    entity::{CreateUserEmailRequest, UpdateUserEmailRequest, UserEmail},
+  },
+};
 use os_model::entities::user_emails::{
   create_user_email, delete_user_email, get_user_email_by_id, list_user_emails_by_user_id,
   update_user_email_primary, verify_user_email,
-};
-use crate::{
-  router::{
-    common::permissions::Permission,
-    entity::RouterState,
-    error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
-    middleware::user_authorization::UserAuthorization,
-    user_email::{
-      constants::TAG,
-      entity::{CreateUserEmailRequest, UpdateUserEmailRequest, UserEmail},
-    },
-  },
 };
 
 #[utoipa::path(
@@ -58,7 +56,7 @@ pub async fn list_user_emails(
     }
   }
 
-  match list_user_emails_by_user_id(&state.database, user_id_parsed).await {
+  match list_user_emails_by_user_id(&state.database_connection, user_id_parsed).await {
     Ok(emails) => {
       let emails: Vec<UserEmail> = emails.into_iter().map(|e| e.into()).collect();
       axum::Json(emails).into_response()
@@ -118,7 +116,7 @@ pub async fn get_user_email(
     }
   }
 
-  let email_model = match get_user_email_by_id(&state.database, email_id_parsed).await {
+  let email_model = match get_user_email_by_id(&state.database_connection, email_id_parsed).await {
     Ok(Some(email)) => {
       if email.user_id != user_id_parsed {
         return HttpError::not_found()
@@ -183,15 +181,16 @@ pub async fn create_user_email_handler(
     }
   }
 
-  let email_model = match create_user_email(&state.database, user_id_parsed, &request.email).await {
-    Ok(email) => email,
-    Err(e) => {
-      log::error!("error creating user email: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let email_model =
+    match create_user_email(&state.database_connection, user_id_parsed, &request.email).await {
+      Ok(email) => email,
+      Err(e) => {
+        log::error!("error creating user email: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let email: UserEmail = email_model.into();
   (axum::http::StatusCode::CREATED, axum::Json(email)).into_response()
@@ -248,21 +247,26 @@ pub async fn update_user_email_handler(
 
   if let Some(is_primary) = request.is_primary {
     if is_primary {
-      let email_model =
-        match update_user_email_primary(&state.database, user_id_parsed, email_id_parsed).await {
-          Ok(Some(email)) => email,
-          Ok(None) => {
-            return HttpError::not_found()
-              .with_error("email", NOT_FOUND_ERROR)
-              .into_response();
-          }
-          Err(e) => {
-            log::error!("error updating user email primary: {}", e);
-            return HttpError::internal_error()
-              .with_application_error(INTERNAL_ERROR)
-              .into_response();
-          }
-        };
+      let email_model = match update_user_email_primary(
+        &state.database_connection,
+        user_id_parsed,
+        email_id_parsed,
+      )
+      .await
+      {
+        Ok(Some(email)) => email,
+        Ok(None) => {
+          return HttpError::not_found()
+            .with_error("email", NOT_FOUND_ERROR)
+            .into_response();
+        }
+        Err(e) => {
+          log::error!("error updating user email primary: {}", e);
+          return HttpError::internal_error()
+            .with_application_error(INTERNAL_ERROR)
+            .into_response();
+        }
+      };
 
       let email: UserEmail = email_model.into();
       return axum::Json(email).into_response();
@@ -270,7 +274,7 @@ pub async fn update_user_email_handler(
   }
 
   // If no changes, just return the current email
-  match get_user_email_by_id(&state.database, email_id_parsed).await {
+  match get_user_email_by_id(&state.database_connection, email_id_parsed).await {
     Ok(Some(email)) => {
       if email.user_id != user_id_parsed {
         return HttpError::not_found()
@@ -338,7 +342,7 @@ pub async fn delete_user_email_handler(
     }
   }
 
-  match delete_user_email(&state.database, user_id_parsed, email_id_parsed).await {
+  match delete_user_email(&state.database_connection, user_id_parsed, email_id_parsed).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("email", NOT_FOUND_ERROR)
@@ -396,20 +400,21 @@ pub async fn verify_user_email_handler(
     Err(e) => return e.into_response(),
   }
 
-  let email_model = match verify_user_email(&state.database, user_id_parsed, email_id_parsed).await {
-    Ok(Some(email)) => email,
-    Ok(None) => {
-      return HttpError::not_found()
-        .with_error("email", NOT_FOUND_ERROR)
-        .into_response();
-    }
-    Err(e) => {
-      log::error!("error verifying user email: {}", e);
-      return HttpError::internal_error()
-        .with_application_error(INTERNAL_ERROR)
-        .into_response();
-    }
-  };
+  let email_model =
+    match verify_user_email(&state.database_connection, user_id_parsed, email_id_parsed).await {
+      Ok(Some(email)) => email,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("email", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("error verifying user email: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
 
   let email: UserEmail = email_model.into();
   axum::Json(email).into_response()

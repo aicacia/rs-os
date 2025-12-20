@@ -42,7 +42,7 @@ pub async fn user_list(
     Err(e) => return e.into_response(),
   }
 
-  match list_users(&state.database).await {
+  match list_users(&state.database_connection).await {
     Ok(users) => {
       let users: Vec<User> = users.into_iter().map(|u| u.into()).collect();
       axum::Json(users).into_response()
@@ -81,7 +81,7 @@ pub async fn get_user(
     Err(e) => return e.into_response(),
   }
 
-  let user_model = match get_user_by_id(&state.database, user_id).await {
+  let user_model = match get_user_by_id(&state.database_connection, user_id).await {
     Ok(Some(user)) => user,
     Ok(None) => {
       return HttpError::not_found()
@@ -126,7 +126,7 @@ pub async fn create_user_handler(
     Err(e) => return e.into_response(),
   }
 
-  let user_model = match create_user(&state.database, &request.username).await {
+  let user_model = match create_user(&state.database_connection, &request.username).await {
     Ok(user) => user,
     Err(e) => {
       log::error!("error creating user: {}", e);
@@ -168,7 +168,7 @@ pub async fn update_user_handler(
     Err(e) => return e.into_response(),
   }
 
-  let user_model = match update_user(&state.database, user_id, &request.username).await {
+  let user_model = match update_user(&state.database_connection, user_id, &request.username).await {
     Ok(user) => user,
     Err(e) => {
       log::error!("error updating user: {}", e);
@@ -205,7 +205,7 @@ pub async fn delete_user_handler(
     Err(e) => return e.into_response(),
   }
 
-  match delete_user(&state.database, user_id).await {
+  match delete_user(&state.database_connection, user_id).await {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("user", NOT_FOUND_ERROR)
