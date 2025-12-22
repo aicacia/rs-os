@@ -3,8 +3,6 @@ pub use os_api::claims::{BasicClaims, Claims};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::router::common::helper::to_public_jwk;
-
 #[derive(Serialize, ToSchema)]
 pub struct Token {
   pub access_token: String,
@@ -200,7 +198,6 @@ pub trait EncodeClaims: Claims {
       }
     };
     let mut header = jsonwebtoken::Header::new(algorithm);
-    header.jwk = Some(to_public_jwk(jwk));
     match &jwk.common.key_id {
       Some(kid) => {
         header.kid = Some(kid.clone());

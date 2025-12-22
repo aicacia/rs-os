@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
+use os_api::Authorization;
 use os_api::error::INVALID_TYPE_ERROR;
 
 use crate::router::{
@@ -17,7 +18,6 @@ use crate::router::{
   current_user::entity::{CurrentUser, UserOAuth2Provider, UserRole},
   entity::RouterState,
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
-  middleware::authorization::Authorization,
 };
 use os_model::entities::{
   user_emails::list_user_emails_by_user_id,

@@ -67,12 +67,8 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
   };
-  let kid = match header
-    .jwk
-    .as_ref()
-    .and_then(|jwk| jwk.common.key_id.as_ref())
-  {
-    Some(kid) => kid.to_owned(),
+  let kid = match header.kid.to_owned() {
+    Some(kid) => kid,
     None => {
       log::error!("invalid authorization kid is missing");
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));

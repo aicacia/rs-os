@@ -97,6 +97,7 @@ tracing-subscriber = { version = "0.3", features = [
   "tracing-log",
   "env-filter",
 ], default-features = false, optional = true }
+tracing-log = { version = "0.2", default-features = false, optional = true }
 tower-http = { version = "0.6", features = [
   "cors",
   "trace",
@@ -124,6 +125,7 @@ completions = ["dep:clap_complete"]
 bin = [
   "dep:clap",
   "dep:tracing-subscriber",
+  "dep:tracing-log",
   "dep:dotenvy",
   "dep:os-cli",
   "dep:tower-http",

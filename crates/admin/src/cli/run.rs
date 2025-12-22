@@ -12,6 +12,7 @@ use os_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use tokio_util::sync::CancellationToken;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::layer::SubscriberExt;
+use tracing_log::LogTracer;
 
 #[cfg(feature = "completions")]
 use crate::cli::completions;
@@ -37,6 +38,8 @@ pub async fn run() -> io::Result<()> {
       return Err(io::Error::other(e));
     }
   });
+
+  LogTracer::init().map_err(|e| io::Error::other(format!("failed to init log tracer: {}", e)))?;
 
   let level = tracing::Level::from_str(&app_config.log_level).unwrap_or(tracing::Level::DEBUG);
   let subscriber = tracing_subscriber::registry()

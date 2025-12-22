@@ -1868,6 +1868,7 @@ dependencies = [
  "tokio-util",
  "tower-http",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
 ]
 
@@ -1911,6 +1912,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
  "url",
  "utoipa",
@@ -1937,6 +1939,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
 ]
 
@@ -2043,6 +2046,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
  "url",
  "utoipa",
@@ -2069,6 +2073,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
 ]
 

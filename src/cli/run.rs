@@ -11,6 +11,7 @@ use clap::Parser;
 use os_cli::{run::shutdown_signal, serve::serve};
 use tokio_util::sync::CancellationToken;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
+use tracing_log::LogTracer;
 use tracing_subscriber::layer::SubscriberExt;
 
 #[cfg(feature = "completions")]
@@ -39,6 +40,8 @@ pub async fn run() -> io::Result<()> {
       return Err(io::Error::other(e));
     }
   });
+
+  LogTracer::init().map_err(|e| io::Error::other(format!("failed to init log tracer: {}", e)))?;
 
   let level =
     tracing::Level::from_str(&app_config.as_ref().log_level).unwrap_or(tracing::Level::DEBUG);
