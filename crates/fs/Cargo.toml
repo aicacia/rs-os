@@ -6,7 +6,7 @@ authors = ["nathanfaucett@gmail.com"]
 description = "Aicacia OS File System."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/aicacia/rs-os"
-rust-version = "1.91"
+rust-version = "1.92"
 
 [dependencies]
 os-api = { version = "0.1", path = "../api", default-features = false }

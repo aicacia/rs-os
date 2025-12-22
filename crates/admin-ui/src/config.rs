@@ -1,27 +1,7 @@
-use std::{
-  net::{IpAddr, Ipv4Addr},
-  path::Path,
-};
+use std::path::Path;
 
+use os_api::config::ServerConfig;
 use serde::Deserialize;
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(default)]
-pub struct ServerConfig {
-  pub host: IpAddr,
-  pub port: u16,
-  pub gzip: bool,
-}
-
-impl Default for ServerConfig {
-  fn default() -> Self {
-    Self {
-      host: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
-      port: 3000,
-      gzip: true,
-    }
-  }
-}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]

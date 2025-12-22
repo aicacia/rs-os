@@ -6,7 +6,7 @@ authors = ["nathanfaucett@gmail.com"]
 description = "Aicacia OS Admin API."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/aicacia/rs-os"
-rust-version = "1.91"
+rust-version = "1.92"
 
 [dependencies]
 axum = { version = "0.8", features = [
@@ -74,11 +74,6 @@ tokio = { version = "1.48", features = [
   "signal",
 ], default-features = false }
 tokio-util = { version = "0.7", features = ["io"], default-features = false }
-tower-http = { version = "0.6", features = [
-  "cors",
-  "trace",
-  "compression-gzip",
-], default-features = false }
 tracing = { version = "0.1", features = ["std"], default-features = false }
 url = { version = "2.5", default-features = false }
 utoipa = { version = "5.4", features = [
@@ -93,17 +88,44 @@ validator = { version = "0.20", features = [
   "derive",
 ], default-features = false }
 
-[dev-dependencies]
+# bin dependencies
+dotenvy = { version = "0.15", default-features = false, optional = true }
 tracing-subscriber = { version = "0.3", features = [
   "ansi",
   "fmt",
   "std",
   "tracing-log",
   "env-filter",
-], default-features = false }
+], default-features = false, optional = true }
+tower-http = { version = "0.6", features = [
+  "cors",
+  "trace",
+  "compression-gzip",
+], default-features = false, optional = true }
+os-cli = { version = "0.1", path = "../cli", default-features = false, optional = true }
+clap = { version = "4.5", features = [
+  "std",
+  "derive",
+  "help",
+], default-features = false, optional = true }
+clap_complete = { version = "4.5", optional = true, default-features = false }
+
+[dev-dependencies]
+tracing-subscriber = "0.3"
 dotenvy = "0.15"
 scopeguard = "1.2"
 tower = "0.5"
 
 [lib]
 name = "os_admin"
+
+[features]
+completions = ["dep:clap_complete"]
+bin = [
+  "dep:clap",
+  "dep:tracing-subscriber",
+  "dep:dotenvy",
+  "dep:os-cli",
+  "dep:tower-http",
+]
+default = ["bin", "completions"]

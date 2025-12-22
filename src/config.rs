@@ -39,9 +39,9 @@ pub struct AppConfig {
   pub server: ServerConfig,
   pub database: os_model::DatabaseConfig,
   pub oidc_api: os_oidc::config::AppConfig,
-  pub oidc_ui: os_oidc_ui_embed::config::AppConfig,
-  pub admin_api: os_admin::core::config::AppConfig,
-  pub admin_ui: os_admin_ui_embed::config::AppConfig,
+  pub oidc_ui: os_oidc_ui::config::AppConfig,
+  pub admin_api: os_admin::config::AppConfig,
+  pub admin_ui: os_admin_ui::config::AppConfig,
   pub log_level: String,
   pub url: Option<String>,
 }

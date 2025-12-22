@@ -9,7 +9,7 @@ pub fn run(shell: Shell) {
   generate(
     shell,
     &mut CliCommand::command(),
-    env!("CARGO_PKG_NAME"),
+    env!("CARGO_CRATE_NAME"),
     &mut io::stdout(),
   );
 }

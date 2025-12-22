@@ -1,4 +1,4 @@
-use crate::{core::config::AppConfig, router::common::entity::Claims};
+use crate::{config::AppConfig, router::common::entity::Claims};
 
 pub fn parse_jwt<T>(
   jwt: &str,

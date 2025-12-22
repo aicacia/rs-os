@@ -10,7 +10,7 @@ use os_model::entities::{
 };
 
 use crate::{
-  core::config::AppConfig,
+  config::AppConfig,
   router::{
     common::{entity::Claims, helper::parse_jwt},
     entity::RouterState,

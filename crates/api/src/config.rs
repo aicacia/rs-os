@@ -20,13 +20,26 @@ impl Default for ServerConfig {
   }
 }
 
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Environment {
-  #[default]
   Local,
   Development,
   Production,
+}
+
+impl Default for Environment {
+  fn default() -> Self {
+    match std::env::var("APP_ENV") {
+      Ok(env) => match env.as_str() {
+        "local" => Environment::Local,
+        "development" => Environment::Development,
+        "production" => Environment::Production,
+        _ => Environment::Local,
+      },
+      Err(_) => Environment::Local,
+    }
+  }
 }
 
 impl Environment {

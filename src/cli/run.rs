@@ -12,7 +12,7 @@ use os_cli::{run::shutdown_signal, serve::serve};
 use os_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use tokio_util::sync::CancellationToken;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::layer::SubscriberExt;
 
 #[cfg(feature = "completions")]
 use crate::cli::completions;
@@ -28,32 +28,35 @@ pub async fn run() -> io::Result<()> {
 
   match dotenvy::dotenv() {
     Ok(_) => {}
-    Err(e) => return Err(io::Error::other(e)),
+    Err(e) => {
+      eprintln!("failed to load .env file: {}", e);
+    }
   }
 
   let app_config = Arc::new(match AppConfig::try_from(Path::new(&args.config)) {
     Ok(app_config) => app_config,
     Err(e) => {
-      log::error!("failed to load config {:?}: {}", args.config, e);
+      eprintln!("failed to load config {:?}: {}", args.config, e);
       return Err(io::Error::other(e));
     }
   });
 
   let level =
     tracing::Level::from_str(&app_config.as_ref().log_level).unwrap_or(tracing::Level::DEBUG);
-  tracing_subscriber::registry()
+  let subscriber = tracing_subscriber::registry()
     .with(
       tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         format!(
           "{}={level},tower_http={level},axum::rejection=trace",
-          env!("CARGO_PKG_NAME"),
+          env!("CARGO_CRATE_NAME"),
           level = level.as_str().to_lowercase()
         )
         .into()
       }),
     )
-    .with(tracing_subscriber::fmt::layer())
-    .init();
+    .with(tracing_subscriber::fmt::layer());
+  tracing::subscriber::set_global_default(subscriber)
+    .map_err(|e| io::Error::other(format!("failed to set tracing subscriber: {}", e)))?;
 
   let cancellation_token = CancellationToken::new();
 
@@ -82,7 +85,7 @@ pub async fn run() -> io::Result<()> {
     },
     Some(OIDC_API_URL_PREFIX),
   );
-  let oidc_ui_router = os_oidc_ui_embed::router::create_router(Some(OIDC_UI_URL_PREFIX));
+  let oidc_ui_router = os_oidc_ui::router::create_router(Some(OIDC_UI_URL_PREFIX));
 
   let admin_openapi_router = os_admin::router::create_openapi_router(
     os_admin::router::entity::RouterState {
@@ -91,7 +94,7 @@ pub async fn run() -> io::Result<()> {
     },
     Some(ADMIN_API_URL_PREFIX),
   );
-  let admin_ui_router = os_admin_ui_embed::router::create_router(Some(ADMIN_UI_URL_PREFIX));
+  let admin_ui_router = os_admin_ui::router::create_router(Some(ADMIN_UI_URL_PREFIX));
 
   let router = Router::new()
     .merge(oidc_openapi_router)
