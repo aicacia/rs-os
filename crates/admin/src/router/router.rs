@@ -1,10 +1,10 @@
+use os_api::SecurityAddon;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::router::{
-  client, common::permissions::Permission, current_user, entity::RouterState,
-  openapi::utoipa::SecurityAddon, user, user_email, user_oauth2_provider, user_phone_number,
-  user_role, util,
+  client, common::permissions::Permission, current_user, entity::RouterState, user, user_email,
+  user_oauth2_provider, user_phone_number, user_role, util,
 };
 
 #[derive(OpenApi)]
@@ -40,11 +40,11 @@ pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) 
 
   let openapi_spec = openapi_router.get_openapi().clone();
 
-  let base_api_url_app_config = state.config.clone();
-  let base_api_url = move || base_api_url_app_config.base_api_url();
+  let base_url_app_config = state.config.clone();
+  let base_url = move || base_url_app_config.base_url();
 
   openapi_router.merge(os_api::openapi::create_router(
-    base_api_url,
+    base_url,
     openapi_spec,
     prefix_optional,
   ))

@@ -12,7 +12,7 @@ where
   let mut validation = jsonwebtoken::Validation::new(algorithm);
   validation.validate_nbf = true;
   validation.validate_aud = false;
-  validation.set_issuer(&[app_config.api_url()]);
+  validation.set_issuer(&[app_config.url()]);
 
   jsonwebtoken::decode(jwt, &decoding_key, &validation)
 }

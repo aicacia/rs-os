@@ -35,7 +35,7 @@ pub(crate) async fn create_user_token(
 ) -> Result<Token, HttpError> {
   let now = chrono::Utc::now();
 
-  let issuer = app_config.api_url();
+  let issuer = app_config.url();
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id.to_string(),
@@ -246,7 +246,7 @@ pub(crate) async fn create_user_authorization_code_token(
 
   let now = chrono::Utc::now();
 
-  let issuer = app_config.api_url();
+  let issuer = app_config.url();
   let claims = AuthorizationCodeClaims {
     basic_claims: BasicClaims {
       r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
@@ -309,7 +309,7 @@ where
   let mut validation = jsonwebtoken::Validation::new(algorithm);
   validation.validate_nbf = true;
   validation.validate_aud = false;
-  validation.set_issuer(&[app_config.api_url()]);
+  validation.set_issuer(&[app_config.url()]);
 
   jsonwebtoken::decode(jwt, &decoding_key, &validation)
 }

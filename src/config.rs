@@ -44,6 +44,7 @@ pub struct AppConfig {
   pub admin_ui: os_admin_ui::config::AppConfig,
   pub log_level: String,
   pub url: Option<String>,
+  pub ui_url: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -57,6 +58,7 @@ impl Default for AppConfig {
       admin_ui: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: None,
+      ui_url: None,
     }
   }
 }
@@ -81,9 +83,14 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
 
     app_config.oidc_api.database = app_config.database.clone();
 
+    if let Some(ui_url) = &app_config.ui_url {
+      if app_config.oidc_api.ui_url.is_none() {
+        app_config.oidc_api.ui_url = Some(format!("{}{}", ui_url, OIDC_UI_URL_PREFIX));
+      }
+    }
     if let Some(url) = &app_config.url {
-      if app_config.oidc_api.api_url.is_none() {
-        app_config.oidc_api.api_url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
+      if app_config.oidc_api.url.is_none() {
+        app_config.oidc_api.url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
       }
       if app_config.oidc_api.ui_url.is_none() {
         app_config.oidc_api.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
@@ -104,9 +111,14 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
 
     app_config.admin_api.database = app_config.database.clone();
 
+    if let Some(ui_url) = &app_config.ui_url {
+      if app_config.admin_api.ui_url.is_none() {
+        app_config.admin_api.ui_url = Some(format!("{}{}", ui_url, ADMIN_UI_URL_PREFIX));
+      }
+    }
     if let Some(url) = &app_config.url {
-      if app_config.admin_api.api_url.is_none() {
-        app_config.admin_api.api_url = Some(format!("{}{}", url, ADMIN_API_URL_PREFIX));
+      if app_config.admin_api.url.is_none() {
+        app_config.admin_api.url = Some(format!("{}{}", url, ADMIN_API_URL_PREFIX));
       }
       if app_config.admin_api.ui_url.is_none() {
         app_config.admin_api.ui_url = Some(format!("{}{}", url, ADMIN_UI_URL_PREFIX));

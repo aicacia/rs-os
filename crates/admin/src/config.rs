@@ -91,7 +91,7 @@ pub struct AppConfig {
   pub user: UserConfig,
   pub oauth2: OAuth2,
   pub token: TokenConfig,
-  pub api_url: Option<String>,
+  pub url: Option<String>,
   pub ui_url: Option<String>,
 }
 
@@ -106,22 +106,22 @@ impl Default for AppConfig {
       user: UserConfig::default(),
       oauth2: OAuth2::default(),
       token: TokenConfig::default(),
-      api_url: None,
+      url: None,
       ui_url: None,
     }
   }
 }
 
 impl AppConfig {
-  pub fn api_url(&self) -> String {
+  pub fn url(&self) -> String {
     self
-      .api_url
+      .url
       .to_owned()
       .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
   }
 
-  pub fn base_api_url(&self) -> Result<String, url::ParseError> {
-    let url = url::Url::parse(&self.api_url())?;
+  pub fn base_url(&self) -> Result<String, url::ParseError> {
+    let url = url::Url::parse(self.url().as_ref())?;
     Ok(url.origin().unicode_serialization())
   }
 }

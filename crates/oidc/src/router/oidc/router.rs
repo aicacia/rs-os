@@ -116,7 +116,7 @@ pub async fn jwks(State(state): State<RouterState>) -> impl IntoResponse {
   )
 )]
 pub async fn openid_configuration(State(state): State<RouterState>) -> impl IntoResponse {
-  let api_url = state.config.api_url();
+  let api_url = state.config.url();
 
   let jwks = match list_jwks(&state.database_connection).await {
     Ok(jwks) => jwks,
@@ -234,7 +234,7 @@ pub async fn end_session(
         )
         .await
         {
-          Ok((token, _jwk)) => token.claims.aud,
+          Ok((token, _jwk)) => token.claims.client,
           Err(e) => {
             log::error!("failed to parse id_token_hint: {}", e);
             return e.into_response();
@@ -368,8 +368,8 @@ async fn password_grant(
     (client_id.to_owned(), client_model.audience.clone())
   } else {
     (
-      state.config.api_url(),
-      string_vec_to_json(&vec![state.config.api_url()]),
+      state.config.url(),
+      string_vec_to_json(&vec![state.config.url()]),
     )
   };
 
@@ -450,12 +450,12 @@ async fn refresh_token_grant(
   }
 
   let client_id = if let Some(client_id) = &client_auth.client_id {
-    if client_id != &token_data.claims.aud {
+    if client_id != &token_data.claims.client {
       return Err(HttpError::unauthorized().with_error("client_id", INVALID_ERROR));
     }
     client_id.to_owned()
   } else {
-    token_data.claims.aud.to_owned()
+    token_data.claims.client.to_owned()
   };
   let client_model = validate_client_authentication(
     &state.database_connection,
@@ -866,7 +866,7 @@ pub async fn revoke(
   };
 
   if let Some(client_id) = &revoke_request.client_auth.client_id {
-    if &token_data.claims.aud != client_id {
+    if &token_data.claims.client != client_id {
       log::error!("client_id mismatch: token belongs to different client");
       return HttpError::unauthorized()
         .with_error("client_id", INVALID_ERROR)

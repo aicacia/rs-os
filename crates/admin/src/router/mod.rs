@@ -3,7 +3,6 @@ pub mod common;
 pub mod current_user;
 pub mod entity;
 pub mod middleware;
-pub mod openapi;
 mod router;
 pub mod user;
 pub mod user_email;

@@ -2,7 +2,6 @@ pub mod common;
 pub mod entity;
 pub mod middleware;
 pub mod oidc;
-pub mod openapi;
 mod router;
 pub mod util;
 
