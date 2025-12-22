@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { User } from '$lib/common/openapi/oidc/models';
+	import type { User } from '$lib/common/openapi/admin/models';
 	import { Edit, Trash2 } from '@lucide/svelte';
 	import { m } from '$lib/paraglide/messages';
 

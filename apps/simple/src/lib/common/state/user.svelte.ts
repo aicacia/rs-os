@@ -36,7 +36,7 @@ const userSettings = browser
 					auth_method: 'none',
 					grant_types: ['authorization_code', 'refresh_token'],
 					response_types: ['code'],
-					scopes: ['openid', 'profile', 'address', 'offline', 'email', 'phone_number'],
+					scopes: ['openid', 'profile', 'address', 'offline', 'email', 'phone'],
 					audience: [`${PUBLIC_URL}`],
 					access_token_expires_in_seconds: 3600,
 					id_token_expires_in_seconds: 3600,

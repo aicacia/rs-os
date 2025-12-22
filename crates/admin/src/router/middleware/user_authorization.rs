@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
+use os_api::error::INVALID_TYPE_ERROR;
 
 use crate::router::{
   common::{
@@ -191,7 +192,7 @@ where
     let authorization = Authorization::<BasicClaims>::from_request_parts(parts, state).await?;
 
     if authorization.claims.r#type != TOKEN_TYPE_BEARER {
-      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, "invalid-token-type"));
+      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_TYPE_ERROR));
     }
 
     let user_id = match authorization.claims.sub.parse::<i64>() {

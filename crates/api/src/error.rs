@@ -17,6 +17,7 @@ pub const CREDENTIALS: &str = "credentials";
 pub const REQUIRED_ERROR: &str = "required";
 pub const NOT_FOUND_ERROR: &str = "not_found";
 pub const INVALID_ERROR: &str = "invalid";
+pub const INVALID_TYPE_ERROR: &str = "invalid_type";
 pub const INTERNAL_ERROR: &str = "internal";
 pub const NOT_ALLOWED_ERROR: &str = "not_allowed";
 pub const NOT_SUPPORTED_ERROR: &str = "not_supported";

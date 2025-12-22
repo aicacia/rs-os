@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * os-oidc
- * Aicacia OS API.
+ * Aicacia OS OIDC API.
  *
  * The version of the OpenAPI document: 0.1.0
  * 

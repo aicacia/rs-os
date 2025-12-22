@@ -1,13 +1,13 @@
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { Permission } from '../openapi/oidc';
-	import { hasPermission, logout } from '../state/currentUser.svelte';
+	import { Permission, type OpenIdClaims } from '../openapi/admin';
+	import { getUserManager, hasPermission } from '../state/user.svelte';
 	import { ChevronLeft, LogOut } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	export interface SidebarProps {
-		user: CurrentUser;
+		user: OpenIdClaims;
 		children: Snippet<[]>;
 	}
 </script>
@@ -23,8 +23,7 @@
 		open = !open;
 	}
 	async function onLogout() {
-		logout();
-		await goto(resolve('/signin'));
+		await getUserManager().signoutCallback();
 	}
 </script>
 

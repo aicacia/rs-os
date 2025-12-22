@@ -3,11 +3,9 @@ import {
 	type ConfigurationParameters,
 	CurrentUserApi,
 	ClientApi,
-	OidcApi,
-	PasswordApi,
 	UserApi
-} from './oidc';
-import { PUBLIC_OS_OIDC_API_URL } from '$env/static/public';
+} from './admin';
+import { PUBLIC_OS_ADMIN_API_URL } from '$env/static/public';
 
 let authToken: string | undefined;
 
@@ -26,17 +24,15 @@ export const defaultConfigurationParameters: ConfigurationParameters = {
 	accessToken() {
 		return authToken as string;
 	},
-	basePath: new URL(PUBLIC_OS_OIDC_API_URL).origin,
+	basePath: new URL(PUBLIC_OS_ADMIN_API_URL).origin,
 	credentials: 'same-origin'
 };
 
-export const oidcConfiguration = new Configuration(defaultConfigurationParameters);
+export const adminConfiguration = new Configuration(defaultConfigurationParameters);
 
-export const currentUserApi = new CurrentUserApi(oidcConfiguration);
-export const clientApi = new ClientApi(oidcConfiguration);
-export const oidcApi = new OidcApi(oidcConfiguration);
-export const passwordApi = new PasswordApi(oidcConfiguration);
-export const userApi = new UserApi(oidcConfiguration);
+export const currentUserApi = new CurrentUserApi(adminConfiguration);
+export const clientApi = new ClientApi(adminConfiguration);
+export const userApi = new UserApi(adminConfiguration);
 
 export function setAuthToken(newAuthToken?: string) {
 	authToken = newAuthToken;

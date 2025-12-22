@@ -1,4 +1,4 @@
-import { getCurrentUser } from '$lib/common/state/currentUser.svelte';
+import { getUser } from '$lib/common/state/user.svelte';
 import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
 import { resolve } from '$app/paths';
@@ -7,11 +7,11 @@ import { setAfterSigninRedirectPathFromURL } from '$lib/common/state/afterSignIn
 export const load: LayoutLoad = async (event) => {
 	await event.parent();
 
-	const currentUser = await getCurrentUser();
+	const user = await getUser();
 
-	if (currentUser) {
+	if (user) {
 		return {
-			user: currentUser
+			user
 		};
 	} else {
 		setAfterSigninRedirectPathFromURL(event.url);

@@ -35,7 +35,7 @@ use os_model::entities::clients::{
     ("Authorization" = ["client:read"])
   )
 )]
-pub async fn client_by_client_id(
+pub async fn client_by_id(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
   Path(client_id): Path<i64>,
@@ -263,7 +263,7 @@ pub async fn client_delete(
 
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
-    .routes(routes!(client_by_client_id))
+    .routes(routes!(client_by_id))
     .routes(routes!(client_list))
     .routes(routes!(client_create))
     .routes(routes!(client_update))

@@ -19,10 +19,7 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
   config::AppConfig,
-  core::{
-    encryption::verify_password,
-    helper::{json_to_string_vec, string_vec_to_json},
-  },
+  core::{encryption::verify_password, helper::json_to_string_vec},
   router::{
     Form, Json,
     common::{
@@ -356,22 +353,13 @@ async fn password_grant(
   password: String,
   client_auth: ClientAuthentication,
 ) -> Result<Token, HttpError> {
-  let (client_id, audience) = if let Some(client_id) = &client_auth.client_id {
-    let client_model = validate_client_authentication(
-      &state.database_connection,
-      client_id,
-      &client_auth,
-      GRANT_TYPE_PASSWORD,
-      &scope,
-    )
-    .await?;
-    (client_id.to_owned(), client_model.audience.clone())
-  } else {
-    (
-      state.config.url(),
-      string_vec_to_json(&vec![state.config.url()]),
-    )
-  };
+  let client_model = validate_client_authentication(
+    &state.database_connection,
+    &client_auth,
+    GRANT_TYPE_PASSWORD,
+    &scope,
+  )
+  .await?;
 
   let user =
     match users::get_user_by_username_or_primary_email(&state.database_connection, &username).await
@@ -428,8 +416,8 @@ async fn password_grant(
     &state.config,
     jwk,
     user,
-    client_id,
-    audience,
+    client_model.client_id,
+    client_model.audience,
     scope,
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
   )
@@ -448,18 +436,12 @@ async fn refresh_token_grant(
   if token_data.claims.r#type != TOKEN_TYPE_REFRESH {
     return Err(HttpError::unauthorized());
   }
+  if token_data.claims.client.to_owned() != client_auth.client_id {
+    return Err(HttpError::unauthorized().with_error("client_id", INVALID_ERROR));
+  }
 
-  let client_id = if let Some(client_id) = &client_auth.client_id {
-    if client_id != &token_data.claims.client {
-      return Err(HttpError::unauthorized().with_error("client_id", INVALID_ERROR));
-    }
-    client_id.to_owned()
-  } else {
-    token_data.claims.client.to_owned()
-  };
   let client_model = validate_client_authentication(
     &state.database_connection,
-    &client_id,
     &client_auth,
     GRANT_TYPE_REFRESH_TOKEN,
     &token_data.claims.scope,
@@ -491,7 +473,7 @@ async fn refresh_token_grant(
     &state.config,
     jwk_model,
     user,
-    client_id,
+    client_model.client_id,
     client_model.audience,
     token_data.claims.scope,
     TOKEN_ISSUE_TYPE_REFRESH_TOKEN.to_owned(),
@@ -543,7 +525,6 @@ async fn authorization_code_grant(
 
   let client_model = validate_client_authentication(
     &state.database_connection,
-    &token_data.claims.basic_claims.client,
     &client_auth,
     GRANT_TYPE_AUTHORIZATION_CODE,
     &token_data.claims.basic_claims.scope,
@@ -585,21 +566,21 @@ async fn authorization_code_grant(
 
 pub(crate) async fn validate_client_authentication(
   db: &sea_orm::DatabaseConnection,
-  client_id: &str,
   client_auth: &ClientAuthentication,
   grant_type: &str,
   scope: &str,
 ) -> Result<clients::Model, HttpError> {
-  let client_model = match clients::get_client_by_client_id(db, client_id).await {
-    Ok(Some(client)) => client,
-    Ok(None) => {
-      return Err(HttpError::not_found().with_error("client", NOT_FOUND_ERROR));
-    }
-    Err(e) => {
-      log::error!("failed to fetch client: {}", e);
-      return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
-    }
-  };
+  let client_model =
+    match clients::get_client_by_client_id(db, client_auth.client_id.as_str()).await {
+      Ok(Some(client)) => client,
+      Ok(None) => {
+        return Err(HttpError::not_found().with_error("client", NOT_FOUND_ERROR));
+      }
+      Err(e) => {
+        log::error!("failed to fetch client: {}", e);
+        return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+      }
+    };
 
   if !ALWAYS_ALLOWED_GRANT_TYPES.contains(&grant_type) {
     let grant_types_vec: Vec<String> = json_to_string_vec(&client_model.grant_types);
@@ -623,24 +604,16 @@ pub(crate) async fn validate_client_authentication(
   }
 
   match client_model.auth_method.as_str() {
-    "client_secret_post" | "client_secret_basic" => {
-      if let Some(auth_client_id) = &client_auth.client_id {
-        if auth_client_id != client_id {
-          return Err(HttpError::unauthorized().with_error("client_id", INVALID_ERROR));
+    "client_secret_post" | "client_secret_basic" => match &client_auth.client_secret {
+      Some(provided_secret) => {
+        if provided_secret != &client_model.client_secret {
+          return Err(HttpError::unauthorized().with_error("client_secret", INVALID_ERROR));
         }
       }
-
-      match &client_auth.client_secret {
-        Some(provided_secret) => {
-          if provided_secret != &client_model.client_secret {
-            return Err(HttpError::unauthorized().with_error("client_secret", INVALID_ERROR));
-          }
-        }
-        None => {
-          return Err(HttpError::bad_request().with_error("client_secret", REQUIRED_ERROR));
-        }
+      None => {
+        return Err(HttpError::bad_request().with_error("client_secret", REQUIRED_ERROR));
       }
-    }
+    },
     "none" => {}
     "client_secret_jwt" | "private_key_jwt" => {
       log::warn!("JWT-based client authentication not yet implemented");
@@ -865,28 +838,25 @@ pub async fn revoke(
     }
   };
 
-  if let Some(client_id) = &revoke_request.client_auth.client_id {
-    if &token_data.claims.client != client_id {
-      log::error!("client_id mismatch: token belongs to different client");
-      return HttpError::unauthorized()
-        .with_error("client_id", INVALID_ERROR)
-        .into_response();
-    }
+  if &token_data.claims.client != &revoke_request.client_auth.client_id {
+    log::error!("client_id mismatch: token belongs to different client");
+    return HttpError::unauthorized()
+      .with_error("client_id", INVALID_ERROR)
+      .into_response();
+  }
 
-    match validate_client_authentication(
-      &state.database_connection,
-      client_id,
-      &revoke_request.client_auth,
-      GRANT_TYPE_REVOKE,
-      &token_data.claims.scope,
-    )
-    .await
-    {
-      Ok(_) => {}
-      Err(e) => {
-        log::error!("client authentication failed: {}", e);
-        return e.into_response();
-      }
+  match validate_client_authentication(
+    &state.database_connection,
+    &revoke_request.client_auth,
+    GRANT_TYPE_REVOKE,
+    &token_data.claims.scope,
+  )
+  .await
+  {
+    Ok(_) => {}
+    Err(e) => {
+      log::error!("client authentication failed: {}", e);
+      return e.into_response();
     }
   }
 

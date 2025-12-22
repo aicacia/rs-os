@@ -5,8 +5,7 @@
 
 	let { data }: PageProps = $props();
 
-	const user = data?.user ?? {};
-	const name = user.info?.name ?? user.username ?? 'user';
+	const name = data.user.nickname ?? data.user.preferredUsername; 
 </script>
 
 <svelte:head>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import type { Client } from '$lib/common/openapi/oidc/models/index';
+	import type { Client } from '$lib/common/openapi/admin/models/index';
 	import { Plus, Pencil, Trash, Eye, Search } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';

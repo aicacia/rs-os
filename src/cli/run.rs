@@ -9,7 +9,6 @@ use std::{
 use axum::Router;
 use clap::Parser;
 use os_cli::{run::shutdown_signal, serve::serve};
-use os_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use tokio_util::sync::CancellationToken;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::layer::SubscriberExt;
@@ -47,8 +46,7 @@ pub async fn run() -> io::Result<()> {
     .with(
       tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         format!(
-          "{}={level},tower_http={level},axum::rejection=trace",
-          env!("CARGO_CRATE_NAME"),
+          "{level},axum::rejection=trace",
           level = level.as_str().to_lowercase()
         )
         .into()
@@ -65,18 +63,7 @@ pub async fn run() -> io::Result<()> {
     Err(e) => return Err(io::Error::other(e)),
   };
 
-  if list_jwks(&database_connection)
-    .await
-    .map_err(io::Error::other)?
-    .is_empty()
-  {
-    let _ = create_jwk(
-      &database_connection,
-      generate_jwk(app_config.oidc_api.token.default_jwt_algorithm).map_err(io::Error::other)?,
-    )
-    .await
-    .map_err(io::Error::other)?;
-  }
+  os_oidc::core::model::init(&database_connection, &app_config.oidc_api).await?;
 
   let oidc_openapi_router = os_oidc::router::create_openapi_router(
     os_oidc::router::entity::RouterState {

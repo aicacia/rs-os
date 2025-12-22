@@ -1,21 +1,17 @@
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { Permission } from '../openapi/oidc';
-	import { hasPermission, logout } from '../state/currentUser.svelte';
+	import {  logout } from '../state/auth.svelte';
 	import { ChevronLeft, LogOut } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	export interface SidebarProps {
-		user: CurrentUser;
 		children: Snippet<[]>;
 	}
 </script>
 
 <script lang="ts">
-	import { page } from '$app/state';
-
-	let { user, children }: SidebarProps = $props();
+	let { children }: SidebarProps = $props();
 
 	let open = $state(false);
 
@@ -47,51 +43,7 @@
 				</button>
 			</div>
 			<hr />
-			<div class="flex grow">
-				<div
-					class={{
-						'flex flex-col': true,
-						hidden: open
-					}}
-				>
-					<a
-						class={{
-							'btn ghost rounded-none border-0': true,
-							active: page.route.id === '/(auth)/(home)/profile'
-						}}
-						href={resolve('/profile')}
-					>
-						Profile</a
-					>
-					{#if hasPermission(user, Permission.Admin)}
-						<a
-							class={{
-								'btn ghost rounded-none border-0': true,
-								active: page.route.id === '/(auth)/(home)/config'
-							}}
-							href={resolve('/config')}>Application Config</a
-						>
-					{/if}
-					{#if hasPermission(user, Permission.ClientWrite) || hasPermission(user, Permission.ClientRead)}
-						<a
-							class={{
-								'btn ghost rounded-none border-0': true,
-								active: page.route.id === '/(auth)/(home)/clients'
-							}}
-							href={resolve('/clients')}>Clients</a
-						>
-					{/if}
-					{#if hasPermission(user, Permission.UserWrite) || hasPermission(user, Permission.UserRead)}
-						<a
-							class={{
-								'btn ghost rounded-none border-0': true,
-								active: page.route.id === '/(auth)/(home)/users'
-							}}
-							href={resolve('/users')}>Users</a
-						>
-					{/if}
-				</div>
-			</div>
+			<div class="flex grow"></div>
 			<hr />
 			<div class="m-2 flex shrink flex-row justify-end">
 				<button type="button" class="btn danger icon" onclick={onLogout}>

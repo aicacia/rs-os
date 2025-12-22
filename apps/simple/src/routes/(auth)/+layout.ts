@@ -6,11 +6,11 @@ import { getUserManager } from '$lib/common/state/user.svelte';
 export const load: LayoutLoad = async (event) => {
 	await event.parent();
 
-	const currentUser = await getUserManager().getUser();
+	const user = await getUserManager().getUser();
 
-	if (currentUser) {
+	if (user) {
 		return {
-			user: currentUser
+			user
 		};
 	} else {
 		redirect(302, resolve('/signin'));

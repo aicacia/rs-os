@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * os-oidc
- * Aicacia OS API.
+ * Aicacia OS OIDC API.
  *
  * The version of the OpenAPI document: 0.1.0
  * 
@@ -25,6 +25,12 @@ export interface BasicClaims {
      * @memberof BasicClaims
      */
     aud: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BasicClaims
+     */
+    client: string;
     /**
      * 
      * @type {number}
@@ -74,6 +80,7 @@ export interface BasicClaims {
  */
 export function instanceOfBasicClaims(value: object): value is BasicClaims {
     if (!('aud' in value) || value['aud'] === undefined) return false;
+    if (!('client' in value) || value['client'] === undefined) return false;
     if (!('exp' in value) || value['exp'] === undefined) return false;
     if (!('iat' in value) || value['iat'] === undefined) return false;
     if (!('iss' in value) || value['iss'] === undefined) return false;
@@ -95,6 +102,7 @@ export function BasicClaimsFromJSONTyped(json: any, ignoreDiscriminator: boolean
     return {
         
         'aud': json['aud'],
+        'client': json['client'],
         'exp': json['exp'],
         'iat': json['iat'],
         'iss': json['iss'],
@@ -117,6 +125,7 @@ export function BasicClaimsToJSONTyped(value?: BasicClaims | null, ignoreDiscrim
     return {
         
         'aud': value['aud'],
+        'client': value['client'],
         'exp': value['exp'],
         'iat': value['iat'],
         'iss': value['iss'],

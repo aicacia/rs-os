@@ -1,9 +1,4 @@
-import {
-	defaultConfigurationParameters,
-	oidcApi,
-	oidcConfiguration,
-	setAuthToken
-} from '../openapi';
+import { defaultConfigurationParameters, oidcApi, setAuthToken } from '../openapi';
 import {
 	Configuration,
 	OidcApi,
@@ -19,6 +14,9 @@ import { localStorageState } from '../util/localStorageState.svelte';
 import { afterSigninRedirect } from './afterSignInRedirectPath';
 import { isOnline } from './online.svelte';
 import { handleError } from '../errors';
+import { PUBLIC_URL } from '$env/static/public';
+
+const CLIENT_ID = PUBLIC_URL;
 
 const userInfo = localStorageState<OpenIdClaims | null>('user_info', null, {
 	serializer: {
@@ -47,6 +45,7 @@ const currentUserInfo = $derived.by(async () => {
 						}
 						token.value = await oidcApi.token({
 							grantType: 'refresh_token',
+							clientId: CLIENT_ID,
 							refreshToken: token.value.refreshToken,
 							scope: 'openid profile offline'
 						});
@@ -104,9 +103,10 @@ function hasPermissionInternal(user: OpenIdClaims, permission: string): boolean 
 export async function signInUsernamePassword(username: string, password: string) {
 	token.value = await oidcApi.token({
 		grantType: 'password',
+		clientId: CLIENT_ID,
 		username,
 		password,
-		scope: 'openid profile address email phone_number offline'
+		scope: 'openid profile address email phone offline'
 	});
 	const user = await currentUserInfo;
 	await afterSigninRedirect();

@@ -120,6 +120,7 @@ impl MigrationTrait for Migration {
     if pw_exists.is_none() {
       let pw = user_passwords::ActiveModel {
         user_id: Set(user.id),
+        // The password is "admin" hashed with Argon2id
         encrypted_password: Set(
           "$argon2id$v=19$m=19,t=2,p=1$cmc5ZXVXT1N0RmxjZFR1NQ$/0nLLEJDUFjP/lO6UhUHlzvL6Zlz1NO8BW+XdMNTG3c"
             .to_owned(),

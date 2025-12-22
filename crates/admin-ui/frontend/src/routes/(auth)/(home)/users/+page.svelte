@@ -7,8 +7,8 @@
 	import UserCard from './UserCard.svelte';
 	import UserListSkeleton from './UserListSkeleton.svelte';
 	import { m } from '$lib/paraglide/messages';
-	import { getCurrentUser, hasPermissions } from '$lib/common/state/currentUser.svelte';
-	import { Permission, type User as OUser } from '$lib/common/openapi/oidc/models';
+	import { hasPermissions } from '$lib/common/state/user.svelte';
+	import { Permission, type User as OUser } from '$lib/common/openapi/admin/models';
 
 	let { data }: PageProps = $props();
 	let query = $state('');
@@ -20,9 +20,7 @@
 	});
 
 	$effect(() => {
-		getCurrentUser().then((current) => {
-			canCreate = !!(current && hasPermissions(current, [Permission.UserWrite]));
-		});
+		canCreate = hasPermissions(data.user, [Permission.UserWrite]);
 	});
 
 	const filtered = $derived.by(() => {

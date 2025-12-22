@@ -7,7 +7,7 @@
 	import { handleError } from '$lib/common/errors';
 	import { createNotification } from '$lib/common/state/notifications.svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { User } from '$lib/common/openapi/oidc/models';
+	import type { User } from '$lib/common/openapi/admin/models';
 
 	let { data }: PageProps = $props();
 	let user: User = data.user;

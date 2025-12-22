@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * os-oidc
- * Aicacia OS API.
+ * Aicacia OS OIDC API.
  *
  * The version of the OpenAPI document: 0.1.0
  * 
@@ -36,7 +36,7 @@ export interface ClientRegisterRequest {
      * @type {Array<string>}
      * @memberof ClientRegisterRequest
      */
-    audience?: Array<string> | null;
+    audience: Array<string>;
     /**
      * 
      * @type {string}
@@ -129,6 +129,7 @@ export interface ClientRegisterRequest {
 export function instanceOfClientRegisterRequest(value: object): value is ClientRegisterRequest {
     if (!('accessTokenExpiresInSeconds' in value) || value['accessTokenExpiresInSeconds'] === undefined) return false;
     if (!('applicationType' in value) || value['applicationType'] === undefined) return false;
+    if (!('audience' in value) || value['audience'] === undefined) return false;
     if (!('authMethod' in value) || value['authMethod'] === undefined) return false;
     if (!('clientId' in value) || value['clientId'] === undefined) return false;
     if (!('grantTypes' in value) || value['grantTypes'] === undefined) return false;
@@ -152,7 +153,7 @@ export function ClientRegisterRequestFromJSONTyped(json: any, ignoreDiscriminato
         
         'accessTokenExpiresInSeconds': json['access_token_expires_in_seconds'],
         'applicationType': json['application_type'],
-        'audience': json['audience'] == null ? undefined : json['audience'],
+        'audience': json['audience'],
         'authMethod': json['auth_method'],
         'clientId': json['client_id'],
         'clientUri': json['client_uri'] == null ? undefined : json['client_uri'],

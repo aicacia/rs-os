@@ -52,7 +52,7 @@
 </script>
 
 <script lang="ts">
-	import type { ClientRegisterRequest, Client } from '$lib/common/openapi/oidc/models/index';
+	import type { ClientRegisterRequest, Client } from '$lib/common/openapi/admin/models/index';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
 	import { X, Plus } from '@lucide/svelte';

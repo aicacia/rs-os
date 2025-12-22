@@ -46,8 +46,7 @@ pub struct JWKs {
 
 #[derive(Deserialize, ToSchema)]
 pub struct ClientAuthentication {
-  #[serde(skip_serializing_if = "Option::is_none", default)]
-  pub client_id: Option<String>,
+  pub client_id: String,
   #[serde(skip_serializing_if = "Option::is_none", default)]
   pub client_secret: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none", default)]

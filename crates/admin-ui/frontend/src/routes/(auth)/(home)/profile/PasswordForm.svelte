@@ -20,7 +20,7 @@
 </script>
 
 <script lang="ts">
-	import type { User } from '$lib/common/openapi/oidc/models/index';
+	import type { User } from '$lib/common/openapi/admin/models/index';
 	import { currentUserApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
 	import { createForm } from '$lib/common/util/form.svelte';

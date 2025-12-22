@@ -62,13 +62,11 @@
 		loadingUserAllowed = true;
 		oidcApi
 			.isClientAllowedForUser({ clientId: authorizeRequest.clientId })
-			.then(onAuthorize)
-			.catch((_e) => {
-				return null;
-			})
-			.finally(() => {
+			.catch((e) => {
 				loadingUserAllowed = false;
-			});
+				throw e;
+			})
+			.then(onAuthorize);
 	});
 
 	let loadingAuthorizeRequest = $state(false);

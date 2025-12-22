@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import type { CurrentUser } from '$lib/common/openapi/oidc';
+	import type { CurrentUser } from '$lib/common/openapi/admin';
 	import UsernameForm from './UsernameForm.svelte';
 	import PasswordForm from './PasswordForm.svelte';
 	import InfoForm from './InfoForm.svelte';

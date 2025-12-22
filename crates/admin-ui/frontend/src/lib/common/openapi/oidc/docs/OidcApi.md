@@ -4,10 +4,14 @@ All URIs are relative to *http://localhost:3000*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
+| [**approveClientForUser**](OidcApi.md#approveclientforuser) | **POST** /oidc/api/approve-client |  |
 | [**authorize**](OidcApi.md#authorize) | **GET** /oidc/api/authorize |  |
+| [**authorizeClient**](OidcApi.md#authorizeclient) | **POST** /oidc/api/authorize-client |  |
+| [**client**](OidcApi.md#client) | **GET** /oidc/api/client |  |
 | [**deviceAuthorize**](OidcApi.md#deviceauthorize) | **POST** /oidc/api/device-authorize |  |
 | [**endSession**](OidcApi.md#endsession) | **GET** /oidc/api/end-session |  |
 | [**introspect**](OidcApi.md#introspect) | **POST** /oidc/api/introspect |  |
+| [**isClientAllowedForUser**](OidcApi.md#isclientallowedforuser) | **GET** /oidc/api/client-allowed |  |
 | [**jwks**](OidcApi.md#jwks) | **GET** /oidc/api/.well-known/jwks.json |  |
 | [**openidConfiguration**](OidcApi.md#openidconfiguration) | **GET** /oidc/api/.well-known/openid-configuration |  |
 | [**postAuthorize**](OidcApi.md#postauthorize) | **POST** /oidc/api/authorize |  |
@@ -16,6 +20,80 @@ All URIs are relative to *http://localhost:3000*
 | [**token**](OidcApi.md#token) | **POST** /oidc/api/token |  |
 | [**userInfo**](OidcApi.md#userinfo) | **GET** /oidc/api/user-info |  |
 
+
+
+## approveClientForUser
+
+> approveClientForUser(clientId)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  OidcApi,
+} from '';
+import type { ApproveClientForUserRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new OidcApi(config);
+
+  const body = {
+    // string
+    clientId: clientId_example,
+  } satisfies ApproveClientForUserRequest;
+
+  try {
+    const data = await api.approveClientForUser(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **clientId** | `string` |  | [Defaults to `undefined`] |
+
+### Return type
+
+`void` (Empty response body)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **204** |  |  -  |
+| **400** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
 ## authorize
@@ -109,6 +187,152 @@ No authorization required
 | **400** | Application Error |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
+| **500** | Application Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## authorizeClient
+
+> ClientAuthorization authorizeClient(clientAuthorizeRequest)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  OidcApi,
+} from '';
+import type { AuthorizeClientRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new OidcApi(config);
+
+  const body = {
+    // ClientAuthorizeRequest
+    clientAuthorizeRequest: ...,
+  } satisfies AuthorizeClientRequest;
+
+  try {
+    const data = await api.authorizeClient(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **clientAuthorizeRequest** | [ClientAuthorizeRequest](ClientAuthorizeRequest.md) |  | |
+
+### Return type
+
+[**ClientAuthorization**](ClientAuthorization.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Authorized |  -  |
+| **400** | Application Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
+| **500** | Application Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## client
+
+> Client client(clientId)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  OidcApi,
+} from '';
+import type { ClientRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new OidcApi(config);
+
+  const body = {
+    // string
+    clientId: clientId_example,
+  } satisfies ClientRequest;
+
+  try {
+    const data = await api.client(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **clientId** | `string` |  | [Defaults to `undefined`] |
+
+### Return type
+
+[**Client**](Client.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Client fetched |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
+| **404** | Not Found |  -  |
 | **500** | Application Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -304,6 +528,80 @@ No authorization required
 | **400** | Invalid request |  -  |
 | **401** | Unauthorized |  -  |
 | **500** | Application Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## isClientAllowedForUser
+
+> ClientAllowed isClientAllowedForUser(clientId)
+
+
+
+### Example
+
+```ts
+import {
+  Configuration,
+  OidcApi,
+} from '';
+import type { IsClientAllowedForUserRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new OidcApi(config);
+
+  const body = {
+    // string
+    clientId: clientId_example,
+  } satisfies IsClientAllowedForUserRequest;
+
+  try {
+    const data = await api.isClientAllowedForUser(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **clientId** | `string` |  | [Defaults to `undefined`] |
+
+### Return type
+
+[**ClientAllowed**](ClientAllowed.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **400** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -749,7 +1047,7 @@ No authorization required
 
 ## userInfo
 
-> OpenIdClaims userInfo(clientRegisterRequest)
+> OpenIdClaims userInfo()
 
 
 
@@ -770,13 +1068,8 @@ async function example() {
   });
   const api = new OidcApi(config);
 
-  const body = {
-    // ClientRegisterRequest
-    clientRegisterRequest: ...,
-  } satisfies UserInfoRequest;
-
   try {
-    const data = await api.userInfo(body);
+    const data = await api.userInfo();
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -789,10 +1082,7 @@ example().catch(console.error);
 
 ### Parameters
 
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **clientRegisterRequest** | [ClientRegisterRequest](ClientRegisterRequest.md) |  | |
+This endpoint does not need any parameter.
 
 ### Return type
 
@@ -804,7 +1094,7 @@ example().catch(console.error);
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
+- **Content-Type**: Not defined
 - **Accept**: `application/json`
 
 

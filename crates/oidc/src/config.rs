@@ -124,6 +124,13 @@ impl AppConfig {
     let url = url::Url::parse(self.url().as_str())?;
     Ok(url.origin().unicode_serialization())
   }
+
+  pub fn ui_url(&self) -> String {
+    self
+      .ui_url
+      .to_owned()
+      .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
+  }
 }
 
 impl<'a> TryFrom<&'a Path> for AppConfig {

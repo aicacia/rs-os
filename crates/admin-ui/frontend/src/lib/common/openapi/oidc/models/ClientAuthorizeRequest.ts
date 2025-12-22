@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * os-oidc
- * Aicacia OS API.
+ * Aicacia OS OIDC API.
  *
  * The version of the OpenAPI document: 0.1.0
  * 
@@ -27,6 +27,12 @@ import {
  * @interface ClientAuthorizeRequest
  */
 export interface ClientAuthorizeRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof ClientAuthorizeRequest
+     */
+    clientId: string;
     /**
      * 
      * @type {string}
@@ -65,6 +71,7 @@ export interface ClientAuthorizeRequest {
  * Check if a given object implements the ClientAuthorizeRequest interface.
  */
 export function instanceOfClientAuthorizeRequest(value: object): value is ClientAuthorizeRequest {
+    if (!('clientId' in value) || value['clientId'] === undefined) return false;
     if (!('redirectUri' in value) || value['redirectUri'] === undefined) return false;
     if (!('responseType' in value) || value['responseType'] === undefined) return false;
     if (!('scope' in value) || value['scope'] === undefined) return false;
@@ -81,6 +88,7 @@ export function ClientAuthorizeRequestFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
+        'clientId': json['client_id'],
         'codeChallenge': json['code_challenge'] == null ? undefined : json['code_challenge'],
         'codeChallengeMethod': json['code_challenge_method'] == null ? undefined : json['code_challenge_method'],
         'redirectUri': json['redirect_uri'],
@@ -100,6 +108,7 @@ export function ClientAuthorizeRequestToJSONTyped(value?: ClientAuthorizeRequest
 
     return {
         
+        'client_id': value['clientId'],
         'code_challenge': value['codeChallenge'],
         'code_challenge_method': value['codeChallengeMethod'],
         'redirect_uri': value['redirectUri'],
