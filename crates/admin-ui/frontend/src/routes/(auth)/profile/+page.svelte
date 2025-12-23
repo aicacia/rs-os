@@ -20,11 +20,13 @@
 
 <div class="space-y-4">
 	<section class="card">
-		<div class="flex flex-row items-center justify-start space-x-2">
-			<a href={resolve('/')}>
-				<ArrowLeft />
-			</a>
-			<h2 class="m-0">{m.profile_title()}</h2>
+		<div class="flex gap-4 flex-row items-center justify-between">
+			<div class="flex gap-4 flex-row items-center">
+				<a href={resolve('/')}>
+					<ArrowLeft />
+				</a>
+				<h2 class="m-0">{m.profile_title()}</h2>
+			</div>
 		</div>
 	</section>
 

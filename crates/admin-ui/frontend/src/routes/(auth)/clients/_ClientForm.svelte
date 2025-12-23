@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
 	import * as v from 'valibot';
 	import { m } from '$lib/paraglide/messages';
 
@@ -52,7 +52,7 @@
 </script>
 
 <script lang="ts">
-	import type { ClientRegisterRequest, Client } from '$lib/common/openapi/admin/models/index';
+	import type { ClientUpsertRequest, Client } from '$lib/common/openapi/admin/models/index';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
 	import { X, Plus } from '@lucide/svelte';
@@ -61,13 +61,11 @@
 	let {
 		initialValues,
 		onsubmit,
-		submitLabel = 'Save Client',
 		readonly = false,
 		actions
 	}: {
-		initialValues: Partial<ClientRegisterRequest> | Partial<Client>;
+		initialValues: Partial<ClientUpsertRequest> | Partial<Client>;
 		onsubmit: (data: ClientFormData) => void | Promise<void>;
-		submitLabel?: string;
 		readonly?: boolean;
 		actions?: Snippet;
 	} = $props();
@@ -186,7 +184,6 @@
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 
-		// Manually construct the form data with array values
 		const formData: ClientFormData = {
 			clientId: form.fields.clientId.value ?? '',
 			name: form.fields.name.value ?? '',
@@ -208,7 +205,6 @@
 			refreshExpiresInSeconds: form.fields.refreshExpiresInSeconds.value ?? 86400
 		};
 
-		// Validate basic fields
 		const [, basicErr] = await form.validate();
 		if (basicErr) {
 			return;
@@ -219,7 +215,6 @@
 </script>
 
 <form onsubmit={handleSubmit} class="space-y-6">
-	<!-- Basic Information -->
 	<section class="card">
 		<h3 class="mb-4 text-lg font-semibold">{m.client_form_basic_info()}</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -568,7 +563,13 @@
 			{#if actions}
 				{@render actions()}
 			{/if}
-			<button type="submit" class="btn primary">{submitLabel}</button>
+			<button type="submit" class="btn primary">
+				{#if initialValues.id}
+					{m.clients_update_button()}
+				{:else}
+					{m.clients_create_button()}
+				{/if}
+			</button>
 		</div>
 	{/if}
 </form>

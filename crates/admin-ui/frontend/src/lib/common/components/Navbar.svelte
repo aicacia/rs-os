@@ -31,10 +31,10 @@
 	<nav class={'flex shrink flex-col border-r border-gray-600 bg-gray-100 dark:bg-gray-800'}>
 		<div class="flex h-full w-full grow flex-col overflow-auto">
 			<div class="m-2 flex shrink flex-row items-center justify-between">
-				<a href={resolve('/')} class={{ hidden: open }}><h3 class="m-0">OIDC Admin UI</h3></a>
+				<a href={resolve('/')} class={{ hidden: open }}><h3 class="m-0 me-2">OIDC Admin UI</h3></a>
 				<button
 					type="button"
-					class="btn icon ghost ms-2"
+					class="btn icon ghost"
 					aria-pressed={!open}
 					aria-expanded={open}
 					aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
@@ -56,7 +56,7 @@
 					<a
 						class={{
 							'btn ghost rounded-none border-0': true,
-							active: page.route.id === '/(auth)/(home)/profile'
+							active: page.route.id === '/(auth)/profile'
 						}}
 						href={resolve('/profile')}
 					>
@@ -66,7 +66,7 @@
 						<a
 							class={{
 								'btn ghost rounded-none border-0': true,
-								active: page.route.id === '/(auth)/(home)/config'
+								active: page.route.id === '/(auth)/config'
 							}}
 							href={resolve('/config')}>Application Config</a
 						>
@@ -75,7 +75,7 @@
 						<a
 							class={{
 								'btn ghost rounded-none border-0': true,
-								active: page.route.id === '/(auth)/(home)/clients'
+								active: page.route.id === '/(auth)/clients'
 							}}
 							href={resolve('/clients')}>Clients</a
 						>
@@ -84,7 +84,7 @@
 						<a
 							class={{
 								'btn ghost rounded-none border-0': true,
-								active: page.route.id === '/(auth)/(home)/users'
+								active: page.route.id === '/(auth)/users'
 							}}
 							href={resolve('/users')}>Users</a
 						>

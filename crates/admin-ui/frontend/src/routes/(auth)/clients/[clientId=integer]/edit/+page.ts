@@ -3,6 +3,7 @@ import { clientApi } from '$lib/common/openapi';
 
 export const load: PageLoad = async (event) => {
 	await event.parent();
-	const client = await clientApi.clientByClientId({ clientId: event.params.clientId });
+	const clientId = Number.parseInt(event.params.clientId, 10);
+	const client = await clientApi.clientById({ clientId });
 	return { client };
 };

@@ -16,11 +16,11 @@
 	async function handleSubmit(formData: ClientFormData) {
 		try {
 			const updatedClient = await clientApi.clientUpdate({
-				clientId: client.clientId,
-				clientRegisterRequest: formData
+				clientId: client.id,
+				clientUpsertRequest: formData
 			});
 			createNotification(m.clients_updated_success(), 'success');
-			await goto(resolve(`/clients/${updatedClient.clientId}`));
+			await goto(resolve(`/clients/${updatedClient.id}`));
 		} catch (e) {
 			handleError(e);
 		}
@@ -35,13 +35,13 @@
 	<section class="card">
 		<div class="flex items-center gap-3">
 			<a
-				href={resolve('/(auth)/(home)/clients')}
+				href={resolve('/(auth)/clients')}
 				class="text-gray-600 hover:text-gray-900 dark:hover:text-white"
 			>
 				<ArrowLeft class="h-5 w-5" />
 			</a>
 			<div>
-				<h2 class="m-0 text-2xl font-bold">{m.clients_edit_title()}</h2>
+				<h2 class="m-0">{m.clients_edit_title()}</h2>
 				<p class="text-sm text-gray-600 dark:text-gray-400">{client.name}</p>
 			</div>
 		</div>
@@ -50,13 +50,12 @@
 	<ClientForm
 		initialValues={client}
 		onsubmit={handleSubmit}
-		submitLabel={m.clients_update_button()}
 	>
 		{#snippet actions()}
 			<button
 				type="button"
 				class="btn secondary"
-				onclick={() => goto(resolve('/(auth)/(home)/clients'))}
+				onclick={() => goto(resolve('/(auth)/clients'))}
 			>
 				{m.clients_cancel()}
 			</button>

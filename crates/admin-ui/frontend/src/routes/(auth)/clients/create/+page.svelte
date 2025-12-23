@@ -14,7 +14,7 @@
 				clientRegisterRequest: data
 			});
 			createNotification(m.clients_created_success(), 'success');
-			await goto(resolve('/(auth)/(home)/clients'));
+			await goto(resolve('/(auth)/clients'));
 		} catch (e) {
 			handleError(e);
 		}
@@ -29,18 +29,18 @@
 	<section class="card">
 		<div class="flex items-center gap-3">
 			<a
-				href={resolve('/(auth)/(home)/clients')}
+				href={resolve('/(auth)/clients')}
 				class="text-gray-600 hover:text-gray-900 dark:hover:text-white"
 			>
 				<ArrowLeft class="h-5 w-5" />
 			</a>
-			<h2 class="m-0 text-2xl font-bold">{m.clients_create_title()}</h2>
+			<h2 class="m-0">{m.clients_create_title()}</h2>
 		</div>
 	</section>
 
-	<ClientForm initialValues={{}} onsubmit={handleSubmit} submitLabel={m.clients_create_button()}>
+	<ClientForm initialValues={{}} onsubmit={handleSubmit}>
 		{#snippet actions()}
-			<a type="button" class="btn secondary" href={resolve('/(auth)/(home)/clients')}>
+			<a type="button" class="btn secondary" href={resolve('/(auth)/clients')}>
 				{m.clients_cancel()}
 			</a>
 		{/snippet}

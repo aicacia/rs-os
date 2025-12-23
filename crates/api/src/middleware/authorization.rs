@@ -1,16 +1,43 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{
+  str::FromStr,
+  time::{Duration, Instant},
+};
 
 use axum::{extract::FromRequestParts, http::HeaderValue};
+use dashmap::DashMap;
 use http::request::Parts;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode, jwk::Jwk};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
-use tokio::sync::RwLock;
 
 use crate::{
   Claims,
   error::{HttpError, INVALID_ERROR, REQUIRED_ERROR},
 };
+
+#[derive(Deserialize)]
+struct RawJwtHeader {
+  alg: String,
+  #[serde(default)]
+  kid: Option<String>,
+  #[serde(default)]
+  jku: Option<String>,
+}
+
+pub struct Authorization<T>
+where
+  T: Claims,
+{
+  pub claims: T,
+}
+
+struct JwkEntry {
+  decoding_key: DecodingKey,
+  expires_at: Instant,
+}
+
+const CACHE_TTL: Duration = Duration::from_mins(5);
+const CACHE_REFRESH_WINDOW: Duration = Duration::from_secs(30);
 
 pub const AUTHORIZATION_HEADER: &str = "Authorization";
 pub const AUTHORIZATION_BEARER_PREFIX: &str = "Bearer ";
@@ -40,39 +67,14 @@ pub fn authorization_from_header(
   }
 }
 
-pub struct Authorization<T>
-where
-  T: Claims,
-{
-  pub claims: T,
-}
+static JWK_CACHE: Lazy<DashMap<String, JwkEntry>> = Lazy::new(|| DashMap::new());
 
-#[derive(Deserialize)]
-struct RawJwtHeader {
-  alg: String,
-  #[serde(default)]
-  kid: Option<String>,
-  #[serde(default)]
-  jku: Option<String>,
-}
-
-static JWK_CACHE: Lazy<RwLock<HashMap<String, DecodingKey>>> =
-  Lazy::new(|| RwLock::new(HashMap::new()));
-
-async fn fetch_decoding_key(jku: &str, kid: &str) -> Result<DecodingKey, HttpError> {
-  let cache_key = format!("{}?kid={}", jku, kid);
-
-  {
-    let cache = JWK_CACHE.read().await;
-    if let Some(key) = cache.get(&cache_key) {
-      return Ok(key.clone());
-    }
-  }
-
+async fn fetch_jwk_from_server(jku: &str, kid: &str) -> Result<DecodingKey, HttpError> {
   let resp = reqwest::get(jku).await.map_err(|e| {
     log::error!("failed to fetch JWK from {}: {}", jku, e);
-    return HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR);
+    HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
   })?;
+
   if !resp.status().is_success() {
     log::error!(
       "failed to fetch JWK from {}: {}",
@@ -81,14 +83,17 @@ async fn fetch_decoding_key(jku: &str, kid: &str) -> Result<DecodingKey, HttpErr
     );
     return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
   }
+
   let json: serde_json::Value = resp.json().await.map_err(|e| {
     log::error!("failed to parse JWK JSON from {}: {}", jku, e);
-    return HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR);
+    HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
   })?;
+
   let keys = json
     .get("keys")
     .and_then(|v| v.as_array())
     .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))?;
+
   for jwk_value in keys {
     if jwk_value.get("kid").and_then(|v| v.as_str()) == Some(kid) {
       let jwk: Jwk = serde_json::from_value(jwk_value.clone()).map_err(|e| {
@@ -99,12 +104,60 @@ async fn fetch_decoding_key(jku: &str, kid: &str) -> Result<DecodingKey, HttpErr
         log::error!("failed to create decoding key from JWK: {}", e);
         HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
       })?;
-      let mut cache = JWK_CACHE.write().await;
-      cache.insert(cache_key, decoding_key.clone());
       return Ok(decoding_key);
     }
   }
+
   Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))
+}
+
+async fn fetch_decoding_key(jku: &str, kid: &str) -> Result<DecodingKey, HttpError> {
+  let cache_key = format!("{}?kid={}", jku, kid);
+
+  let now = Instant::now();
+
+  if let Some(entry) = JWK_CACHE.get(&cache_key) {
+    let remaining = entry.expires_at.saturating_duration_since(now);
+
+    if remaining.is_zero() {
+      drop(entry);
+    } else {
+      if remaining <= CACHE_REFRESH_WINDOW {
+        let cache_key = cache_key.clone();
+        let jku = jku.to_owned();
+        let kid = kid.to_owned();
+
+        tokio::spawn(async move {
+          if let Ok(decoding_key) = fetch_jwk_from_server(&jku, &kid).await {
+            let expires_at = Instant::now() + CACHE_TTL;
+            JWK_CACHE.insert(
+              cache_key,
+              JwkEntry {
+                decoding_key,
+                expires_at,
+              },
+            );
+          } else {
+            log::warn!("failed to refresh JWK for {}?kid={}", jku, kid);
+          }
+        });
+      }
+
+      return Ok(entry.decoding_key.clone());
+    }
+  }
+
+  let decoding_key = fetch_jwk_from_server(jku, kid).await?;
+  let expires_at = Instant::now() + CACHE_TTL;
+  JWK_CACHE.insert(
+    cache_key,
+    JwkEntry {
+      decoding_key: decoding_key.clone(),
+      expires_at,
+    },
+  );
+
+  Ok(decoding_key)
 }
 
 fn base64_url_decode(segment: &str) -> Result<Vec<u8>, HttpError> {

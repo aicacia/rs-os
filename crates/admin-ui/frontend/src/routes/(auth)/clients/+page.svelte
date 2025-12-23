@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import type { Client } from '$lib/common/openapi/admin/models/index';
-	import { Plus, Pencil, Trash, Eye, Search } from '@lucide/svelte';
+	import { Plus, Pencil, Trash, Eye, Search, ArrowLeft } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { clientApi } from '$lib/common/openapi';
@@ -17,8 +17,7 @@
 	const filteredClients = $derived(
 		clients.filter(
 			(client) =>
-				client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				client.clientId.toLowerCase().includes(searchQuery.toLowerCase())
+				client.name.toLowerCase().includes(searchQuery.toLowerCase())
 		)
 	);
 
@@ -28,8 +27,8 @@
 		}
 
 		try {
-			await clientApi.clientDelete({ clientId: client.clientId });
-			clients = clients.filter((c) => c.clientId !== client.clientId);
+			await clientApi.clientDelete({ clientId: client.id });
+			clients = clients.filter((c) => c.id !== client.id);
 			createNotification(m.clients_deleted_success(), 'success');
 		} catch (e) {
 			handleError(e);
@@ -47,8 +46,13 @@
 
 <div class="space-y-4">
 	<section class="card">
-		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-			<h2 class="m-0 text-2xl font-bold">{m.clients_oauth2_clients()}</h2>
+		<div class="flex gap-4 flex-row items-center justify-between">
+			<div class="flex gap-4 flex-row items-center">
+				<a href={resolve('/')}>
+					<ArrowLeft />
+				</a>
+				<h2 class="m-0">{m.clients_oauth2_clients()}</h2>
+			</div>
 			<button
 				class="btn primary flex items-center gap-2"
 				onclick={() => goto(resolve('/clients/create'))}
@@ -65,7 +69,7 @@
 					type="text"
 					placeholder={m.clients_search_placeholder()}
 					bind:value={searchQuery}
-					class="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 dark:border-gray-600 dark:bg-gray-800"
+					class="w-full pl-10"
 				/>
 			</div>
 		</div>
@@ -126,8 +130,8 @@
 									<div class="flex items-center justify-end gap-2">
 										<a
 											class="btn icon primary sm"
-											href={resolve('/(auth)/(home)/clients/[clientId]/edit', {
-												clientId: encodeURIComponent(client.clientId)
+											href={resolve('/(auth)/clients/[clientId=integer]/edit', {
+												clientId: client.id.toString()
 											})}
 											aria-label={m.clients_edit()}
 										>
