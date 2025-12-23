@@ -7,8 +7,8 @@ export async function GET() {
 		{
 			relation: ['delegate_permission/common.handle_all_urls'],
 			target: {
-				namespace: 'com.aicacia.os',
-				package_name: 'os',
+				namespace: 'com.aicacia.os.oidc',
+				package_name: 'os.oidc',
 				sha256_cert_fingerprints: []
 			}
 		}

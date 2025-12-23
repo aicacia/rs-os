@@ -28,7 +28,7 @@ import {
     HttpErrorToJSON,
 } from '../models/index';
 
-export interface ClientByClientIdRequest {
+export interface ClientByIdRequest {
     clientId: number;
 }
 
@@ -59,11 +59,11 @@ export interface ClientApiInterface {
      * @throws {RequiredError}
      * @memberof ClientApiInterface
      */
-    clientByClientIdRaw(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>>;
+    clientByIdRaw(requestParameters: ClientByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>>;
 
     /**
      */
-    clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
+    clientById(requestParameters: ClientByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client>;
 
     /**
      * 
@@ -126,11 +126,11 @@ export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
 
     /**
      */
-    async clientByClientIdRaw(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
+    async clientByIdRaw(requestParameters: ClientByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Client>> {
         if (requestParameters['clientId'] == null) {
             throw new runtime.RequiredError(
                 'clientId',
-                'Required parameter "clientId" was null or undefined when calling clientByClientId().'
+                'Required parameter "clientId" was null or undefined when calling clientById().'
             );
         }
 
@@ -162,8 +162,8 @@ export class ClientApi extends runtime.BaseAPI implements ClientApiInterface {
 
     /**
      */
-    async clientByClientId(requestParameters: ClientByClientIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
-        const response = await this.clientByClientIdRaw(requestParameters, initOverrides);
+    async clientById(requestParameters: ClientByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Client> {
+        const response = await this.clientByIdRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

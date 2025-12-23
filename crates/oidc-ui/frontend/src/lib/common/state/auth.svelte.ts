@@ -1,14 +1,12 @@
-import { defaultConfigurationParameters, oidcApi, setAuthToken } from '../openapi';
+import { oidcApi, setAuthToken } from '../openapi';
 import {
-	Configuration,
-	OidcApi,
-	OpenIdClaimsFromJSON,
-	OpenIdClaimsToJSON,
 	Permission,
 	TokenFromJSON,
 	TokenToJSON,
-	type OpenIdClaims,
-	type Token
+	type UserInfo,
+	type Token,
+	UserInfoFromJSON,
+	UserInfoToJSON
 } from '../openapi/oidc';
 import { localStorageState } from '../util/localStorageState.svelte';
 import { afterSigninRedirect } from './afterSignInRedirectPath';
@@ -18,10 +16,10 @@ import { PUBLIC_URL } from '$env/static/public';
 
 const CLIENT_ID = PUBLIC_URL;
 
-const userInfo = localStorageState<OpenIdClaims | null>('user_info', null, {
+const userInfo = localStorageState<UserInfo | null>('user_info', null, {
 	serializer: {
-		parse: (text) => OpenIdClaimsFromJSON(JSON.parse(text)),
-		stringify: (value) => JSON.stringify(OpenIdClaimsToJSON(value))
+		parse: (text) => UserInfoFromJSON(JSON.parse(text)),
+		stringify: (value) => JSON.stringify(UserInfoToJSON(value))
 	}
 });
 const token = localStorageState<Token | null>('token', null, {
@@ -54,12 +52,7 @@ const currentUserInfo = $derived.by(async () => {
 					}
 				}
 				setAuthToken(token.value.accessToken);
-				userInfo.value = await new OidcApi(
-					new Configuration({
-						...defaultConfigurationParameters,
-						accessToken: token.value.idToken ?? token.value.accessToken
-					})
-				).userInfo();
+				userInfo.value = await oidcApi.userInfo();
 			} else {
 				throw new Error('not authorized');
 			}
@@ -78,26 +71,26 @@ export async function getCurrentUserInfo() {
 	return await currentUserInfo;
 }
 
-export function hasPermission(user: OpenIdClaims, permission: string): boolean {
+export function hasPermission(user: UserInfo, permission: Permission): boolean {
 	if (hasAdminAll(user)) {
 		return true;
 	}
 	return hasPermissionInternal(user, permission);
 }
 
-export function hasPermissions(user: OpenIdClaims, permissions: string[]): boolean {
+export function hasPermissions(user: UserInfo, permissions: Permission[]): boolean {
 	if (hasAdminAll(user)) {
 		return true;
 	}
 	return permissions.every((p) => hasPermissionInternal(user, p));
 }
 
-function hasAdminAll(user: OpenIdClaims): boolean {
+function hasAdminAll(user: UserInfo): boolean {
 	return hasPermissionInternal(user, Permission.Admin);
 }
 
-function hasPermissionInternal(user: OpenIdClaims, permission: string): boolean {
-	return new RegExp(`\\b${permission.replaceAll('.', '\\.')}\\b`).test(user.scope);
+function hasPermissionInternal(user: UserInfo, permission: Permission): boolean {
+	return user.permissions.includes(permission) ?? false;
 }
 
 export async function signInUsernamePassword(username: string, password: string) {

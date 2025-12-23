@@ -7,7 +7,7 @@ export async function GET() {
 		applinks: {
 			details: [
 				{
-					appIDs: ['com.aicacia.os'],
+					appIDs: ['com.aicacia.os.oidc'],
 					components: [
 						{
 							'/': '/*',

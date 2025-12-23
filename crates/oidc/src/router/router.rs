@@ -2,7 +2,7 @@ use os_api::SecurityAddon;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
-use crate::router::{common::permissions::Permission, entity::RouterState, oidc, util};
+use crate::router::{common::entity::Permission, entity::RouterState, oidc, util};
 
 #[derive(OpenApi)]
 #[openapi(

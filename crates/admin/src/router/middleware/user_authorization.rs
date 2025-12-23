@@ -20,6 +20,7 @@ use crate::router::{
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
 };
 use os_model::entities::{
+  permissions, roles,
   user_emails::list_user_emails_by_user_id,
   user_infos::get_user_info_by_user_id,
   user_o_auth2_providers::get_user_oauth2_providers,
@@ -30,7 +31,7 @@ use os_model::entities::{
 pub struct UserAuthorization {
   pub claims: BasicClaims,
   pub user_model: users::Model,
-  pub permission_models: HashMap<i64, Vec<os_model::entities::permissions::Model>>,
+  pub role_permissions: HashMap<roles::Model, Vec<permissions::Model>>,
   pub permissions: HashSet<Permission>,
 }
 
@@ -54,7 +55,7 @@ impl UserAuthorization {
 
       for (_, role_opt) in role_tuples {
         if let Some(role_model) = role_opt {
-          let permissions = if let Some(permissions) = self.permission_models.get(&role_model.id) {
+          let permissions = if let Some(permissions) = self.role_permissions.get(&role_model) {
             permissions
               .into_iter()
               .map(|p| p.uri.clone())
@@ -212,13 +213,13 @@ where
           log::error!("invalid authorization user is not active");
           return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
         }
-        let permission_models = match get_user_role_permissions_by_user_id(
+        let role_permissions = match get_user_role_permissions_by_user_id(
           &router_state.database_connection,
           user_model.id,
         )
         .await
         {
-          Ok(permission_models) => permission_models,
+          Ok(role_permissions) => role_permissions,
           Err(e) => {
             log::error!("failed to fetch permissions: {}", e);
             return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
@@ -226,7 +227,7 @@ where
         };
 
         let mut permissions: HashSet<Permission> = HashSet::default();
-        for (_role_id, perms) in permission_models.iter() {
+        for (_role_id, perms) in role_permissions.iter() {
           for p in perms {
             if let Ok(permission) = Permission::from_str(&p.uri) {
               permissions.insert(permission);
@@ -237,7 +238,7 @@ where
         return Ok(Self {
           claims: authorization.claims,
           user_model,
-          permission_models,
+          role_permissions,
           permissions,
         });
       }

@@ -1,3 +1,4 @@
+use std::hash::{Hash, Hasher};
 
 use sea_orm::entity::prelude::*;
 
@@ -11,6 +12,12 @@ pub struct Model {
   pub description: String,
   pub updated_at: i64,
   pub created_at: i64,
+}
+
+impl Hash for Model {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.id.hash(state);
+  }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -74,6 +81,17 @@ pub async fn get_role_permissions_by_role_id(
 
   permissions::Entity::find()
     .filter(permissions::Column::Id.is_in(permission_ids))
+    .all(db)
+    .await
+}
+
+pub async fn list_roles_by_user_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Vec<Model>, DbErr> {
+  Entity::find()
+    .inner_join(super::user_roles::Entity)
+    .filter(super::user_roles::Column::UserId.eq(user_id))
     .all(db)
     .await
 }

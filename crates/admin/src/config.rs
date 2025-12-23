@@ -74,7 +74,7 @@ impl Default for TokenConfig {
   fn default() -> Self {
     Self {
       default_jwt_algorithm: jsonwebtoken::Algorithm::EdDSA,
-      expires_in_seconds: 86400,          // 1 day
+      expires_in_seconds: 3600,           // 1 hour
       refresh_expires_in_seconds: 604800, // 1 week
     }
   }

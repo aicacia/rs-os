@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, Utc};
 pub use os_api::claims::{BasicClaims, Claims};
+use os_model::entities::users;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -42,6 +45,9 @@ impl Claims for AuthorizationCodeClaims {
   }
   fn iss(&self) -> &str {
     &self.basic_claims.iss
+  }
+  fn user(&self) -> i64 {
+    self.basic_claims.user
   }
   fn client(&self) -> &str {
     &self.basic_claims.client
@@ -139,6 +145,7 @@ pub struct OpenIdClaims {
   pub basic_claims: BasicClaims,
   #[serde(flatten)]
   pub profile: OpenIdProfile,
+  pub username: String,
 }
 
 impl Claims for OpenIdClaims {
@@ -156,6 +163,9 @@ impl Claims for OpenIdClaims {
   }
   fn iss(&self) -> &str {
     &self.basic_claims.iss
+  }
+  fn user(&self) -> i64 {
+    self.basic_claims.user
   }
   fn client(&self) -> &str {
     &self.basic_claims.client
@@ -219,3 +229,90 @@ impl EncodeClaims for BasicClaims {}
 impl EncodeClaims for AuthorizationCodeClaims {}
 
 impl EncodeClaims for OpenIdClaims {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
+pub enum Permission {
+  #[serde(rename = "admin:*")]
+  AdminAll,
+
+  #[serde(rename = "client:read")]
+  ClientRead,
+  #[serde(rename = "client:write")]
+  ClientWrite,
+  #[serde(rename = "client:delete")]
+  ClientDelete,
+
+  #[serde(rename = "user:read")]
+  UserRead,
+  #[serde(rename = "user:write")]
+  UserWrite,
+  #[serde(rename = "user:delete")]
+  UserDelete,
+}
+
+impl Permission {
+  pub fn as_str(&self) -> &'static str {
+    match self {
+      Permission::AdminAll => "admin:*",
+      Permission::ClientRead => "client:read",
+      Permission::ClientWrite => "client:write",
+      Permission::ClientDelete => "client:delete",
+      Permission::UserRead => "user:read",
+      Permission::UserWrite => "user:write",
+      Permission::UserDelete => "user:delete",
+    }
+  }
+}
+
+impl std::fmt::Display for Permission {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str(self.as_str())
+  }
+}
+
+impl FromStr for Permission {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "admin:*" => Ok(Permission::AdminAll),
+      "client:read" => Ok(Permission::ClientRead),
+      "client:write" => Ok(Permission::ClientWrite),
+      "client:delete" => Ok(Permission::ClientDelete),
+      "user:read" => Ok(Permission::UserRead),
+      "user:write" => Ok(Permission::UserWrite),
+      "user:delete" => Ok(Permission::UserDelete),
+      _ => Err(format!("unknown permission: {}", s)),
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, ToSchema)]
+pub struct UserInfo {
+  #[serde(flatten)]
+  pub basic_claims: BasicClaims,
+  #[serde(flatten)]
+  pub profile: OpenIdProfile,
+  pub username: String,
+  pub roles: Vec<String>,
+  pub permissions: Vec<Permission>,
+}
+
+impl From<users::Model> for UserInfo {
+  fn from(user_model: users::Model) -> Self {
+    Self {
+      basic_claims: BasicClaims {
+        user: user_model.id,
+        sub: user_model.id.to_string(),
+        ..Default::default()
+      },
+      profile: OpenIdProfile {
+        preferred_username: Some(user_model.username.clone()),
+        ..Default::default()
+      },
+      username: user_model.username,
+      roles: Vec::new(),
+      permissions: Vec::new(),
+    }
+  }
+}

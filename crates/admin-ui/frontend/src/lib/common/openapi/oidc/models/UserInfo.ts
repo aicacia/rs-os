@@ -13,174 +13,206 @@
  */
 
 import { mapValues } from '../runtime';
+import type { Permission } from './Permission';
+import {
+    PermissionFromJSON,
+    PermissionFromJSONTyped,
+    PermissionToJSON,
+    PermissionToJSONTyped,
+} from './Permission';
+
 /**
  * 
  * @export
- * @interface OpenIdClaims
+ * @interface UserInfo
  */
-export interface OpenIdClaims {
+export interface UserInfo {
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     aud: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     client: string;
     /**
      * 
      * @type {number}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     exp: number;
     /**
      * 
      * @type {number}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     iat: number;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     iss: string;
     /**
      * 
      * @type {number}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     nbf: number;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     scope: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     sub: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     type: string;
     /**
      * 
+     * @type {number}
+     * @memberof UserInfo
+     */
+    user: number;
+    /**
+     * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     address?: string;
     /**
      * 
      * @type {Date}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     birthdate?: Date;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     email?: string;
     /**
      * 
      * @type {boolean}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     emailVerified?: boolean;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     familyName?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     gender?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     givenName?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     locale?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     middleName?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     name?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     nickname?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     phone?: string;
     /**
      * 
      * @type {boolean}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     phoneVerified?: boolean;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     preferredUsername?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     profilePicture?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     website?: string;
     /**
      * 
      * @type {string}
-     * @memberof OpenIdClaims
+     * @memberof UserInfo
      */
     zoneInfo?: string;
+    /**
+     * 
+     * @type {Array<Permission>}
+     * @memberof UserInfo
+     */
+    permissions: Array<Permission>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof UserInfo
+     */
+    roles: Array<string>;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserInfo
+     */
+    username: string;
 }
 
 /**
- * Check if a given object implements the OpenIdClaims interface.
+ * Check if a given object implements the UserInfo interface.
  */
-export function instanceOfOpenIdClaims(value: object): value is OpenIdClaims {
+export function instanceOfUserInfo(value: object): value is UserInfo {
     if (!('aud' in value) || value['aud'] === undefined) return false;
     if (!('client' in value) || value['client'] === undefined) return false;
     if (!('exp' in value) || value['exp'] === undefined) return false;
@@ -190,14 +222,18 @@ export function instanceOfOpenIdClaims(value: object): value is OpenIdClaims {
     if (!('scope' in value) || value['scope'] === undefined) return false;
     if (!('sub' in value) || value['sub'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
+    if (!('user' in value) || value['user'] === undefined) return false;
+    if (!('permissions' in value) || value['permissions'] === undefined) return false;
+    if (!('roles' in value) || value['roles'] === undefined) return false;
+    if (!('username' in value) || value['username'] === undefined) return false;
     return true;
 }
 
-export function OpenIdClaimsFromJSON(json: any): OpenIdClaims {
-    return OpenIdClaimsFromJSONTyped(json, false);
+export function UserInfoFromJSON(json: any): UserInfo {
+    return UserInfoFromJSONTyped(json, false);
 }
 
-export function OpenIdClaimsFromJSONTyped(json: any, ignoreDiscriminator: boolean): OpenIdClaims {
+export function UserInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean): UserInfo {
     if (json == null) {
         return json;
     }
@@ -212,6 +248,7 @@ export function OpenIdClaimsFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'scope': json['scope'],
         'sub': json['sub'],
         'type': json['type'],
+        'user': json['user'],
         'address': json['address'] == null ? undefined : json['address'],
         'birthdate': json['birthdate'] == null ? undefined : (new Date(json['birthdate'])),
         'email': json['email'] == null ? undefined : json['email'],
@@ -229,14 +266,17 @@ export function OpenIdClaimsFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'profilePicture': json['profile_picture'] == null ? undefined : json['profile_picture'],
         'website': json['website'] == null ? undefined : json['website'],
         'zoneInfo': json['zone_info'] == null ? undefined : json['zone_info'],
+        'permissions': ((json['permissions'] as Array<any>).map(PermissionFromJSON)),
+        'roles': json['roles'],
+        'username': json['username'],
     };
 }
 
-export function OpenIdClaimsToJSON(json: any): OpenIdClaims {
-    return OpenIdClaimsToJSONTyped(json, false);
+export function UserInfoToJSON(json: any): UserInfo {
+    return UserInfoToJSONTyped(json, false);
 }
 
-export function OpenIdClaimsToJSONTyped(value?: OpenIdClaims | null, ignoreDiscriminator: boolean = false): any {
+export function UserInfoToJSONTyped(value?: UserInfo | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
@@ -252,6 +292,7 @@ export function OpenIdClaimsToJSONTyped(value?: OpenIdClaims | null, ignoreDiscr
         'scope': value['scope'],
         'sub': value['sub'],
         'type': value['type'],
+        'user': value['user'],
         'address': value['address'],
         'birthdate': value['birthdate'] == null ? value['birthdate'] : value['birthdate'].toISOString(),
         'email': value['email'],
@@ -269,6 +310,9 @@ export function OpenIdClaimsToJSONTyped(value?: OpenIdClaims | null, ignoreDiscr
         'profile_picture': value['profilePicture'],
         'website': value['website'],
         'zone_info': value['zoneInfo'],
+        'permissions': ((value['permissions'] as Array<any>).map(PermissionToJSON)),
+        'roles': value['roles'],
+        'username': value['username'],
     };
 }
 

@@ -1,13 +1,13 @@
 import { UserManager, type UserManagerSettings } from 'oidc-client-ts';
-import { localStorageState } from '../util/localStorageState.svelte';
 import { browser } from '$app/environment';
 import icon256x256Png from '$lib/assets/icon256x256.png';
 import { PUBLIC_OS_OIDC_API_URL, PUBLIC_URL } from '$env/static/public';
-import { Permission, type OpenIdClaims } from '../openapi/oidc';
+import { Permission, type UserInfo } from '../openapi/oidc';
 import { setAuthToken } from '../openapi';
 
 const userSettings = browser
 	? ({
+			authority: PUBLIC_OS_OIDC_API_URL,
 			client_id: `${PUBLIC_URL}`,
 			redirect_uri: `${PUBLIC_URL}/callback`,
 			post_logout_redirect_uri: `${PUBLIC_URL}/logout`,
@@ -45,32 +45,20 @@ const userSettings = browser
 					refresh_expires_in_seconds: 604800
 				})
 			}
-		} satisfies Omit<UserManagerSettings, 'authority'>)
+		} satisfies UserManagerSettings)
 	: ({} as never);
 
-const authority = localStorageState('authority', PUBLIC_OS_OIDC_API_URL);
-
-const userManager = $derived.by(
-	() => new UserManager({ ...userSettings, authority: authority.value })
-);
-
-export function getAuthority() {
-	return authority.value;
-}
-
-export function setAuthority(value: string) {
-	authority.value = value;
-}
+const userManager = $derived.by(() => new UserManager({ ...userSettings }));
 
 export function getUserManager() {
 	return userManager;
 }
 
-const user = $derived.by<Promise<OpenIdClaims | null>>(async () => {
+const user = $derived.by<Promise<UserInfo | null>>(async () => {
 	try {
 		const manager = getUserManager();
 		const user = await manager.getUser();
-		return user?.profile as unknown as OpenIdClaims | null;
+		return user?.profile as unknown as UserInfo | null;
 	} catch (e) {
 		console.error('Error getting user from UserManager', e);
 		return null;
@@ -81,26 +69,26 @@ export function getUser() {
 	return user;
 }
 
-export function hasPermission(user: OpenIdClaims, permission: string): boolean {
+export function hasPermission(user: UserInfo, permission: string): boolean {
 	if (hasAdminAll(user)) {
 		return true;
 	}
 	return hasPermissionInternal(user, permission);
 }
 
-export function hasPermissions(user: OpenIdClaims, permissions: string[]): boolean {
+export function hasPermissions(user: UserInfo, permissions: string[]): boolean {
 	if (hasAdminAll(user)) {
 		return true;
 	}
 	return permissions.every((p) => hasPermissionInternal(user, p));
 }
 
-function hasAdminAll(user: OpenIdClaims): boolean {
+function hasAdminAll(user: UserInfo): boolean {
 	return hasPermissionInternal(user, Permission.Admin);
 }
 
-function hasPermissionInternal(user: OpenIdClaims, permission: string): boolean {
-	return new RegExp(`\\b${permission.replaceAll('.', '\\.')}\\b`).test(user.scope);
+function hasPermissionInternal(user: UserInfo, permission: string): boolean {
+	return user.permissions.includes(permission as Permission);
 }
 
 if (browser) {

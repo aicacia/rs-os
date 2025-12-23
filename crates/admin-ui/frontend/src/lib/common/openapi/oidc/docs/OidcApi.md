@@ -1047,7 +1047,7 @@ No authorization required
 
 ## userInfo
 
-> OpenIdClaims userInfo()
+> UserInfo userInfo()
 
 
 
@@ -1086,7 +1086,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**OpenIdClaims**](OpenIdClaims.md)
+[**UserInfo**](UserInfo.md)
 
 ### Authorization
 

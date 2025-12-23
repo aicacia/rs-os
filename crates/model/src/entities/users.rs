@@ -451,36 +451,42 @@ pub async fn get_user_roles_by_user_id(
 pub async fn get_user_role_permissions_by_user_id(
   db: &DatabaseConnection,
   user_id: i64,
-) -> Result<HashMap<i64, Vec<permissions::Model>>, DbErr> {
-  let user_roles_list = user_roles::Entity::find()
+) -> Result<HashMap<roles::Model, Vec<permissions::Model>>, DbErr> {
+  let user_roles = user_roles::Entity::find()
     .filter(user_roles::Column::UserId.eq(user_id))
+    .find_also_related(roles::Entity)
     .all(db)
     .await?;
 
-  let role_ids: Vec<i64> = user_roles_list.iter().map(|ur| ur.role_id).collect();
+  let role_ids: Vec<i64> = user_roles
+    .iter()
+    .filter_map(|(_, role)| role.as_ref().map(|r| r.id))
+    .collect();
 
   if role_ids.is_empty() {
-    return Ok(HashMap::default());
+    return Ok(HashMap::new());
   }
 
-  let roles_permissions = roles_permissions::Entity::find()
-    .filter(roles_permissions::Column::RoleId.is_in(role_ids))
+  let role_permissions = roles_permissions::Entity::find()
+    .filter(roles_permissions::Column::RoleId.is_in(role_ids.clone()))
     .find_also_related(permissions::Entity)
     .all(db)
     .await?;
 
-  let mut permissions: HashMap<i64, Vec<permissions::Model>> = HashMap::default();
+  let mut result = HashMap::new();
 
-  for (roles_permission, permission_opt) in roles_permissions {
-    if let Some(permission) = permission_opt {
-      permissions
-        .entry(roles_permission.role_id)
-        .or_insert_with(Vec::new)
-        .push(permission);
+  for (_, role) in user_roles {
+    if let Some(role) = role {
+      let perms: Vec<permissions::Model> = role_permissions
+        .iter()
+        .filter(|(rp, _)| rp.role_id == role.id)
+        .filter_map(|(_, perm)| perm.clone())
+        .collect();
+      result.insert(role, perms);
     }
   }
 
-  Ok(permissions)
+  Ok(result)
 }
 
 pub async fn assign_user_role(

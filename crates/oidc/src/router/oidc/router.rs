@@ -28,19 +28,15 @@ use crate::{
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
         TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
       },
-      entity::{AuthorizationCodeClaims, BasicClaims, OpenIdClaims, Token},
+      entity::{AuthorizationCodeClaims, BasicClaims, Permission, Token, UserInfo},
       helper::{create_user_authorization_code_token, create_user_token},
-      permissions::Permission,
     },
     entity::RouterState,
     error::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
       NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
     },
-    middleware::{
-      authorization::{Authorization, parse_authorization},
-      user_authorization::UserAuthorization,
-    },
+    middleware::{authorization::parse_authorization, user_authorization::UserAuthorization},
     oidc::{
       constants::{
         ALWAYS_ALLOWED_GRANT_TYPES, GRANT_TYPE_AUTHORIZATION_CODE, GRANT_TYPE_PASSWORD,
@@ -792,7 +788,7 @@ pub async fn register_client(
   path = "/user-info",
   tags = [TAG],
   responses(
-    (status = 200, description = "Consented claims", body = OpenIdClaims),
+    (status = 200, description = "Consented claims", body = UserInfo),
     (status = 401, description = "Unauthorized", body = HttpError),
     (status = 403, description = "Forbidden", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
@@ -802,10 +798,16 @@ pub async fn register_client(
   )
 )]
 pub async fn user_info(
-  State(_state): State<RouterState>,
-  authorization: Authorization<OpenIdClaims>,
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
 ) -> impl IntoResponse {
-  axum::Json(authorization.claims).into_response()
+  match user_authorization
+    .get_user_info(&state.database_connection)
+    .await
+  {
+    Ok(user_info) => axum::Json(user_info).into_response(),
+    Err(e) => e.into_response(),
+  }
 }
 
 #[utoipa::path(

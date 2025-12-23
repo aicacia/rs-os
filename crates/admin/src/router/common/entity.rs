@@ -45,6 +45,9 @@ impl Claims for AuthorizationCodeClaims {
   fn iss(&self) -> &str {
     &self.basic_claims.iss
   }
+  fn user(&self) -> i64 {
+    self.basic_claims.user
+  }
   fn client(&self) -> &str {
     &self.basic_claims.client
   }
@@ -158,6 +161,9 @@ impl Claims for OpenIdClaims {
   }
   fn iss(&self) -> &str {
     &self.basic_claims.iss
+  }
+  fn user(&self) -> i64 {
+    self.basic_claims.user
   }
   fn client(&self) -> &str {
     &self.basic_claims.client

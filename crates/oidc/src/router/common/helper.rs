@@ -40,6 +40,7 @@ pub(crate) async fn create_user_token(
     r#type: TOKEN_TYPE_BEARER.to_owned(),
     sub: user.id.to_string(),
     aud: audience,
+    user: user.id,
     client: client_id,
     iat: now.timestamp(),
     nbf: now.timestamp(),
@@ -112,7 +113,7 @@ pub(crate) async fn create_user_token(
         preferred_username: Some(user.username.clone()),
         ..Default::default()
       },
-      ..Default::default()
+      username: user.username.clone(),
     };
     id_claims.basic_claims.r#type = TOKEN_TYPE_ID.to_owned();
 
@@ -252,6 +253,7 @@ pub(crate) async fn create_user_authorization_code_token(
       r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
       sub: user_id.to_string(),
       aud: audience,
+      user: user_id,
       client: client_id.clone(),
       iat: now.timestamp(),
       nbf: now.timestamp(),

@@ -23,7 +23,7 @@
 		open = !open;
 	}
 	async function onLogout() {
-		await getUserManager().signoutCallback();
+		await getUserManager().signoutRedirect();
 	}
 </script>
 
@@ -31,10 +31,10 @@
 	<nav class={'flex shrink flex-col border-r border-gray-600 bg-gray-100 dark:bg-gray-800'}>
 		<div class="flex h-full w-full grow flex-col overflow-auto">
 			<div class="m-2 flex shrink flex-row items-center justify-between">
-				<a href={resolve('/')} class={{ hidden: open }}><h3 class="m-0">OIDC</h3></a>
+				<a href={resolve('/')} class={{ hidden: open }}><h3 class="m-0">OIDC Admin UI</h3></a>
 				<button
 					type="button"
-					class="btn icon ghost"
+					class="btn icon ghost ms-2"
 					aria-pressed={!open}
 					aria-expanded={open}
 					aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}

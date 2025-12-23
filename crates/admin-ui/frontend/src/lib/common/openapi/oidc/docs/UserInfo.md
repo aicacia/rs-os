@@ -1,5 +1,5 @@
 
-# OpenIdClaims
+# UserInfo
 
 
 ## Properties
@@ -15,6 +15,7 @@ Name | Type
 `scope` | string
 `sub` | string
 `type` | string
+`user` | number
 `address` | string
 `birthdate` | Date
 `email` | string
@@ -32,11 +33,14 @@ Name | Type
 `profilePicture` | string
 `website` | string
 `zoneInfo` | string
+`permissions` | [Array&lt;Permission&gt;](Permission.md)
+`roles` | Array&lt;string&gt;
+`username` | string
 
 ## Example
 
 ```typescript
-import type { OpenIdClaims } from ''
+import type { UserInfo } from ''
 
 // TODO: Update the object below with actual values
 const example = {
@@ -49,6 +53,7 @@ const example = {
   "scope": null,
   "sub": null,
   "type": null,
+  "user": null,
   "address": null,
   "birthdate": null,
   "email": null,
@@ -66,7 +71,10 @@ const example = {
   "profilePicture": null,
   "website": null,
   "zoneInfo": null,
-} satisfies OpenIdClaims
+  "permissions": null,
+  "roles": null,
+  "username": null,
+} satisfies UserInfo
 
 console.log(example)
 
@@ -75,7 +83,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as OpenIdClaims
+const exampleParsed = JSON.parse(exampleJSON) as UserInfo
 console.log(exampleParsed)
 ```
 

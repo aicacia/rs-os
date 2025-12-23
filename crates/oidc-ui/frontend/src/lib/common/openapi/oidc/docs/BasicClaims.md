@@ -15,6 +15,7 @@ Name | Type
 `scope` | string
 `sub` | string
 `type` | string
+`user` | number
 
 ## Example
 
@@ -32,6 +33,7 @@ const example = {
   "scope": null,
   "sub": null,
   "type": null,
+  "user": null,
 } satisfies BasicClaims
 
 console.log(example)

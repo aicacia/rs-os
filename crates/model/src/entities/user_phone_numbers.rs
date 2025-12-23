@@ -1,4 +1,3 @@
-
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
@@ -46,7 +45,7 @@ impl Related<super::users::Entity> for Entity {
 impl ActiveModelBehavior for ActiveModel {}
 
 // Database operations for user_phone_numbers
-use sea_orm::{sea_query::Expr, Set, TransactionTrait};
+use sea_orm::{Set, TransactionTrait, sea_query::Expr};
 
 pub async fn list_user_phone_numbers_by_user_id(
   db: &DatabaseConnection,
@@ -55,6 +54,17 @@ pub async fn list_user_phone_numbers_by_user_id(
   Entity::find()
     .filter(Column::UserId.eq(user_id))
     .all(db)
+    .await
+}
+
+pub async fn get_user_primary_phone_number_by_user_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Option<Model>, DbErr> {
+  Entity::find()
+    .filter(Column::UserId.eq(user_id))
+    .filter(Column::Primary.eq(1))
+    .one(db)
     .await
 }
 

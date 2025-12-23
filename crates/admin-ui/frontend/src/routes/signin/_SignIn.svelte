@@ -1,15 +1,5 @@
 <script lang="ts">
-	import { getUserManager, getAuthority, setAuthority } from "$lib/common/state/user.svelte";
-
-	let authority = $state('');
-
-	$effect(() => {
-		authority = getAuthority();
-	})
-
-	function onChangeAuthority() {
-		setAuthority(authority);
-	}
+	import { getUserManager } from "$lib/common/state/user.svelte";
 
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -19,13 +9,5 @@
 </script>
 
 <form onsubmit={onSubmit} class="flex flex-col">
-	<input
-		type="text"
-		aria-label="OIDC Authority URL"
-		autocomplete="url"
-		placeholder="OIDC Authority URL"
-		bind:value={authority}
-		oninput={onChangeAuthority}
-	/>
-	<input class="btn primary mt-4" type="submit" value="Sign in" />
+	<input class="btn primary" type="submit" value="Sign in" />
 </form>

@@ -23,11 +23,11 @@ import type {
   ClientRegisterRequest,
   HttpError,
   JWKs,
-  OpenIdClaims,
   OpenIdConfiguration,
   ResponseMode,
   ResponseType,
   Token,
+  UserInfo,
 } from '../models/index';
 import {
     AuthorizeRequestFromJSON,
@@ -46,8 +46,6 @@ import {
     HttpErrorToJSON,
     JWKsFromJSON,
     JWKsToJSON,
-    OpenIdClaimsFromJSON,
-    OpenIdClaimsToJSON,
     OpenIdConfigurationFromJSON,
     OpenIdConfigurationToJSON,
     ResponseModeFromJSON,
@@ -56,6 +54,8 @@ import {
     ResponseTypeToJSON,
     TokenFromJSON,
     TokenToJSON,
+    UserInfoFromJSON,
+    UserInfoToJSON,
 } from '../models/index';
 
 export interface ApproveClientForUserRequest {
@@ -341,11 +341,11 @@ export interface OidcApiInterface {
      * @throws {RequiredError}
      * @memberof OidcApiInterface
      */
-    userInfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>>;
+    userInfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserInfo>>;
 
     /**
      */
-    userInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims>;
+    userInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserInfo>;
 
 }
 
@@ -1029,7 +1029,7 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
     /**
      */
-    async userInfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OpenIdClaims>> {
+    async userInfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserInfo>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -1052,12 +1052,12 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => OpenIdClaimsFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => UserInfoFromJSON(jsonValue));
     }
 
     /**
      */
-    async userInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OpenIdClaims> {
+    async userInfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserInfo> {
         const response = await this.userInfoRaw(initOverrides);
         return await response.value();
     }

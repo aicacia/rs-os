@@ -4,7 +4,7 @@ All URIs are relative to *http://localhost:3000*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**clientByClientId**](ClientApi.md#clientbyclientid) | **GET** /admin/api/clients/{client_id} |  |
+| [**clientById**](ClientApi.md#clientbyid) | **GET** /admin/api/clients/{client_id} |  |
 | [**clientCreate**](ClientApi.md#clientcreate) | **POST** /admin/api/clients |  |
 | [**clientDelete**](ClientApi.md#clientdelete) | **DELETE** /admin/api/clients/{client_id} |  |
 | [**clientList**](ClientApi.md#clientlist) | **GET** /admin/api/clients |  |
@@ -12,9 +12,9 @@ All URIs are relative to *http://localhost:3000*
 
 
 
-## clientByClientId
+## clientById
 
-> Client clientByClientId(clientId)
+> Client clientById(clientId)
 
 
 
@@ -25,7 +25,7 @@ import {
   Configuration,
   ClientApi,
 } from '';
-import type { ClientByClientIdRequest } from '';
+import type { ClientByIdRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
@@ -38,10 +38,10 @@ async function example() {
   const body = {
     // number
     clientId: 789,
-  } satisfies ClientByClientIdRequest;
+  } satisfies ClientByIdRequest;
 
   try {
-    const data = await api.clientByClientId(body);
+    const data = await api.clientById(body);
     console.log(data);
   } catch (error) {
     console.error(error);

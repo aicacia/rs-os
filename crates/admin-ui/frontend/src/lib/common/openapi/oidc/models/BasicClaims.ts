@@ -73,6 +73,12 @@ export interface BasicClaims {
      * @memberof BasicClaims
      */
     type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof BasicClaims
+     */
+    user: number;
 }
 
 /**
@@ -88,6 +94,7 @@ export function instanceOfBasicClaims(value: object): value is BasicClaims {
     if (!('scope' in value) || value['scope'] === undefined) return false;
     if (!('sub' in value) || value['sub'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
+    if (!('user' in value) || value['user'] === undefined) return false;
     return true;
 }
 
@@ -110,6 +117,7 @@ export function BasicClaimsFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'scope': json['scope'],
         'sub': json['sub'],
         'type': json['type'],
+        'user': json['user'],
     };
 }
 
@@ -133,6 +141,7 @@ export function BasicClaimsToJSONTyped(value?: BasicClaims | null, ignoreDiscrim
         'scope': value['scope'],
         'sub': value['sub'],
         'type': value['type'],
+        'user': value['user'],
     };
 }
 
