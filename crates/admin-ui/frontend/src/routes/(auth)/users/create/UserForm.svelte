@@ -28,8 +28,8 @@
 	}
 </script>
 
-<form class="space-y-4" onsubmit={handleSubmit}>
-	<h2 class="text-2xl font-semibold">
+<form onsubmit={handleSubmit}>
+	<h2>
 		{mode === 'create' ? m.users_create_title() : m.users_edit_title()}
 	</h2>
 
@@ -43,7 +43,8 @@
 	<div class="flex gap-2">
 		<button
 			type="submit"
-			class="btn primary disabled:opacity-50"
+			class="btn primary"
+			class:disabled={!canSubmit || submitting}
 			disabled={!canSubmit || submitting}
 		>
 			{#if submitting}

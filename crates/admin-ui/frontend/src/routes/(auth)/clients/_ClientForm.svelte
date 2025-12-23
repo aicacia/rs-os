@@ -214,15 +214,14 @@
 	}
 </script>
 
-<form onsubmit={handleSubmit} class="space-y-6">
+<form onsubmit={handleSubmit}>
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">{m.client_form_basic_info()}</h3>
+		<h3>{m.client_form_basic_info()}</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_client_id()} *</span>
+			<label>
+				<span>{m.client_form_client_id()} *</span>
 				<input
 					type="text"
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.clientId.value}
 					placeholder={m.client_form_client_id_placeholder()}
 					{readonly}
@@ -231,11 +230,10 @@
 				<Issues issues={form.fields.clientId.issues} />
 			</label>
 
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_name()} *</span>
+			<label>
+				<span>{m.client_form_name()} *</span>
 				<input
 					type="text"
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.name.value}
 					placeholder={m.client_form_name_placeholder()}
 					{readonly}
@@ -244,11 +242,10 @@
 				<Issues issues={form.fields.name.issues} />
 			</label>
 
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_client_secret()}</span>
+			<label>
+				<span>{m.client_form_client_secret()}</span>
 				<input
 					type="text"
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.clientSecret.value}
 					placeholder={m.client_form_client_secret_placeholder()}
 					{readonly}
@@ -261,12 +258,11 @@
 
 	<!-- Application Configuration -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">{m.client_form_app_config()}</h3>
+		<h3>{m.client_form_app_config()}</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_app_type()} *</span>
+			<label>
+				<span>{m.client_form_app_type()} *</span>
 				<select
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.applicationType.value}
 					disabled={readonly}
 				>
@@ -277,10 +273,9 @@
 				<Issues issues={form.fields.applicationType.issues} />
 			</label>
 
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_auth_method()} *</span>
+			<label>
+				<span>{m.client_form_auth_method()} *</span>
 				<select
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.authMethod.value}
 					disabled={readonly}
 				>
@@ -295,136 +290,125 @@
 
 	<!-- OAuth2 Configuration -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">{m.client_form_oauth2_config()}</h3>
+		<h3>{m.client_form_oauth2_config()}</h3>
 
-		<div class="space-y-4">
-			<div>
-				<span class="text-sm font-medium">{m.client_form_grant_types()} *</span>
-				<div class="mt-2 flex flex-wrap gap-2">
-					{#each availableGrantTypes as grantType}
-						<label class="flex items-center gap-2">
-							<input
-								type="checkbox"
-								checked={grantTypes.includes(grantType)}
-								onchange={() => toggleGrantType(grantType)}
-								disabled={readonly}
-							/>
-							<span class="text-sm">{grantType}</span>
-						</label>
-					{/each}
-				</div>
+		<div>
+			<span>{m.client_form_grant_types()} *</span>
+			<div class="flex flex-wrap gap-2">
+				{#each availableGrantTypes as grantType}
+					<label class="flex items-center gap-2">
+						<input
+							type="checkbox"
+							checked={grantTypes.includes(grantType)}
+							onchange={() => toggleGrantType(grantType)}
+							disabled={readonly}
+						/>
+						<span>{grantType}</span>
+					</label>
+				{/each}
 			</div>
+		</div>
 
-			<div>
-				<span class="text-sm font-medium">{m.client_form_response_types()} *</span>
-				<div class="mt-2 flex flex-wrap gap-2">
-					{#each availableResponseTypes as responseType}
-						<label class="flex items-center gap-2">
-							<input
-								type="checkbox"
-								checked={responseTypes.includes(responseType)}
-								onchange={() => toggleResponseType(responseType)}
-								disabled={readonly}
-							/>
-							<span class="text-sm">{responseType}</span>
-						</label>
-					{/each}
-				</div>
+		<div>
+			<span>{m.client_form_response_types()} *</span>
+			<div class="flex flex-wrap gap-2">
+				{#each availableResponseTypes as responseType}
+					<label class="flex items-center gap-2">
+						<input
+							type="checkbox"
+							checked={responseTypes.includes(responseType)}
+							onchange={() => toggleResponseType(responseType)}
+							disabled={readonly}
+						/>
+						<span>{responseType}</span>
+					</label>
+				{/each}
 			</div>
+		</div>
 
-			<div>
-				<span class="text-sm font-medium">{m.client_form_scopes()} *</span>
-				<div class="mt-2 flex flex-wrap gap-2">
-					{#each availableScopes as scope}
-						<label class="flex items-center gap-2">
-							<input
-								type="checkbox"
-								checked={scopesState.includes(scope)}
-								onchange={() => toggleScope(scope)}
-								disabled={readonly}
-							/>
-							<span class="text-sm">{scope}</span>
-						</label>
-					{/each}
-				</div>
+		<div>
+			<span>{m.client_form_scopes()} *</span>
+			<div class="flex flex-wrap gap-2">
+				{#each availableScopes as scope}
+					<label class="flex items-center gap-2">
+						<input
+							type="checkbox"
+							checked={scopesState.includes(scope)}
+							onchange={() => toggleScope(scope)}
+							disabled={readonly}
+						/>
+						<span>{scope}</span>
+					</label>
+				{/each}
 			</div>
 		</div>
 	</section>
 
 	<!-- URIs -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">{m.client_form_uris()}</h3>
-		<div class="space-y-4">
-			<!-- Redirect URIs -->
-			<div>
-				<span class="text-sm font-medium">{m.client_form_redirect_uris()}</span>
-				{#if !readonly}
-					<div class="mt-2 flex gap-2">
-						<input
-							type="url"
-							class="block flex-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-							bind:value={redirectUriInput}
-							placeholder={m.client_form_redirect_uri_placeholder()}
-							onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addRedirectUri())}
-						/>
-						<button type="button" class="btn primary" onclick={addRedirectUri}>
-							<Plus class="h-4 w-4" />
-						</button>
-					</div>
-				{/if}
-				<div class="mt-2 flex flex-wrap gap-2">
-					{#each redirectUris as uri, index}
-						<span
-							class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm dark:bg-gray-700"
-						>
-							{uri}
-							{#if !readonly}
-								<button
-									type="button"
-									onclick={() => removeRedirectUri(index)}
-									class="text-red-500 hover:text-red-700"
-								>
-									<X class="h-3 w-3" />
-								</button>
-							{/if}
-						</span>
-					{/each}
+		<h3>{m.client_form_uris()}</h3>
+		<!-- Redirect URIs -->
+		<div>
+			<span>{m.client_form_redirect_uris()}</span>
+			{#if !readonly}
+				<div class="flex gap-2">
+					<input
+						type="url"
+						class="flex-1"
+						bind:value={redirectUriInput}
+						placeholder={m.client_form_redirect_uri_placeholder()}
+						onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addRedirectUri())}
+					/>
+					<button type="button" class="btn primary" onclick={addRedirectUri}>
+						<Plus class="h-4 w-4" />
+					</button>
 				</div>
+			{/if}
+			<div class="flex flex-wrap gap-2">
+				{#each redirectUris as uri, index}
+					<span class="badge gray">
+						{uri}
+						{#if !readonly}
+							<button
+								type="button"
+								onclick={() => removeRedirectUri(index)}
+								class="btn icon"
+							>
+								<X class="h-3 w-3" />
+							</button>
+						{/if}
+					</span>
+				{/each}
 			</div>
+		</div>
 
-			<!-- Post Logout Redirect URIs -->
-			<div>
-				<span class="text-sm font-medium">{m.client_form_post_logout_redirect_uris()}</span>
-				{#if !readonly}
-					<div class="mt-2 flex gap-2">
-						<input
-							type="url"
-							class="block flex-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-							bind:value={postLogoutRedirectUriInput}
-							placeholder={m.client_form_post_logout_redirect_uri_placeholder()}
-							onkeydown={(e) =>
-								e.key === 'Enter' && (e.preventDefault(), addPostLogoutRedirectUri())}
-						/>
-						<button type="button" class="btn primary" onclick={addPostLogoutRedirectUri}>
-							<Plus class="h-4 w-4" />
-						</button>
-					</div>
-				{/if}
-				<div class="mt-2 flex flex-wrap gap-2">
-					{#each postLogoutRedirectUris as uri, index}
-						<span
-							class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm dark:bg-gray-700"
-						>
-							{uri}
-							{#if !readonly}
-								<button
-									type="button"
-									onclick={() => removePostLogoutRedirectUri(index)}
-									class="text-red-500 hover:text-red-700"
-								>
-									<X class="h-3 w-3" />
-								</button>
-							{/if}
+		<!-- Post Logout Redirect URIs -->
+		<div>
+			<span>{m.client_form_post_logout_redirect_uris()}</span>
+			{#if !readonly}
+				<div class="flex gap-2">
+					<input
+						type="url"
+						class="flex-1"
+						bind:value={postLogoutRedirectUriInput}
+						placeholder={m.client_form_post_logout_redirect_uri_placeholder()}
+						onkeydown={(e) =>
+							e.key === 'Enter' && (e.preventDefault(), addPostLogoutRedirectUri())}
+					/>
+					<button type="button" class="btn primary" onclick={addPostLogoutRedirectUri}>
+						<Plus class="h-4 w-4" />
+					</button>
+				</div>
+			{/if}
+			<div class="flex flex-wrap gap-2">
+				{#each postLogoutRedirectUris as uri, index}
+					<span class="badge gray">
+						{uri}
+						{#if !readonly}
+							<button
+								type="button"
+								onclick={() => removePostLogoutRedirectUri(index)}
+								class="btn icon"
 						</span>
 					{/each}
 				</div>
@@ -481,12 +465,12 @@
 
 	<!-- Audience -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">{m.client_form_audience()}</h3>
+		<h3>{m.client_form_audience()}</h3>
 		{#if !readonly}
 			<div class="flex gap-2">
 				<input
 					type="text"
-					class="block flex-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+					class="flex-1"
 					bind:value={audienceInput}
 					placeholder={m.client_form_audience_placeholder()}
 					onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addAudience())}
@@ -496,17 +480,15 @@
 				</button>
 			</div>
 		{/if}
-		<div class="mt-2 flex flex-wrap gap-2">
+		<div class="flex flex-wrap gap-2">
 			{#each audienceState as aud, index}
-				<span
-					class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm dark:bg-gray-700"
-				>
+				<span class="badge gray">
 					{aud}
 					{#if !readonly}
 						<button
 							type="button"
 							onclick={() => removeAudience(index)}
-							class="text-red-500 hover:text-red-700"
+							class="btn icon"
 						>
 							<X class="h-3 w-3" />
 						</button>
@@ -518,13 +500,12 @@
 
 	<!-- Token Expiration -->
 	<section class="card">
-		<h3 class="mb-4 text-lg font-semibold">{m.client_form_token_expiration()}</h3>
+		<h3>{m.client_form_token_expiration()}</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_access_token()} *</span>
+			<label>
+				<span>{m.client_form_access_token()} *</span>
 				<input
 					type="number"
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.accessTokenExpiresInSeconds.value}
 					min="1"
 					{readonly}
@@ -532,11 +513,10 @@
 				<Issues issues={form.fields.accessTokenExpiresInSeconds.issues} />
 			</label>
 
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_id_token()} *</span>
+			<label>
+				<span>{m.client_form_id_token()} *</span>
 				<input
 					type="number"
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.idTokenExpiresInSeconds.value}
 					min="1"
 					{readonly}
@@ -544,11 +524,10 @@
 				<Issues issues={form.fields.idTokenExpiresInSeconds.issues} />
 			</label>
 
-			<label class="block">
-				<span class="text-sm font-medium">{m.client_form_refresh_token()} *</span>
+			<label>
+				<span>{m.client_form_refresh_token()} *</span>
 				<input
 					type="number"
-					class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
 					bind:value={form.fields.refreshExpiresInSeconds.value}
 					min="1"
 					{readonly}

@@ -46,12 +46,12 @@
 </script>
 
 <form onsubmit={submit} class="card">
-	<h3 class="text-lg font-medium">{m.profile_username_title()}</h3>
+	<h3>{m.profile_username_title()}</h3>
 	<label class="block">
-		<span class="text-sm font-medium">{m.profile_username_label()}</span>
+		<span>{m.profile_username_label()}</span>
 		<input
 			id="profile-username"
-			class="mt-1 block w-full px-3 py-2"
+			class="block w-full"
 			bind:value={form.fields.username.value}
 			placeholder={m.profile_username_placeholder()}
 			aria-label={m.profile_username_label()}

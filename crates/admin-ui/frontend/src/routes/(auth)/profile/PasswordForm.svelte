@@ -52,13 +52,13 @@
 </script>
 
 <form onsubmit={submit} class="card">
-	<h3 class="text-lg font-medium">{m.profile_change_password_title()}</h3>
+	<h3>{m.profile_change_password_title()}</h3>
 	<label class="block">
-		<span class="text-sm font-medium">{m.profile_new_password_label()}</span>
+		<span>{m.profile_new_password_label()}</span>
 		<input
 			id="profile-new-password"
 			type="password"
-			class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 			bind:value={form.fields.password.value}
 			placeholder={m.profile_new_password_placeholder()}
 			aria-label={m.profile_new_password_label()}
@@ -66,11 +66,11 @@
 		<Issues issues={form.fields.password.issues} />
 	</label>
 	<label class="block">
-		<span class="text-sm font-medium">{m.profile_confirm_password_label()}</span>
+		<span>{m.profile_confirm_password_label()}</span>
 		<input
 			id="profile-confirm-password"
 			type="password"
-			class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 			bind:value={form.fields.passwordConfirmation.value}
 			placeholder={m.profile_confirm_password_placeholder()}
 			aria-label={m.profile_confirm_password_label()}

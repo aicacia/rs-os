@@ -23,6 +23,6 @@
 	<title>{m.users_create_title()}</title>
 </svelte:head>
 
-<section class="mx-auto max-w-xl p-4">
+<section class="card">
 	<UserForm mode="create" {onSubmit} onCancel={() => history.back()} />
 </section>

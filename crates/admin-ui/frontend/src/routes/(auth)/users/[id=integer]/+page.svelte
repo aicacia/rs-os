@@ -28,38 +28,36 @@
 	<title>{m.users_detail_title()} - {user.username}</title>
 </svelte:head>
 
-<section class="mx-auto max-w-3xl space-y-4 p-4">
-	<h1 class="text-3xl font-semibold">{m.users_detail_title()}</h1>
+<section class="card">
+	<h1>{m.users_detail_title()}</h1>
 
-	<div class="card secondary space-y-2">
+	<div>
+		<span>ID</span>
+		<div class="font-mono">{user.id}</div>
+	</div>
+	<div>
+		<span>Username</span>
+		<div>{user.username}</div>
+	</div>
+	<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 		<div>
-			<span class="text-sm text-gray-600 dark:text-gray-400">ID</span>
-			<div class="font-mono">{user.id}</div>
+			<span>Created</span>
+			<div>{new Date(user.createdAt).toLocaleString()}</div>
 		</div>
 		<div>
-			<span class="text-sm text-gray-600 dark:text-gray-400">Username</span>
-			<div>{user.username}</div>
+			<span>Updated</span>
+			<div>{new Date(user.updatedAt).toLocaleString()}</div>
 		</div>
-		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-			<div>
-				<span class="text-sm text-gray-600 dark:text-gray-400">Created</span>
-				<div>{new Date(user.createdAt).toLocaleString()}</div>
-			</div>
-			<div>
-				<span class="text-sm text-gray-600 dark:text-gray-400">Updated</span>
-				<div>{new Date(user.updatedAt).toLocaleString()}</div>
-			</div>
-		</div>
-		<div class="flex gap-2 pt-2">
-			<button class="btn light" onclick={() => goto(`/users/${user.id}/edit`)}>
-				<Edit class="mr-1 h-4 w-4" />
-				{m.actions_edit()}
-			</button>
-			<button class="btn danger" onclick={() => (showDelete = true)}>
-				<Trash2 class="mr-1 h-4 w-4" />
-				{m.actions_delete()}
-			</button>
-		</div>
+	</div>
+	<div class="flex flex-row items-center gap-2">
+		<button class="btn light flex flex-row items-center" onclick={() => goto(`/users/${user.id}/edit`)}>
+			<Edit class="mr-1 h-4 w-4" />
+			{m.actions_edit()}
+		</button>
+		<button class="btn danger flex flex-row items-center" onclick={() => (showDelete = true)}>
+			<Trash2 class="mr-1 h-4 w-4" />
+			{m.actions_delete()}
+		</button>
 	</div>
 
 	{#if showDelete}

@@ -31,34 +31,29 @@
 	<title>{m.clients_edit_title()}</title>
 </svelte:head>
 
-<div class="space-y-4">
-	<section class="card">
-		<div class="flex items-center gap-3">
-			<a
-				href={resolve('/(auth)/clients')}
-				class="text-gray-600 hover:text-gray-900 dark:hover:text-white"
-			>
-				<ArrowLeft class="h-5 w-5" />
-			</a>
-			<div>
-				<h2 class="m-0">{m.clients_edit_title()}</h2>
-				<p class="text-sm text-gray-600 dark:text-gray-400">{client.name}</p>
-			</div>
+<section class="card">
+	<div class="flex items-center gap-3">
+		<a href={resolve('/(auth)/clients')}>
+			<ArrowLeft class="h-5 w-5" />
+		</a>
+		<div>
+			<h2>{m.clients_edit_title()}</h2>
+			<p>{client.name}</p>
 		</div>
-	</section>
+	</div>
+</section>
 
-	<ClientForm
-		initialValues={client}
-		onsubmit={handleSubmit}
-	>
-		{#snippet actions()}
-			<button
-				type="button"
-				class="btn secondary"
-				onclick={() => goto(resolve('/(auth)/clients'))}
-			>
-				{m.clients_cancel()}
-			</button>
-		{/snippet}
-	</ClientForm>
-</div>
+<ClientForm
+	initialValues={client}
+	onsubmit={handleSubmit}
+>
+	{#snippet actions()}
+		<button
+			type="button"
+			class="btn secondary"
+			onclick={() => goto(resolve('/(auth)/clients'))}
+		>
+			{m.clients_cancel()}
+		</button>
+	{/snippet}
+</ClientForm>

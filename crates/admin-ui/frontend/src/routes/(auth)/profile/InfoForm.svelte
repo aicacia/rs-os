@@ -103,24 +103,24 @@
 </script>
 
 <form onsubmit={submit} class="card">
-	<h3 class="text-lg font-medium">{m.profile_info_title()}</h3>
+	<h3>{m.profile_info_title()}</h3>
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_given_name_label()}</span>
+			<span>{m.profile_given_name_label()}</span>
 			<input
 				id="profile-given-name"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.givenName.value}
 				placeholder={m.profile_given_name_placeholder()}
 				aria-label={m.profile_given_name_label()}
 			/>
 			<Issues issues={form.fields.givenName.issues} />
-		</label>
+		</label> 
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_middle_name_label()}</span>
+			<span>{m.profile_middle_name_label()}</span>
 			<input
 				id="profile-middle-name"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.middleName.value}
 				placeholder={m.profile_middle_name_placeholder()}
 				aria-label={m.profile_middle_name_label()}
@@ -128,10 +128,10 @@
 			<Issues issues={form.fields.middleName.issues} />
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_family_name_label()}</span>
+			<span>{m.profile_family_name_label()}</span>
 			<input
 				id="profile-family-name"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.familyName.value}
 				placeholder={m.profile_family_name_placeholder()}
 				aria-label={m.profile_family_name_label()}
@@ -139,10 +139,10 @@
 			<Issues issues={form.fields.familyName.issues} />
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_nickname_label()}</span>
+			<span>{m.profile_nickname_label()}</span>
 			<input
 				id="profile-nickname"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.nickname.value}
 				placeholder={m.profile_nickname_placeholder()}
 				aria-label={m.profile_nickname_label()}
@@ -150,10 +150,10 @@
 			<Issues issues={form.fields.nickname.issues} />
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_website_label()}</span>
+			<span>{m.profile_website_label()}</span>
 			<input
 				id="profile-website"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.website.value}
 				placeholder={m.profile_website_placeholder()}
 				aria-label={m.profile_website_label()}
@@ -161,10 +161,10 @@
 			<Issues issues={form.fields.website.issues} />
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_locale_label()}</span>
+			<span>{m.profile_locale_label()}</span>
 			<select
 				id="profile-locale"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.locale.value}
 				placeholder={m.profile_locale_placeholder()}
 				aria-label={m.profile_locale_label()}
@@ -176,10 +176,10 @@
 			<Issues issues={form.fields.locale.issues} />
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_zone_info_label()}</span>
+			<span>{m.profile_zone_info_label()}</span>
 			<select
 				id="profile-zone-info"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.zoneInfo.value}
 				placeholder={m.profile_zone_info_placeholder()}
 				aria-label={m.profile_zone_info_label()}
@@ -191,11 +191,11 @@
 			</select>
 			<Issues issues={form.fields.zoneInfo.issues} />
 		</label>
-		<label class="block md:col-span-2">
-			<span class="text-sm font-medium">{m.profile_address_label()}</span>
+		<label class="md:col-span-2">
+			<span>{m.profile_address_label()}</span>
 			<input
 				id="profile-address"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.address.value}
 				placeholder={m.profile_address_placeholder()}
 				aria-label={m.profile_address_label()}
@@ -203,11 +203,11 @@
 			<Issues issues={form.fields.address.issues} />
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_birthdate_label()}</span>
+			<span>{m.profile_birthdate_label()}</span>
 			<input
 				id="profile-birthdate"
 				type="date"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				value={form.fields.birthdate.value
 					? new Date(form.fields.birthdate.value * 1000).toISOString().split('T')[0]
 					: ''}
@@ -223,22 +223,22 @@
 			<Issues issues={form.fields.birthdate.issues} />
 		</label>
 		<label class="block">
-			<span class="text-sm font-medium">{m.profile_gender_label()}</span>
+			<span>{m.profile_gender_label()}</span>
 			<input
 				id="profile-gender"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.gender.value}
 				placeholder={m.profile_gender_placeholder()}
 				aria-label={m.profile_gender_label()}
 			/>
 			<Issues issues={form.fields.gender.issues} />
 		</label>
-		<label class="block md:col-span-2">
-			<span class="text-sm font-medium">{m.profile_profile_picture_label()}</span>
+		<label class="md:col-span-2">
+			<span>{m.profile_profile_picture_label()}</span>
 			<input
 				id="profile-picture"
 				type="url"
-				class="mt-1 block w-full px-3 py-2"
+				class="block w-full"
 				bind:value={form.fields.profilePicture.value}
 				placeholder={m.profile_profile_picture_placeholder()}
 				aria-label={m.profile_profile_picture_label()}

@@ -25,24 +25,19 @@
 	<title>{m.clients_create_title()}</title>
 </svelte:head>
 
-<div class="space-y-4">
-	<section class="card">
-		<div class="flex items-center gap-3">
-			<a
-				href={resolve('/(auth)/clients')}
-				class="text-gray-600 hover:text-gray-900 dark:hover:text-white"
-			>
-				<ArrowLeft class="h-5 w-5" />
-			</a>
-			<h2 class="m-0">{m.clients_create_title()}</h2>
-		</div>
-	</section>
+<section class="card">
+	<div class="flex items-center gap-3">
+		<a href={resolve('/(auth)/clients')}>
+			<ArrowLeft class="h-5 w-5" />
+		</a>
+		<h2>{m.clients_create_title()}</h2>
+	</div>
+</section>
 
-	<ClientForm initialValues={{}} onsubmit={handleSubmit}>
-		{#snippet actions()}
-			<a type="button" class="btn secondary" href={resolve('/(auth)/clients')}>
-				{m.clients_cancel()}
-			</a>
-		{/snippet}
-	</ClientForm>
-</div>
+<ClientForm initialValues={{}} onsubmit={handleSubmit}>
+	{#snippet actions()}
+		<a type="button" class="btn secondary" href={resolve('/(auth)/clients')}>
+			{m.clients_cancel()}
+		</a>
+	{/snippet}
+</ClientForm>

@@ -40,7 +40,7 @@
 	<title>{m.users_edit_title()} - {user.username}</title>
 </svelte:head>
 
-<section class="mx-auto max-w-xl space-y-4 p-4">
+<section class="card">
 	<UserForm
 		mode="edit"
 		initial={{ username: user.username }}
@@ -56,7 +56,7 @@
 			open
 		/>
 	{/if}
-	<div class="pt-2">
+	<div>
 		<button class="btn danger" onclick={() => (showDelete = true)}>
 			{m.actions_delete()}
 		</button>
