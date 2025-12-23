@@ -2116,6 +2116,7 @@ dependencies = [
  "os-cli",
  "os-model",
  "redis",
+ "scopeguard",
  "serde",
  "serde_json",
  "tokio",

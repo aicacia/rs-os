@@ -163,6 +163,44 @@ async fn handle_ws(
       HttpError::internal_error()
     })?;
 
+  let cleanup_user_id = user_id.clone();
+  let cleanup_room_channel = room_channel.clone();
+  let cleanup_room_users_key = room_users_key.clone();
+  let cleanup_redis_client = state.redis_client.clone();
+  let _cleanup_guard = scopeguard::guard((), move |_| {
+    tokio::spawn(async move {
+      let mut conn = match cleanup_redis_client
+        .get_multiplexed_async_connection()
+        .await
+      {
+        Ok(c) => c,
+        Err(e) => {
+          log::error!("Failed to get Redis connection for cleanup: {}", e);
+          return;
+        }
+      };
+
+      if let Err(e) = conn
+        .srem::<_, _, ()>(&cleanup_room_users_key, &cleanup_user_id)
+        .await
+      {
+        log::error!("Failed to remove user from room during cleanup: {}", e);
+      }
+
+      let leave_msg = RoomMessage::Leave {
+        user_id: cleanup_user_id,
+      };
+      if let Ok(leave_json) = serde_json::to_string(&leave_msg) {
+        if let Err(e) = conn
+          .publish::<_, _, ()>(&cleanup_room_channel, &leave_json)
+          .await
+        {
+          log::error!("Failed to publish leave message during cleanup: {}", e);
+        }
+      }
+    });
+  });
+
   let join_msg = RoomMessage::Join {
     user_id: user_id.clone(),
   };
@@ -181,6 +219,24 @@ async fn handle_ws(
 
   let (mut ws_sender, mut ws_receiver) = socket.split();
   let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+
+  let redis_task_handle =
+    std::sync::Arc::new(tokio::sync::Mutex::new(None::<tokio::task::JoinHandle<()>>));
+  let ws_sender_task_handle =
+    std::sync::Arc::new(tokio::sync::Mutex::new(None::<tokio::task::JoinHandle<()>>));
+
+  let cleanup_redis_task = redis_task_handle.clone();
+  let cleanup_ws_sender_task = ws_sender_task_handle.clone();
+  let _task_cleanup_guard = scopeguard::guard((), move |_| {
+    tokio::spawn(async move {
+      if let Some(handle) = cleanup_redis_task.lock().await.take() {
+        handle.abort();
+      }
+      if let Some(handle) = cleanup_ws_sender_task.lock().await.take() {
+        handle.abort();
+      }
+    });
+  });
 
   let peers_msg = RoomMessage::Peers { user_ids: peers };
   let peers_json = serde_json::to_string(&peers_msg).map_err(|e| {
@@ -229,6 +285,7 @@ async fn handle_ws(
       }
     }
   });
+  *redis_task_handle.lock().await = Some(redis_task);
 
   let ws_sender_task = tokio::spawn(async move {
     while let Some(payload) = rx.recv().await {
@@ -237,6 +294,7 @@ async fn handle_ws(
       }
     }
   });
+  *ws_sender_task_handle.lock().await = Some(ws_sender_task);
 
   while let Some(msg) = ws_receiver.next().await {
     match msg {
@@ -270,33 +328,7 @@ async fn handle_ws(
     }
   }
 
-  pub_conn
-    .srem::<_, _, ()>(&room_users_key, &user_id)
-    .await
-    .map_err(|e| {
-      log::error!("Failed to remove user from room: {}", e);
-      HttpError::internal_error()
-    })?;
-
-  let leave_msg = RoomMessage::Leave {
-    user_id: user_id.clone(),
-  };
-  let leave_json = serde_json::to_string(&leave_msg).map_err(|e| {
-    log::error!("Failed to serialize leave message: {}", e);
-    HttpError::internal_error()
-  })?;
-
-  pub_conn
-    .publish::<_, _, ()>(&room_channel, &leave_json)
-    .await
-    .map_err(|e| {
-      log::error!("Failed to publish leave message: {}", e);
-      HttpError::internal_error()
-    })?;
-
-  redis_task.abort();
-  ws_sender_task.abort();
-
+  // Normal cleanup is handled by the guard dropping here
   Ok(())
 }
 
