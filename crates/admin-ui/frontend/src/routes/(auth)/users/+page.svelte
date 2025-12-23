@@ -1,19 +1,16 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { Search, Plus, ArrowLeft } from '@lucide/svelte';
+	import { Search, Plus, ArrowLeft, Eye, Pencil } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import UserTable from './UserTable.svelte';
-	import UserCard from './UserCard.svelte';
-	import UserListSkeleton from './UserListSkeleton.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { hasPermissions } from '$lib/common/state/user.svelte';
 	import { Permission, type User as OUser } from '$lib/common/openapi/admin/models';
 
 	let { data }: PageProps = $props();
 	let query = $state('');
-	let users = $state<OUser[] | null>(null);
-	let canCreate = $state(false);
+	let users = $state<OUser[]>(data.users ?? []);
+	let canCreate = $state(hasPermissions(data.user, [Permission.UserWrite]));
 
 	$effect(() => {
 		users = data.users ?? [];
@@ -24,7 +21,6 @@
 	});
 
 	const filtered = $derived.by(() => {
-		if (!users) return [];
 		if (!query) return users;
 		const q = query.toLowerCase();
 		return users.filter((u) => String(u.id).includes(q) || u.username.toLowerCase().includes(q));
@@ -79,20 +75,57 @@
 	</section>
 
 	<section class="card">
-		{#if users === null}
-			<UserListSkeleton />
-		{:else if users.length === 0}
-			<p class="text-gray-600 dark:text-gray-400">{m.users_empty()}</p>
-		{:else if filtered.length === 0}
-			<p class="text-gray-600 dark:text-gray-400">{m.users_no_match()}</p>
-		{:else}
-			<div class="hidden md:block">
-				<UserTable users={filtered} {onEdit} onDelete={onView} />
+		{#if users.length === 0}
+			<div class="py-12 text-center">
+				<p class="text-gray-500">{m.users_empty()}</p>
 			</div>
-			<div class="grid gap-3 md:hidden">
-				{#each filtered as u}
-					<UserCard user={u} {onEdit} onDelete={onView} />
-				{/each}
+		{:else if filtered.length === 0}
+			<div class="py-12 text-center">
+				<p class="text-gray-500">{m.users_no_match()}</p>
+			</div>
+		{:else}
+			<div class="overflow-x-auto">
+				<table class="w-full">
+					<thead class="border-b border-gray-200 dark:border-gray-700">
+						<tr>
+							<th class="px-4 py-3 text-left text-sm font-semibold">{m.users_username()}</th>
+							<th class="px-4 py-3 text-left text-sm font-semibold">{m.users_id()}</th>
+							<th class="px-4 py-3 text-left text-sm font-semibold">{m.users_created_at()}</th>
+							<th class="px-4 py-3 text-left text-sm font-semibold">{m.users_updated_at()}</th>
+							<th class="px-4 py-3 text-right text-sm font-semibold">{m.users_actions()}</th>
+						</tr>
+					</thead>
+					<tbody class="border-b border-gray-100 dark:border-gray-800">
+						{#each filtered as u (u.id)}
+							<tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+								<td class="px-4 py-3 font-medium">{u.username}</td>
+								<td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{u.id}</td>
+								<td class="px-4 py-3 text-sm">{new Date(u.createdAt).toLocaleString()}</td>
+								<td class="px-4 py-3 text-sm">{new Date(u.updatedAt).toLocaleString()}</td>
+								<td class="px-4 py-3 text-right">
+									<div class="flex items-center justify-end gap-2">
+										<button
+											class="btn icon light sm"
+											onclick={() => onView(u)}
+											aria-label="view user"
+										>
+											<Eye class="h-4 w-4" />
+										</button>
+										{#if canCreate}
+											<button
+												class="btn icon primary sm"
+												onclick={() => onEdit(u)}
+												aria-label={m.users_edit_title()}
+											>
+												<Pencil class="h-4 w-4" />
+											</button>
+										{/if}
+									</div>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			</div>
 		{/if}
 	</section>
