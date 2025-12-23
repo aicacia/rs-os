@@ -41,9 +41,12 @@ pub async fn setup() -> Result<(Router, Arc<AppConfig>), Box<dyn Error>> {
     let _ = create_jwk(&db, generate_jwk(app_config.token.default_jwt_algorithm)?).await?;
   }
 
+  let redis_client = redis::Client::open(app_config.redis_url.as_str())?;
+
   let router = create_openapi_router(
     RouterState {
       config: app_config.clone(),
+      redis_client,
     },
     None,
   )

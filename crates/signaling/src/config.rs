@@ -93,6 +93,7 @@ pub struct AppConfig {
   pub token: TokenConfig,
   pub url: Option<String>,
   pub ui_url: Option<String>,
+  pub redis_url: String,
 }
 
 impl Default for AppConfig {
@@ -108,6 +109,7 @@ impl Default for AppConfig {
       token: TokenConfig::default(),
       url: None,
       ui_url: None,
+      redis_url: "redis://localhost:6379".to_string(),
     }
   }
 }

@@ -87,8 +87,11 @@ pub async fn run() -> io::Result<()> {
   );
   let admin_ui_router = os_admin_ui::router::create_router(Some(ADMIN_UI_URL_PREFIX));
 
+  let redis_client =
+    redis::Client::open(app_config.signaling_api.redis_url.as_str()).map_err(io::Error::other)?;
   let signaling_openapi_router = os_signaling::router::create_openapi_router(
     os_signaling::router::entity::RouterState {
+      redis_client,
       config: Arc::new(app_config.signaling_api.clone()),
     },
     Some(SIGNALING_API_URL_PREFIX),

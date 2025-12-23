@@ -76,9 +76,13 @@ pub async fn run() -> io::Result<()> {
     .map_err(io::Error::other)?;
   }
 
+  let redis_client =
+    redis::Client::open(app_config.redis_url.as_str()).map_err(io::Error::other)?;
+
   let open_api_router = crate::router::create_openapi_router(
     crate::router::entity::RouterState {
       config: app_config.clone(),
+      redis_client,
     },
     None,
   );
