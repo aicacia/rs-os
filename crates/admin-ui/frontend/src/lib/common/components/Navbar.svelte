@@ -49,7 +49,7 @@
 			<div class="flex grow">
 				<div
 					class={{
-						'flex flex-col': true,
+						'flex flex-col w-full justify-start items-start': true,
 						hidden: open
 					}}
 				>
@@ -62,15 +62,6 @@
 					>
 						Profile</a
 					>
-					{#if hasPermission(user, Permission.Admin)}
-						<a
-							class={{
-								'btn ghost rounded-none border-0': true,
-								active: page.route.id === '/(auth)/config'
-							}}
-							href={resolve('/config')}>Application Config</a
-						>
-					{/if}
 					{#if hasPermission(user, Permission.ClientWrite) || hasPermission(user, Permission.ClientRead)}
 						<a
 							class={{
@@ -87,6 +78,15 @@
 								active: page.route.id === '/(auth)/users'
 							}}
 							href={resolve('/users')}>Users</a
+						>
+					{/if}
+					{#if hasPermission(user, Permission.Admin)}
+						<a
+							class={{
+								'btn ghost rounded-none border-0': true,
+								active: page.route.id === '/(auth)/config'
+							}}
+							href={resolve('/config')}>Application Config</a
 						>
 					{/if}
 				</div>
