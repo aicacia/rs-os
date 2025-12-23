@@ -22,16 +22,6 @@ base64 = { version = "0.22", default-features = false }
 build-time = { version = "0.1", default-features = false }
 chrono = { version = "0.4", features = ["serde"], default-features = false }
 config = { version = "0.15", features = ["json"], default-features = false }
-ed25519-dalek = { version = "2.2", features = [
-  "alloc",
-  "pkcs8",
-  "rand_core",
-], default-features = false }
-elliptic-curve = { version = "0.13", features = [
-  "arithmetic",
-  "pkcs8",
-  "serde",
-], default-features = false }
 hashbrown = { version = "0.16", default-features = false, features = [
   "serde",
   "default-hasher",
@@ -43,26 +33,13 @@ jsonwebtoken = { version = "9.3", features = [
   "use_pem",
 ], default-features = false }
 log = { version = "0.4", default-features = false }
-num-bigint = { version = "0.4", features = ["std"], default-features = false }
-num-bigint-dig = { version = "0.8", default-features = false }
 os-api = { version = "0.1", path = "../api", default-features = false }
 os-model = { version = "0.1", path = "../model", default-features = false }
 hex = { version = "0.4", default-features = false }
-p256 = { version = "0.13", features = [
-  "arithmetic",
-  "ecdsa",
-  "pkcs8",
-], default-features = false }
-p384 = { version = "0.13", features = [
-  "arithmetic",
-  "ecdsa",
-  "pkcs8",
-], default-features = false }
 rand = { version = "0.8", features = [
   "std",
   "std_rng",
 ], default-features = false }
-rsa = { version = "0.9", features = ["pem", "serde"], default-features = false }
 rust-argon2 = { version = "3.0", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
 serde_json = { version = "1.0", default-features = false }
@@ -84,9 +61,6 @@ utoipa = { version = "5.4", features = [
 ], default-features = false }
 utoipa-axum = { version = "0.2", default-features = false }
 uuid = { version = "1.18", features = ["serde", "v4"] }
-validator = { version = "0.20", features = [
-  "derive",
-], default-features = false }
 
 # bin dependencies
 dotenvy = { version = "0.15", default-features = false, optional = true }
@@ -131,3 +105,6 @@ bin = [
   "dep:tower-http",
 ]
 default = ["bin", "completions"]
+
+[package.metadata.cargo-machete]
+ignored = ["rust-argon2"]

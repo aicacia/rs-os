@@ -44,7 +44,6 @@
 	<title>{m.clients_title()}</title>
 </svelte:head>
 
-<div class="space-y-4">
 <section class="card">
 	<div class="flex gap-4 items-center justify-between">
 		<div class="flex gap-4 items-center">
@@ -72,12 +71,13 @@
 		/>
 	</div>
 </section>
+
 {#if filteredClients.length === 0}
-	<section class="card">
+	<section class="card mt-4">
 		<p>{searchQuery ? m.clients_no_match() : m.clients_no_clients()}</p>
 	</section>
 {:else}
-	<section class="card">
+	<section class="card mt-4">
 		<div class="overflow-x-auto">
 			<table class="w-full">
 				<thead>
@@ -137,4 +137,3 @@
 		</div>
 	</section>
 {/if}
-</div>

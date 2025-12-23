@@ -20,6 +20,7 @@ use crate::{
   cli::args::{CliArgs, CliCommand},
   config::{
     ADMIN_API_URL_PREFIX, ADMIN_UI_URL_PREFIX, AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX,
+    SIGNALING_API_URL_PREFIX,
   },
 };
 
@@ -86,9 +87,17 @@ pub async fn run() -> io::Result<()> {
   );
   let admin_ui_router = os_admin_ui::router::create_router(Some(ADMIN_UI_URL_PREFIX));
 
+  let signaling_openapi_router = os_signaling::router::create_openapi_router(
+    os_signaling::router::entity::RouterState {
+      config: Arc::new(app_config.signaling_api.clone()),
+    },
+    Some(SIGNALING_API_URL_PREFIX),
+  );
+
   let router = Router::new()
     .merge(oidc_openapi_router)
     .merge(admin_openapi_router)
+    .merge(signaling_openapi_router)
     .layer(CorsLayer::very_permissive())
     .layer(TraceLayer::new_for_http())
     .merge(oidc_ui_router.reset_fallback())

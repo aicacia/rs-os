@@ -2,11 +2,8 @@ use axum::{extract::State, response::IntoResponse};
 use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use os_model::entities::{
-  users::{update_user, update_user_password},
-  user_infos::update_user_info as update_user_info_orm,
-};
 use crate::{
+  core::encryption::encrypt_password,
   router::{
     Json,
     current_user::{
@@ -19,6 +16,10 @@ use crate::{
     error::HttpError,
     middleware::user_authorization::UserAuthorization,
   },
+};
+use os_model::entities::{
+  user_infos::update_user_info as update_user_info_orm,
+  users::{update_user, update_user_password},
 };
 
 #[utoipa::path(
@@ -39,7 +40,10 @@ pub async fn current_user(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
 ) -> impl IntoResponse {
-  match user_authorization.get_user(&state.database_connection).await {
+  match user_authorization
+    .get_user(&state.database_connection)
+    .await
+  {
     Ok(user) => axum::Json(user).into_response(),
     Err(e) => return e.into_response(),
   }
@@ -105,7 +109,7 @@ pub async fn update_password(
     &state.database_connection,
     user_authorization.user_model.id,
     update.password.as_str(),
-    |password| crate::core::encryption::encrypt_password(&app_config, password).map_err(|e| e.into()),
+    |password| encrypt_password(&app_config, password).map_err(|e| e.into()),
   )
   .await
   {

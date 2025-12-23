@@ -25,7 +25,7 @@
 	<title>{m.clients_create_title()}</title>
 </svelte:head>
 
-<section class="card">
+<section class="card mb-4">
 	<div class="flex items-center gap-3">
 		<a href={resolve('/(auth)/clients')}>
 			<ArrowLeft class="h-5 w-5" />

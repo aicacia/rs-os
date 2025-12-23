@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::router::common::permissions::Permission;
+use crate::router::common::entity::Permission;
 use os_model::entities::roles;
 
 #[derive(Debug, Deserialize, ToSchema)]

@@ -1,8 +1,6 @@
 use std::hash::Hash;
 
 use hashbrown::HashSet;
-use serde::Serialize;
-use serde_json::Value;
 
 pub fn json_to_string_vec<T>(json_str: T) -> Vec<String>
 where
@@ -13,19 +11,6 @@ where
     Err(e) => {
       log::error!("Error parsing JSON: {}", e);
       Vec::default()
-    }
-  }
-}
-
-pub fn type_to_json_value<T>(value: &T) -> Value
-where
-  T: Serialize,
-{
-  match serde_json::to_value(value) {
-    Ok(value) => value,
-    Err(e) => {
-      log::error!("Error formatting JSON: {}", e);
-      Value::Null
     }
   }
 }

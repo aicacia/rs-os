@@ -8,7 +8,7 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::permissions::Permission,
+  common::entity::Permission,
   entity::RouterState,
   error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
   middleware::user_authorization::UserAuthorization,

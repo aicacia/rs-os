@@ -55,7 +55,7 @@
 	import type { ClientUpsertRequest, Client } from '$lib/common/openapi/admin/models/index';
 	import { createForm } from '$lib/common/util/form.svelte';
 	import Issues from '$lib/common/components/Issues.svelte';
-	import { X, Plus } from '@lucide/svelte';
+	import { X, Plus, Eye, EyeOff } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -90,6 +90,10 @@
 		idTokenExpiresInSeconds: initialValues.idTokenExpiresInSeconds ?? 3600,
 		refreshExpiresInSeconds: initialValues.refreshExpiresInSeconds ?? 86400
 	});
+
+	// Client secret visibility - hidden by default if has value
+	const clientSecretIsEmpty = !form.fields.clientSecret.value;
+	let showClientSecret = $state(clientSecretIsEmpty);
 
 	// State for managing arrays - we'll use simple state tracking instead of the complex form array fields
 	let grantTypes = $state<string[]>(initialValues.grantTypes ?? ['authorization_code']);
@@ -214,14 +218,15 @@
 	}
 </script>
 
-<form onsubmit={handleSubmit}>
+<form onsubmit={handleSubmit} class="space-y-4">
 	<section class="card">
 		<h3>{m.client_form_basic_info()}</h3>
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<label>
+		<div class="flex flex-col gap-4">
+			<label class="flex flex-col">
 				<span>{m.client_form_client_id()} *</span>
 				<input
 					type="text"
+					class="w-full"
 					bind:value={form.fields.clientId.value}
 					placeholder={m.client_form_client_id_placeholder()}
 					{readonly}
@@ -230,10 +235,11 @@
 				<Issues issues={form.fields.clientId.issues} />
 			</label>
 
-			<label>
+			<label class="flex flex-col">
 				<span>{m.client_form_name()} *</span>
 				<input
 					type="text"
+					class="w-full"
 					bind:value={form.fields.name.value}
 					placeholder={m.client_form_name_placeholder()}
 					{readonly}
@@ -242,15 +248,32 @@
 				<Issues issues={form.fields.name.issues} />
 			</label>
 
-			<label>
+			<label class="flex flex-col">
 				<span>{m.client_form_client_secret()}</span>
-				<input
-					type="text"
-					bind:value={form.fields.clientSecret.value}
-					placeholder={m.client_form_client_secret_placeholder()}
-					{readonly}
-					aria-label={m.client_form_client_secret()}
-				/>
+				<div class="relative">
+					<input
+						type={showClientSecret ? 'text' : 'password'}
+						class="w-full pr-10"
+						bind:value={form.fields.clientSecret.value}
+						placeholder={m.client_form_client_secret_placeholder()}
+						{readonly}
+						aria-label={m.client_form_client_secret()}
+					/>
+					{#if !readonly}
+						<button
+							type="button"
+							onclick={() => (showClientSecret = !showClientSecret)}
+							class="absolute right-2 top-1/2 -translate-y-1/2 btn icon sm"
+							aria-label={showClientSecret ? 'Hide client secret' : 'Show client secret'}
+						>
+							{#if showClientSecret}
+								<EyeOff class="w-4 h-4" />
+							{:else}
+								<Eye class="w-4 h-4" />
+							{/if}
+						</button>
+					{/if}
+				</div>
 				<Issues issues={form.fields.clientSecret.issues} />
 			</label>
 		</div>
@@ -259,10 +282,11 @@
 	<!-- Application Configuration -->
 	<section class="card">
 		<h3>{m.client_form_app_config()}</h3>
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<label>
+		<div class="flex flex-col gap-4">
+			<label class="flex flex-col">
 				<span>{m.client_form_app_type()} *</span>
 				<select
+					class="w-full"
 					bind:value={form.fields.applicationType.value}
 					disabled={readonly}
 				>
@@ -273,9 +297,10 @@
 				<Issues issues={form.fields.applicationType.issues} />
 			</label>
 
-			<label>
+			<label class="flex flex-col">
 				<span>{m.client_form_auth_method()} *</span>
 				<select
+					class="w-full"
 					bind:value={form.fields.authMethod.value}
 					disabled={readonly}
 				>
@@ -292,11 +317,11 @@
 	<section class="card">
 		<h3>{m.client_form_oauth2_config()}</h3>
 
-		<div>
+		<div class="flex flex-col gap-2">
 			<span>{m.client_form_grant_types()} *</span>
 			<div class="flex flex-wrap gap-2">
 				{#each availableGrantTypes as grantType}
-					<label class="flex items-center gap-2">
+					<label class="flex gap-2">
 						<input
 							type="checkbox"
 							checked={grantTypes.includes(grantType)}
@@ -309,11 +334,11 @@
 			</div>
 		</div>
 
-		<div>
+		<div class="flex flex-col gap-2">
 			<span>{m.client_form_response_types()} *</span>
 			<div class="flex flex-wrap gap-2">
 				{#each availableResponseTypes as responseType}
-					<label class="flex items-center gap-2">
+					<label class="flex gap-2">
 						<input
 							type="checkbox"
 							checked={responseTypes.includes(responseType)}
@@ -326,11 +351,11 @@
 			</div>
 		</div>
 
-		<div>
+		<div class="flex flex-col gap-2">
 			<span>{m.client_form_scopes()} *</span>
 			<div class="flex flex-wrap gap-2">
 				{#each availableScopes as scope}
-					<label class="flex items-center gap-2">
+					<label class="flex gap-2">
 						<input
 							type="checkbox"
 							checked={scopesState.includes(scope)}
@@ -348,33 +373,38 @@
 	<section class="card">
 		<h3>{m.client_form_uris()}</h3>
 		<!-- Redirect URIs -->
-		<div>
+		<div class="flex flex-col gap-2">
 			<span>{m.client_form_redirect_uris()}</span>
 			{#if !readonly}
-				<div class="flex gap-2">
+				<div class="relative">
 					<input
 						type="url"
-						class="flex-1"
+						class="w-full pr-10"
 						bind:value={redirectUriInput}
 						placeholder={m.client_form_redirect_uri_placeholder()}
 						onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addRedirectUri())}
 					/>
-					<button type="button" class="btn primary" onclick={addRedirectUri}>
-						<Plus class="h-4 w-4" />
+					<button
+						type="button"
+						onclick={addRedirectUri}
+						class="absolute right-2 top-1/2 -translate-y-1/2 btn success icon sm"
+						aria-label="Add redirect URI"
+					>
+						<Plus class="w-4 h-4" />
 					</button>
 				</div>
 			{/if}
 			<div class="flex flex-wrap gap-2">
 				{#each redirectUris as uri, index}
-					<span class="badge gray">
+					<span class="badge primary">
 						{uri}
 						{#if !readonly}
 							<button
 								type="button"
 								onclick={() => removeRedirectUri(index)}
-								class="btn icon"
+								class="btn icon danger ms-2"
 							>
-								<X class="h-3 w-3" />
+								<X />
 							</button>
 						{/if}
 					</span>
@@ -383,129 +413,145 @@
 		</div>
 
 		<!-- Post Logout Redirect URIs -->
-		<div>
+		<div class="flex flex-col gap-2">
 			<span>{m.client_form_post_logout_redirect_uris()}</span>
 			{#if !readonly}
-				<div class="flex gap-2">
+				<div class="relative">
 					<input
 						type="url"
-						class="flex-1"
+						class="w-full pr-10"
 						bind:value={postLogoutRedirectUriInput}
 						placeholder={m.client_form_post_logout_redirect_uri_placeholder()}
 						onkeydown={(e) =>
 							e.key === 'Enter' && (e.preventDefault(), addPostLogoutRedirectUri())}
 					/>
-					<button type="button" class="btn primary" onclick={addPostLogoutRedirectUri}>
-						<Plus class="h-4 w-4" />
+					<button
+						type="button"
+						onclick={addPostLogoutRedirectUri}
+						class="absolute right-2 top-1/2 -translate-y-1/2 btn success icon sm"
+						aria-label="Add post logout redirect URI"
+					>
+						<Plus class="w-4 h-4" />
 					</button>
 				</div>
 			{/if}
 			<div class="flex flex-wrap gap-2">
 				{#each postLogoutRedirectUris as uri, index}
-					<span class="badge gray">
-						{uri}
-						{#if !readonly}
-							<button
-								type="button"
-								onclick={() => removePostLogoutRedirectUri(index)}
-								class="btn icon"
+						<span class="badge primary">
+							{uri}
+							{#if !readonly}
+								<button
+									type="button"
+									onclick={() => removePostLogoutRedirectUri(index)}
+									class="btn icon danger ms-2"
+								>
+									<X />
+								</button>
+							{/if}
 						</span>
 					{/each}
 				</div>
 			</div>
 
 			<!-- Additional URIs -->
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-				<label class="block">
-					<span class="text-sm font-medium">{m.client_form_logo_uri()}</span>
+			<div class="flex flex-col gap-4">
+				<label class="flex flex-col">
+					<span>{m.client_form_logo_uri()}</span>
 					<input
 						type="url"
-						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+						class="w-full"
 						bind:value={form.fields.logoUri.value}
 						placeholder={m.client_form_logo_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
 
-				<label class="block">
-					<span class="text-sm font-medium">{m.client_form_client_uri()}</span>
+				<label class="flex flex-col">
+					<span>{m.client_form_client_uri()}</span>
 					<input
 						type="url"
-						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+						class="w-full"
 						bind:value={form.fields.clientUri.value}
 						placeholder={m.client_form_client_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
 
-				<label class="block">
-					<span class="text-sm font-medium">{m.client_form_policy_uri()}</span>
+				<label class="flex flex-col">
+					<span>{m.client_form_policy_uri()}</span>
 					<input
 						type="url"
-						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+						class="w-full"
 						bind:value={form.fields.policyUri.value}
 						placeholder={m.client_form_policy_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
 
-				<label class="block">
-					<span class="text-sm font-medium">{m.client_form_terms_uri()}</span>
+				<label class="flex flex-col">
+					<span>{m.client_form_terms_uri()}</span>
 					<input
 						type="url"
-						class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
+						class="w-full"
 						bind:value={form.fields.termsOfServiceUri.value}
 						placeholder={m.client_form_terms_uri_placeholder()}
 						{readonly}
 					/>
 				</label>
 			</div>
-		</div>
 	</section>
 
 	<!-- Audience -->
 	<section class="card">
 		<h3>{m.client_form_audience()}</h3>
-		{#if !readonly}
-			<div class="flex gap-2">
-				<input
-					type="text"
-					class="flex-1"
-					bind:value={audienceInput}
-					placeholder={m.client_form_audience_placeholder()}
-					onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addAudience())}
-				/>
-				<button type="button" class="btn primary" onclick={addAudience}>
-					<Plus class="h-4 w-4" />
-				</button>
+		<div class="flex flex-col gap-2">
+			{#if !readonly}
+				<div class="relative">
+					<input
+						type="text"
+						class="w-full pr-10"
+						bind:value={audienceInput}
+						placeholder={m.client_form_audience_placeholder()}
+						onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addAudience())}
+					/>
+					<button
+						type="button"
+						onclick={addAudience}
+						class="absolute right-2 top-1/2 -translate-y-1/2 btn success icon sm"
+						aria-label="Add audience"
+					>
+						<Plus class="w-4 h-4" />
+					</button>
+				</div>
+			{/if}
+			<div class="flex flex-wrap gap-2">
+				{#each audienceState as aud, index}
+					<span class="badge primary">
+						{aud}
+						{#if !readonly}
+							<button
+								type="button"
+								onclick={() => removeAudience(index)}
+								class="btn icon danger ms-2"
+							>
+								<X />
+							</button>
+						{/if}
+					</span>
+				{/each}
 			</div>
-		{/if}
-		<div class="flex flex-wrap gap-2">
-			{#each audienceState as aud, index}
-				<span class="badge gray">
-					{aud}
-					{#if !readonly}
-						<button
-							type="button"
-							onclick={() => removeAudience(index)}
-							class="btn icon"
-						>
-							<X class="h-3 w-3" />
-						</button>
-					{/if}
-				</span>
-			{/each}
 		</div>
 	</section>
 
 	<!-- Token Expiration -->
 	<section class="card">
 		<h3>{m.client_form_token_expiration()}</h3>
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			<label>
+		<div class="flex flex-col gap-4">
+			<label class="flex flex-col">
 				<span>{m.client_form_access_token()} *</span>
 				<input
 					type="number"
+					class="w-full"
 					bind:value={form.fields.accessTokenExpiresInSeconds.value}
 					min="1"
 					{readonly}
@@ -513,10 +559,11 @@
 				<Issues issues={form.fields.accessTokenExpiresInSeconds.issues} />
 			</label>
 
-			<label>
+			<label class="flex flex-col">
 				<span>{m.client_form_id_token()} *</span>
 				<input
 					type="number"
+					class="w-full"
 					bind:value={form.fields.idTokenExpiresInSeconds.value}
 					min="1"
 					{readonly}
@@ -524,10 +571,11 @@
 				<Issues issues={form.fields.idTokenExpiresInSeconds.issues} />
 			</label>
 
-			<label>
+			<label class="flex flex-col">
 				<span>{m.client_form_refresh_token()} *</span>
 				<input
 					type="number"
+					class="w-full"
 					bind:value={form.fields.refreshExpiresInSeconds.value}
 					min="1"
 					{readonly}

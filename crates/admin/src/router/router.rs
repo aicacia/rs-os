@@ -3,7 +3,7 @@ use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::router::{
-  client, common::permissions::Permission, current_user, entity::RouterState, user, user_email,
+  client, common::entity::Permission, current_user, entity::RouterState, user, user_email,
   user_oauth2_provider, user_phone_number, user_role, util,
 };
 

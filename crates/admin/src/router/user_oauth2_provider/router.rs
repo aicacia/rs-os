@@ -5,21 +5,19 @@ use axum::{
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 
+use crate::router::{
+  common::entity::Permission,
+  entity::RouterState,
+  error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
+  middleware::user_authorization::UserAuthorization,
+  user_oauth2_provider::{
+    constants::TAG,
+    entity::{LinkUserOAuth2ProviderRequest, UserOAuth2Provider},
+  },
+};
 use os_model::entities::user_o_auth2_providers::{
   delete_user_oauth2_provider, get_user_oauth2_provider_by_id, get_user_oauth2_providers,
   link_user_oauth2_provider,
-};
-use crate::{
-  router::{
-    common::permissions::Permission,
-    entity::RouterState,
-    error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
-    middleware::user_authorization::UserAuthorization,
-    user_oauth2_provider::{
-      constants::TAG,
-      entity::{LinkUserOAuth2ProviderRequest, UserOAuth2Provider},
-    },
-  },
 };
 
 #[utoipa::path(
@@ -133,7 +131,13 @@ pub async fn get_user_oauth2_provider(
     }
   }
 
-  match get_user_oauth2_provider_by_id(&state.database_connection, user_id_parsed, provider_id_parsed).await {
+  match get_user_oauth2_provider_by_id(
+    &state.database_connection,
+    user_id_parsed,
+    provider_id_parsed,
+  )
+  .await
+  {
     Ok(Some((provider, provider_info_opt))) => {
       if let Some(provider_info) = provider_info_opt {
         let oauth2_provider = UserOAuth2Provider {
@@ -283,7 +287,13 @@ pub async fn unlink_user_oauth2_provider_handler(
     }
   }
 
-  match delete_user_oauth2_provider(&state.database_connection, user_id_parsed, provider_id_parsed).await {
+  match delete_user_oauth2_provider(
+    &state.database_connection,
+    user_id_parsed,
+    provider_id_parsed,
+  )
+  .await
+  {
     Ok(Some(_)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("oauth2_provider", NOT_FOUND_ERROR)

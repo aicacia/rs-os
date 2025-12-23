@@ -18,10 +18,15 @@ use crate::router::{
     (status = 500, description = "Health check response", body = Health),
   )
 )]
-pub async fn health(State(_state): State<RouterState>) -> impl IntoResponse {
-  // TODO: Implement proper health check by running a simple query
+pub async fn health(State(state): State<RouterState>) -> impl IntoResponse {
   let health = Health {
-    db: true,
+    db: match state.database_connection.ping().await {
+      Ok(()) => true,
+      Err(e) => {
+        log::error!("Database health check failed: {}", e);
+        false
+      }
+    },
   };
 
   let status = if health.is_healthy() {

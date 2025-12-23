@@ -10,7 +10,7 @@ use crate::router::{
     constants::TAG,
     entity::{Client, ClientUpsertRequest, client_upsert_request_changed},
   },
-  common::permissions::Permission,
+  common::entity::Permission,
   entity::RouterState,
   error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
   middleware::user_authorization::UserAuthorization,

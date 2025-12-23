@@ -17,10 +17,6 @@ pub fn encrypt_password(config: &AppConfig, input: &str) -> argon2::Result<Strin
   )
 }
 
-pub fn verify_password(input: &str, encrypted_password: &str) -> argon2::Result<bool> {
-  argon2::verify_encoded(encrypted_password, input.as_bytes())
-}
-
 fn argon2_config<'a>(config: &AppConfig) -> argon2::Config<'a> {
   return argon2::Config {
     variant: argon2::Variant::Argon2id,

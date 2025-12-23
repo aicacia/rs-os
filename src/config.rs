@@ -11,9 +11,7 @@ pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
 pub const ADMIN_UI_URL_PREFIX: &str = "/admin";
 pub const ADMIN_API_URL_PREFIX: &str = "/admin/api";
 
-pub const DOCUMENT_STORE_API_URL_PREFIX: &str = "/document-store/api";
-
-pub const FS_API_URL_PREFIX: &str = "/fs/api";
+pub const SIGNALING_API_URL_PREFIX: &str = "/signaling/api";
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
@@ -42,6 +40,7 @@ pub struct AppConfig {
   pub oidc_ui: os_oidc_ui::config::AppConfig,
   pub admin_api: os_admin::config::AppConfig,
   pub admin_ui: os_admin_ui::config::AppConfig,
+  pub signaling_api: os_signaling::config::AppConfig,
   pub log_level: String,
   pub url: Option<String>,
   pub ui_url: Option<String>,
@@ -56,6 +55,7 @@ impl Default for AppConfig {
       oidc_ui: Default::default(),
       admin_api: Default::default(),
       admin_ui: Default::default(),
+      signaling_api: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: None,
       ui_url: None,
@@ -130,6 +130,18 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.admin_ui.server.port = app_config.server.port;
     app_config.admin_ui.server.gzip = app_config.server.gzip;
     app_config.admin_ui.log_level = app_config.log_level.clone();
+
+    // Signaling API Config Adjustments
+    app_config.signaling_api.server.host = app_config.server.host;
+    app_config.signaling_api.server.port = app_config.server.port;
+    app_config.signaling_api.server.gzip = app_config.server.gzip;
+    app_config.signaling_api.log_level = app_config.log_level.clone();
+
+    if let Some(url) = &app_config.url {
+      if app_config.signaling_api.url.is_none() {
+        app_config.signaling_api.url = Some(format!("{}{}", url, SIGNALING_API_URL_PREFIX));
+      }
+    }
 
     Ok(app_config)
   }
