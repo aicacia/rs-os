@@ -7,7 +7,7 @@ use os_model::{
 };
 use os_signaling::{
   config::AppConfig,
-  router::{create_openapi_router, entity::RouterState},
+  router::{create_openapi_router, entity::RouterState, ws::pubsub::PubSub},
 };
 
 pub async fn setup() -> Result<(Router, Arc<AppConfig>), Box<dyn Error>> {
@@ -25,12 +25,22 @@ pub async fn setup() -> Result<(Router, Arc<AppConfig>), Box<dyn Error>> {
     let _ = create_jwk(&db, generate_jwk(app_config.token.default_jwt_algorithm)?).await?;
   }
 
-  let redis_client = redis::Client::open(app_config.redis_url.as_str())?;
+  let pubsub = Arc::new(if let Some(redis_url) = &app_config.redis_url {
+    match PubSub::new_redis(redis_url) {
+      Ok(pubsub) => pubsub,
+      Err(e) => {
+        log::error!("failed to create redis pubsub client: {}", e);
+        return Err(e.into());
+      }
+    }
+  } else {
+    PubSub::new_in_memory()
+  });
 
   let router = create_openapi_router(
     RouterState {
       config: app_config.clone(),
-      redis_client,
+      pubsub,
     },
     None,
   )

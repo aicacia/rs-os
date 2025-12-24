@@ -1,3 +1,6 @@
+use std::sync::Arc;
+use std::time::Duration;
+
 use axum::{
   extract::{
     Query, State,
@@ -7,7 +10,8 @@ use axum::{
 };
 use futures_util::{SinkExt, StreamExt};
 use os_api::{BasicClaims, HttpError, parse_token_data};
-use redis::AsyncCommands;
+use scopeguard::defer;
+use tokio_util::sync::CancellationToken;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
@@ -15,6 +19,7 @@ use crate::router::{
   ws::{
     constants::TAG,
     entity::{RoomMessage, WSAuthorizationRequest, WSRoomRequest},
+    pubsub::PubSub,
   },
 };
 
@@ -49,7 +54,7 @@ async fn user(
   let room = format!("user:{}", claims.user);
 
   ws.on_upgrade(move |socket| async move {
-    if let Err(err) = handle_ws(socket, user_id, room, state).await {
+    if let Err(err) = handle_ws(socket, user_id, room, state.pubsub).await {
       log::error!("WebSocket error: {}", err);
     }
   })
@@ -87,7 +92,7 @@ async fn client(
   let room = format!("client:{}", claims.client);
 
   ws.on_upgrade(move |socket| async move {
-    if let Err(err) = handle_ws(socket, user_id, room, state).await {
+    if let Err(err) = handle_ws(socket, user_id, room, state.pubsub).await {
       log::error!("WebSocket error: {}", err);
     }
   })
@@ -115,7 +120,7 @@ async fn anonymous(
   let room = format!("anonymous:{}", room_request.room);
 
   ws.on_upgrade(move |socket| async move {
-    if let Err(err) = handle_ws(socket, user_id, room, state).await {
+    if let Err(err) = handle_ws(socket, user_id, room, state.pubsub).await {
       log::error!("WebSocket error: {}", err);
     }
   })
@@ -126,90 +131,83 @@ async fn handle_ws(
   socket: WebSocket,
   user_id: String,
   room: String,
-  state: RouterState,
+  pubsub: Arc<PubSub>,
 ) -> Result<(), HttpError> {
-  let room_channel = room.clone();
-  let room_users_key = format!("{}:users", room);
+  let cancellation_token = CancellationToken::new();
 
-  let mut pub_conn = state
-    .redis_client
-    .get_multiplexed_async_connection()
-    .await
-    .map_err(|e| {
-      log::error!("Failed to get Redis pub connection: {}", e);
-      HttpError::internal_error()
-    })?;
+  let result = handle_ws_inner(
+    socket,
+    user_id.clone(),
+    room.clone(),
+    pubsub.clone(),
+    cancellation_token.clone(),
+  )
+  .await;
 
-  let mut pubsub = state.redis_client.get_async_pubsub().await.map_err(|e| {
-    log::error!("Failed to get Redis pubsub connection: {}", e);
+  result
+}
+
+async fn handle_ws_inner(
+  socket: WebSocket,
+  user_id: String,
+  room: String,
+  pubsub: Arc<PubSub>,
+  cancellation_token: CancellationToken,
+) -> Result<(), HttpError> {
+  // Add user to room
+  pubsub.add_user(&room, &user_id).await.map_err(|e| {
+    log::error!("Failed to add user to room: {}", e);
     HttpError::internal_error()
   })?;
 
-  pubsub.subscribe(&room_channel).await.map_err(|e| {
-    log::error!("Failed to subscribe to room channel: {}", e);
-    HttpError::internal_error()
-  })?;
+  // Set up cleanup to run on scope exit
+  let pubsub_cleanup = pubsub.clone();
+  let room_cleanup = room.clone();
+  let user_id_cleanup = user_id.clone();
+  defer! {
+    let pubsub = pubsub_cleanup;
+    let room = room_cleanup;
+    let user_id = user_id_cleanup;
 
-  let peers: Vec<String> = pub_conn.smembers(&room_users_key).await.map_err(|e| {
-    log::error!("Failed to get room users: {}", e);
-    HttpError::internal_error()
-  })?;
-
-  pub_conn
-    .sadd::<_, _, ()>(&room_users_key, &user_id)
-    .await
-    .map_err(|e| {
-      log::error!("Failed to add user to room: {}", e);
-      HttpError::internal_error()
-    })?;
-
-  let cleanup_user_id = user_id.clone();
-  let cleanup_room_channel = room_channel.clone();
-  let cleanup_room_users_key = room_users_key.clone();
-  let cleanup_redis_client = state.redis_client.clone();
-  let _cleanup_guard = scopeguard::guard((), move |_| {
     tokio::spawn(async move {
-      let mut conn = match cleanup_redis_client
-        .get_multiplexed_async_connection()
-        .await
-      {
-        Ok(c) => c,
-        Err(e) => {
-          log::error!("Failed to get Redis connection for cleanup: {}", e);
-          return;
-        }
-      };
-
-      if let Err(e) = conn
-        .srem::<_, _, ()>(&cleanup_room_users_key, &cleanup_user_id)
-        .await
-      {
-        log::error!("Failed to remove user from room during cleanup: {}", e);
+      if let Err(e) = pubsub.remove_user(&room, &user_id).await {
+        log::error!(
+          "Failed to remove user {} from room {} during cleanup: {}",
+          user_id,
+          room,
+          e
+        );
       }
 
-      let leave_msg = RoomMessage::Leave {
-        user_id: cleanup_user_id,
-      };
-      if let Ok(leave_json) = serde_json::to_string(&leave_msg)
-        && let Err(e) = conn
-          .publish::<_, _, ()>(&cleanup_room_channel, &leave_json)
-          .await
-      {
-        log::error!("Failed to publish leave message during cleanup: {}", e);
+      let leave_msg = RoomMessage::Leave { user_id };
+      if let Ok(leave_json) = serde_json::to_string(&leave_msg) {
+        if let Err(e) = pubsub.publish(&room, &leave_json).await {
+          log::error!(
+            "Failed to publish leave message for room {} during cleanup: {}",
+            room,
+            e
+          );
+        }
       }
     });
-  });
+  }
 
-  let join_msg = RoomMessage::Join {
-    user_id: user_id.clone(),
-  };
-  let join_json = serde_json::to_string(&join_msg).map_err(|e| {
-    log::error!("Failed to serialize join message: {}", e);
+  let peers = pubsub.get_peers(&room).await.map_err(|e| {
+    log::error!("Failed to get peers: {}", e);
     HttpError::internal_error()
   })?;
 
-  pub_conn
-    .publish::<_, _, ()>(&room_channel, &join_json)
+  pubsub
+    .publish(
+      &room,
+      &serde_json::to_string(&RoomMessage::Join {
+        user_id: user_id.clone(),
+      })
+      .map_err(|e| {
+        log::error!("Failed to serialize join message: {}", e);
+        HttpError::internal_error()
+      })?,
+    )
     .await
     .map_err(|e| {
       log::error!("Failed to publish join message: {}", e);
@@ -217,104 +215,130 @@ async fn handle_ws(
     })?;
 
   let (mut ws_sender, mut ws_receiver) = socket.split();
-  let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+  let (tx, mut rx) = tokio::sync::mpsc::channel(32);
 
-  let redis_task_handle =
-    std::sync::Arc::new(tokio::sync::Mutex::new(None::<tokio::task::JoinHandle<()>>));
-  let ws_sender_task_handle =
-    std::sync::Arc::new(tokio::sync::Mutex::new(None::<tokio::task::JoinHandle<()>>));
-
-  let cleanup_redis_task = redis_task_handle.clone();
-  let cleanup_ws_sender_task = ws_sender_task_handle.clone();
-  let _task_cleanup_guard = scopeguard::guard((), move |_| {
-    tokio::spawn(async move {
-      if let Some(handle) = cleanup_redis_task.lock().await.take() {
-        handle.abort();
-      }
-      if let Some(handle) = cleanup_ws_sender_task.lock().await.take() {
-        handle.abort();
-      }
-    });
-  });
-
-  let peers_msg = RoomMessage::Peers { user_ids: peers };
-  let peers_json = serde_json::to_string(&peers_msg).map_err(|e| {
-    log::error!("Failed to serialize peers message: {}", e);
-    HttpError::internal_error()
-  })?;
-
-  if let Err(e) = ws_sender.send(Message::text(peers_json)).await {
+  if let Err(e) = ws_sender
+    .send(Message::text(
+      serde_json::to_string(&RoomMessage::Peers { user_ids: peers }).map_err(|e| {
+        log::error!("Failed to serialize peers message: {}", e);
+        HttpError::internal_error()
+      })?,
+    ))
+    .await
+  {
     log::error!("Failed to send peers message: {}", e);
     return Err(HttpError::internal_error());
   }
 
-  let user_id_clone = user_id.clone();
-  let redis_task = tokio::spawn(async move {
-    let mut pubsub_stream = pubsub.on_message();
-    while let Some(msg) = pubsub_stream.next().await {
-      let payload: String = match msg.get_payload() {
-        Ok(p) => p,
-        Err(e) => {
-          log::error!("Failed to get Redis message payload: {}", e);
-          continue;
-        }
-      };
-      if let Ok(room_msg) = serde_json::from_str::<RoomMessage>(&payload) {
-        match room_msg {
-          RoomMessage::Join {
-            user_id: msg_user_id,
+  let pubsub_user_id = user_id.clone();
+  let mut pubsub_stream = pubsub
+    .subscribe(&room, cancellation_token.clone())
+    .await
+    .map_err(|e| {
+      log::error!("Failed to subscribe to room: {}", e);
+      HttpError::internal_error()
+    })?;
+
+  let mut pubsub_task_handle = tokio::spawn({
+    let cancellation_token = cancellation_token.clone();
+    async move {
+      loop {
+        tokio::select! {
+          _ = cancellation_token.cancelled() => {
+            log::debug!("PubSub task cancelled");
+            break;
           }
-          | RoomMessage::Leave {
-            user_id: msg_user_id,
-          } => {
-            if msg_user_id == user_id_clone {
-              continue;
+          payload = pubsub_stream.next() => {
+            let Some(payload) = payload else {
+              break;
+            };
+
+            if let Ok(room_msg) = serde_json::from_str::<RoomMessage>(&payload) {
+              match room_msg {
+                RoomMessage::Join {
+                  user_id: msg_user_id,
+                }
+                | RoomMessage::Leave {
+                  user_id: msg_user_id,
+                } => {
+                  if msg_user_id == pubsub_user_id {
+                    continue;
+                  }
+                }
+                RoomMessage::Peers { .. } => {
+                  continue;
+                }
+                RoomMessage::Message { .. } => {}
+              }
+            }
+
+            match tx.send(payload).await {
+              Ok(_) => {}
+              Err(tokio::sync::mpsc::error::SendError(_)) => {
+                log::debug!("Message channel closed, pubsub task exiting");
+                break;
+              }
             }
           }
-          RoomMessage::Peers { .. } => {
-            continue;
-          }
-          RoomMessage::Message { .. } => {}
         }
       }
+    }
+  });
 
-      if let Err(e) = tx.send(payload) {
-        log::error!("Failed to send message to channel: {}", e);
-        break;
+  let mut ws_sender_task_handle = tokio::spawn({
+    let cancellation_token = cancellation_token.clone();
+    async move {
+      loop {
+        tokio::select! {
+          _ = cancellation_token.cancelled() => {
+            log::debug!("WebSocket sender task cancelled");
+            break;
+          }
+          payload = rx.recv() => {
+            let Some(payload) = payload else {
+              break;
+            };
+
+            match tokio::time::timeout(
+              Duration::from_secs(10),
+              ws_sender.send(Message::text(payload)),
+            )
+            .await
+            {
+              Ok(Ok(())) => {
+              }
+              Ok(Err(_)) => {
+                break;
+              }
+              Err(_) => {
+                log::warn!("WebSocket send timeout, closing connection due to slow client");
+                break;
+              }
+            }
+          }
+        }
       }
     }
   });
-  *redis_task_handle.lock().await = Some(redis_task);
-
-  let ws_sender_task = tokio::spawn(async move {
-    while let Some(payload) = rx.recv().await {
-      if ws_sender.send(Message::text(payload)).await.is_err() {
-        break;
-      }
-    }
-  });
-  *ws_sender_task_handle.lock().await = Some(ws_sender_task);
 
   while let Some(msg) = ws_receiver.next().await {
     match msg {
       Ok(Message::Text(text)) => {
-        let room_msg = RoomMessage::Message {
+        let msg = RoomMessage::Message {
           user_id: user_id.clone(),
           content: text.to_string(),
         };
+        let msg_json = match serde_json::to_string(&msg) {
+          Ok(json) => json,
+          Err(e) => {
+            log::error!("Failed to serialize message: {}", e);
+            continue;
+          }
+        };
 
-        let msg_json = serde_json::to_string(&room_msg).map_err(|e| {
-          log::error!("Failed to serialize message: {}", e);
-          HttpError::internal_error()
-        })?;
-
-        pub_conn
-          .publish::<_, _, ()>(&room_channel, &msg_json)
-          .await
-          .map_err(|e| {
-            log::error!("Failed to publish message: {}", e);
-            HttpError::internal_error()
-          })?;
+        if let Err(e) = pubsub.publish(&room, &msg_json).await {
+          log::error!("Failed to publish message: {}", e);
+        }
       }
       Ok(Message::Close(_)) => {
         break;
@@ -323,11 +347,47 @@ async fn handle_ws(
         log::error!("WebSocket error: {}", e);
         break;
       }
-      _ => {}
+      _ => {
+        log::warn!("Unsupported WebSocket message received");
+      }
     }
   }
 
-  // Normal cleanup is handled by the guard dropping here
+  cancellation_token.cancel();
+
+  let shutdown_timeout = std::time::Duration::from_secs(5);
+
+  match tokio::time::timeout(shutdown_timeout, async {
+    let (pubsub_result, ws_sender_result) =
+      tokio::join!(&mut pubsub_task_handle, &mut ws_sender_task_handle);
+
+    if let Err(e) = pubsub_result {
+      if e.is_panic() {
+        log::error!("PubSub task panicked: {:?}", e);
+      }
+    }
+
+    if let Err(e) = ws_sender_result {
+      if e.is_panic() {
+        log::error!("WebSocket sender task panicked: {:?}", e);
+      }
+    }
+  })
+  .await
+  {
+    Err(_) => {
+      log::warn!(
+        "Task shutdown timed out after {:?}, forcefully aborting",
+        shutdown_timeout
+      );
+      pubsub_task_handle.abort();
+      ws_sender_task_handle.abort();
+
+      tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    Ok(_) => {}
+  }
+
   Ok(())
 }
 

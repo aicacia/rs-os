@@ -2101,12 +2101,14 @@ dependencies = [
 name = "os-signaling"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
  "build-time",
  "chrono",
  "clap",
  "clap_complete",
  "config",
+ "dashmap",
  "dotenvy",
  "futures-util",
  "http",

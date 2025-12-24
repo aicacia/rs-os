@@ -19,6 +19,7 @@ use crate::cli::completions;
 use crate::{
   cli::args::{CliArgs, CliCommand},
   config::AppConfig,
+  router::ws::pubsub::PubSub,
 };
 
 pub async fn run() -> io::Result<()> {
@@ -76,13 +77,22 @@ pub async fn run() -> io::Result<()> {
     .map_err(io::Error::other)?;
   }
 
-  let redis_client =
-    redis::Client::open(app_config.redis_url.as_str()).map_err(io::Error::other)?;
+  let pubsub = Arc::new(if let Some(redis_url) = &app_config.redis_url {
+    match PubSub::new_redis(redis_url) {
+      Ok(pubsub) => pubsub,
+      Err(e) => {
+        eprintln!("failed to create redis pubsub client: {}", e);
+        return Err(io::Error::other(e));
+      }
+    }
+  } else {
+    PubSub::new_in_memory()
+  });
 
   let open_api_router = crate::router::create_openapi_router(
     crate::router::entity::RouterState {
       config: app_config.clone(),
-      redis_client,
+      pubsub,
     },
     None,
   );

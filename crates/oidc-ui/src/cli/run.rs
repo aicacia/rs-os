@@ -30,7 +30,10 @@ pub async fn run() -> io::Result<()> {
 
   let app_config = match AppConfig::try_from(Path::new(&args.config)) {
     Ok(app_config) => app_config,
-    Err(e) => return Err(io::Error::other(e)),
+    Err(e) => {
+      eprintln!("failed to load config {:?}: {}", args.config, e);
+      return Err(io::Error::other(e));
+    }
   };
 
   LogTracer::init().map_err(|e| io::Error::other(format!("failed to init log tracer: {}", e)))?;

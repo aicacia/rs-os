@@ -9,6 +9,7 @@ repository = "https://github.com/aicacia/rs-os"
 rust-version = "1.92"
 
 [dependencies]
+async-trait = { version = "0.1", default-features = false }
 axum = { version = "0.8", features = [
   "tokio",
   "http1",
@@ -21,6 +22,7 @@ axum = { version = "0.8", features = [
 build-time = { version = "0.1", default-features = false }
 chrono = { version = "0.4", features = ["serde"], default-features = false }
 config = { version = "0.15", features = ["json"], default-features = false }
+dashmap = { version = "6.0", default-features = false }
 futures-util = { version = "0.3", features = [
   "sink",
 ], default-features = false }

@@ -10,7 +10,9 @@
 	}
 
 	onMount(() => {
-		console.log(websocket);
+		websocket.on('open', () => {
+			console.log('WebSocket connection opened');
+		});
 	});
 </script>
 

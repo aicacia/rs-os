@@ -87,11 +87,23 @@ pub async fn run() -> io::Result<()> {
   );
   let admin_ui_router = os_admin_ui::router::create_router(Some(ADMIN_UI_URL_PREFIX));
 
-  let redis_client =
-    redis::Client::open(app_config.signaling_api.redis_url.as_str()).map_err(io::Error::other)?;
+  let pubsub = Arc::new(
+    if let Some(redis_url) = &app_config.signaling_api.redis_url {
+      match os_signaling::router::ws::pubsub::PubSub::new_redis(redis_url) {
+        Ok(pubsub) => pubsub,
+        Err(e) => {
+          log::error!("failed to create redis pubsub client: {}", e);
+          return Err(io::Error::other(e));
+        }
+      }
+    } else {
+      os_signaling::router::ws::pubsub::PubSub::new_in_memory()
+    },
+  );
+
   let signaling_openapi_router = os_signaling::router::create_openapi_router(
     os_signaling::router::entity::RouterState {
-      redis_client,
+      pubsub,
       config: Arc::new(app_config.signaling_api.clone()),
     },
     Some(SIGNALING_API_URL_PREFIX),
