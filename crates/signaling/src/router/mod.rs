@@ -2,7 +2,6 @@
 pub mod common;
 pub mod entity;
 pub mod router;
-pub mod util;
 pub mod ws;
 
 pub use os_api::{Form, Json, error};

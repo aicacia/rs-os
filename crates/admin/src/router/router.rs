@@ -4,7 +4,7 @@ use utoipa_axum::router::OpenApiRouter;
 
 use crate::router::{
   client, common::entity::Permission, current_user, entity::RouterState, user, user_email,
-  user_oauth2_provider, user_phone_number, user_role, util,
+  user_oauth2_provider, user_phone_number, user_role,
 };
 
 #[derive(OpenApi)]
@@ -24,7 +24,10 @@ pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) 
 
   let app_router = OpenApiRouter::new()
     .merge(client::router::create_router(state.clone()))
-    .merge(util::router::create_router(state.clone()))
+    .merge(os_api::util::router::create_router(
+      state.clone(),
+      health_check,
+    ))
     .merge(current_user::router::create_router(state.clone()))
     .merge(user::router::create_router(state.clone()))
     .merge(user_email::router::create_router(state.clone()))
@@ -48,4 +51,14 @@ pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) 
     openapi_spec,
     prefix_optional,
   ))
+}
+
+async fn health_check(state: RouterState) -> bool {
+  match state.database_connection.ping().await {
+    Ok(()) => true,
+    Err(e) => {
+      log::error!("Database health check failed: {}", e);
+      false
+    }
+  }
 }

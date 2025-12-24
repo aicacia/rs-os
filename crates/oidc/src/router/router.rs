@@ -2,7 +2,7 @@ use os_api::SecurityAddon;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
-use crate::router::{common::entity::Permission, entity::RouterState, oidc, util};
+use crate::router::{common::entity::Permission, entity::RouterState, oidc};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -20,7 +20,10 @@ pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) 
   let mut openapi_router = OpenApiRouter::with_openapi(ApiDoc::openapi());
 
   let app_router = OpenApiRouter::new()
-    .merge(util::router::create_router(state.clone()))
+    .merge(os_api::util::router::create_router(
+      state.clone(),
+      health_check,
+    ))
     .merge(oidc::router::create_router(state.clone()));
 
   if let Some(prefix) = prefix_optional {
@@ -39,4 +42,14 @@ pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) 
     openapi_spec,
     prefix_optional,
   ))
+}
+
+async fn health_check(state: RouterState) -> bool {
+  match state.database_connection.ping().await {
+    Ok(()) => true,
+    Err(e) => {
+      log::error!("Database health check failed: {}", e);
+      false
+    }
+  }
 }
