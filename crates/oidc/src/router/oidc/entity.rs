@@ -4,6 +4,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::core::helper::{json_to_string_vec, string_vec_to_json};
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Serialize, ToSchema)]
 pub struct JWK {
   pub kid: String,

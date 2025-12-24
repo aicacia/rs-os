@@ -20,7 +20,7 @@ impl Default for StorageConfig {
   fn default() -> Self {
     Self {
       storage_adapter: StorageAdapterKind::default(),
-      data_path: "./storage/data".to_string(),
+      data_path: "./storage/data".to_owned(),
     }
   }
 }
@@ -40,7 +40,7 @@ impl Default for AppConfig {
   fn default() -> Self {
     Self {
       server: ServerConfig::default(),
-      log_level: tracing::Level::DEBUG.to_string(),
+      log_level: "DEBUG".to_owned(),
       env: Environment::default(),
       storage: StorageConfig::default(),
       api_url: None,

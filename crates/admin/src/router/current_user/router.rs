@@ -45,7 +45,7 @@ pub async fn current_user(
     .await
   {
     Ok(user) => axum::Json(user).into_response(),
-    Err(e) => return e.into_response(),
+    Err(e) => e.into_response(),
   }
 }
 
@@ -79,7 +79,7 @@ pub async fn update_username(
     Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
     Err(e) => {
       log::error!("error updating username: {}", e);
-      return HttpError::internal_error().into_response();
+      HttpError::internal_error().into_response()
     }
   }
 }
@@ -116,7 +116,7 @@ pub async fn update_password(
     Ok(_) => (StatusCode::NO_CONTENT, ()).into_response(),
     Err(e) => {
       log::error!("error updating user password: {}", e);
-      return HttpError::internal_error().into_response();
+      HttpError::internal_error().into_response()
     }
   }
 }
@@ -151,7 +151,7 @@ pub async fn update_user_info(
     Ok(user_info) => axum::Json(Into::<UserInfo>::into(user_info)).into_response(),
     Err(e) => {
       log::error!("error updating user info: {}", e);
-      return HttpError::internal_error().into_response();
+      HttpError::internal_error().into_response()
     }
   }
 }

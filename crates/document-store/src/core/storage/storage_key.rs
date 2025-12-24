@@ -108,7 +108,8 @@ mod tests {
     );
 
     let bytes = original.to_bytes();
-    let parsed = StorageKey::try_from(bytes.as_slice()).unwrap();
+    let parsed = StorageKey::try_from(bytes.as_slice())
+      .expect("Failed to parse storage key in round-trip test");
 
     assert_eq!(original, parsed);
   }

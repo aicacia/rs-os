@@ -137,7 +137,7 @@ impl UserAuthorization {
     for missing_permission in missing_permissions {
       e = e.with_error(missing_permission.as_str(), REQUIRED_ERROR);
     }
-    return Err(e);
+    Err(e)
   }
 }
 
@@ -195,19 +195,19 @@ where
           }
         }
 
-        return Ok(Self {
+        Ok(Self {
           claims: authorization.claims,
           user_model,
           role_permissions,
           permissions,
-        });
+        })
       }
       Ok(None) => {
-        return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+        Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))
       }
       Err(e) => {
         log::error!("invalid authorization user not found for sub: {}", e);
-        return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+        Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR))
       }
     }
   }

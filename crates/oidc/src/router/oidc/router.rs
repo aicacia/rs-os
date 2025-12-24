@@ -128,11 +128,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
 
     log::info!("{:?}", key_operations);
 
-    if key_operations
-      .iter()
-      .find(|s| s.as_str() == "sign")
-      .is_some()
-    {
+    if key_operations.iter().any(|s| s.as_str() == "sign") {
       signing_algs.insert(jwk.alg.to_owned());
     }
   }
@@ -157,7 +153,7 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     registration_endpoint: Some(format!("{}/register-client", api_url)),
     jwks_uri: format!("{}/.well-known/jwks.json", api_url),
     response_types_supported: vec!["code".to_owned(), "none".to_owned()],
-    response_modes_supported: response_modes_supported,
+    response_modes_supported,
     subject_types_supported: vec!["public".to_owned(), "pairwise".to_owned()],
     id_token_signing_alg_values_supported: signing_algs.into_iter().collect(),
     scopes_supported: vec![
@@ -432,7 +428,7 @@ async fn refresh_token_grant(
   if token_data.claims.r#type != TOKEN_TYPE_REFRESH {
     return Err(HttpError::unauthorized());
   }
-  if token_data.claims.client.to_owned() != client_auth.client_id {
+  if token_data.claims.client != client_auth.client_id {
     return Err(HttpError::unauthorized().with_error("client_id", INVALID_ERROR));
   }
 
@@ -692,8 +688,8 @@ async fn authorize_internal(
       ui_url.query_pairs_mut();
 
     ui_url_params.append_pair("client_id", &authorize_request.client_id);
-    ui_url_params.append_pair("response_type", &authorize_request.response_type.as_str());
-    ui_url_params.append_pair("response_mode", &authorize_request.response_mode.as_str());
+    ui_url_params.append_pair("response_type", authorize_request.response_type.as_str());
+    ui_url_params.append_pair("response_mode", authorize_request.response_mode.as_str());
     ui_url_params.append_pair("scope", &authorize_request.scope);
     ui_url_params.append_pair("redirect_uri", &authorize_request.redirect_uri);
     if let Some(state) = &authorize_request.state {
@@ -840,7 +836,7 @@ pub async fn revoke(
     }
   };
 
-  if &token_data.claims.client != &revoke_request.client_auth.client_id {
+  if token_data.claims.client != revoke_request.client_auth.client_id {
     log::error!("client_id mismatch: token belongs to different client");
     return HttpError::unauthorized()
       .with_error("client_id", INVALID_ERROR)

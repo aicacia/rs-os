@@ -90,3 +90,20 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[workspace.lints.clippy]
+# Security and correctness
+unwrap_used = "warn"
+expect_used = "warn"
+todo = "warn"
+panic = "warn"
+
+# Performance
+clone_on_copy = "warn"
+inefficient_to_string = "warn"
+large_stack_arrays = "warn"
+
+# Style
+missing_docs = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"

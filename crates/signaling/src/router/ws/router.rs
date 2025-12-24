@@ -190,13 +190,12 @@ async fn handle_ws(
       let leave_msg = RoomMessage::Leave {
         user_id: cleanup_user_id,
       };
-      if let Ok(leave_json) = serde_json::to_string(&leave_msg) {
-        if let Err(e) = conn
+      if let Ok(leave_json) = serde_json::to_string(&leave_msg)
+        && let Err(e) = conn
           .publish::<_, _, ()>(&cleanup_room_channel, &leave_json)
           .await
-        {
-          log::error!("Failed to publish leave message during cleanup: {}", e);
-        }
+      {
+        log::error!("Failed to publish leave message during cleanup: {}", e);
       }
     });
   });

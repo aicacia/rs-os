@@ -15,15 +15,16 @@ pub async fn create_database_connection(
   if database_config.url.starts_with("sqlite:") {
     log::info!("Initializing sqlite database: {}", database_config.url);
     let path = Path::new(&database_config.url["sqlite:".len()..]);
-    if let Some(parent) = path.parent() {
-      if !parent.as_os_str().is_empty() && !parent.exists() {
-        log::info!("Creating database directory: {:?}", parent);
-        match create_dir_all(parent) {
-          Ok(_) => (),
-          Err(e) => {
-            log::error!("Failed to create database directory: {}", e);
-            return Err(sea_orm::DbErr::Custom(e.to_string()));
-          }
+    if let Some(parent) = path.parent()
+      && !parent.as_os_str().is_empty()
+      && !parent.exists()
+    {
+      log::info!("Creating database directory: {:?}", parent);
+      match create_dir_all(parent) {
+        Ok(_) => (),
+        Err(e) => {
+          log::error!("Failed to create database directory: {}", e);
+          return Err(sea_orm::DbErr::Custom(e.to_string()));
         }
       }
     }
@@ -48,15 +49,16 @@ pub async fn create_database_connection(
     .max_lifetime(Duration::from_secs(database_config.max_lifetime))
     .after_connect(|conn| {
       Box::pin(async move {
-        match conn.get_database_backend().as_str().to_lowercase().as_str() {
-          "sqlx-sqlite" => {
-            conn
-              .execute_unprepared(
-                "PRAGMA journal_mode = wal; PRAGMA synchronous = normal; PRAGMA foreign_keys = on;",
-              )
-              .await?;
-          }
-          _ => (),
+        if conn
+          .get_database_backend()
+          .as_str()
+          .eq_ignore_ascii_case("sqlx-sqlite")
+        {
+          conn
+            .execute_unprepared(
+              "PRAGMA journal_mode = wal; PRAGMA synchronous = normal; PRAGMA foreign_keys = on;",
+            )
+            .await?;
         }
         Ok(())
       })
@@ -67,8 +69,7 @@ pub async fn create_database_connection(
   database_connection
     .get_schema_registry("os_model::entities::*")
     .sync(&database_connection)
-    .await
-    .expect("failed to sync schema registry");
+    .await?;
 
   Migrator::up(&database_connection, None).await?;
 
@@ -79,18 +80,14 @@ pub async fn close_database_connection(
   database_connection: sea_orm::DatabaseConnection,
 ) -> Result<(), sea_orm::DbErr> {
   {
-    match database_connection
+    if database_connection
       .get_database_backend()
       .as_str()
-      .to_lowercase()
-      .as_str()
+      .eq_ignore_ascii_case("sqlx-sqlite")
     {
-      "sqlx-sqlite" => {
-        database_connection
-          .execute_unprepared("PRAGMA analysis_limit=400; PRAGMA optimize;")
-          .await?;
-      }
-      _ => (),
+      database_connection
+        .execute_unprepared("PRAGMA analysis_limit=400; PRAGMA optimize;")
+        .await?;
     }
   }
   database_connection.close().await?;

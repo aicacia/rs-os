@@ -252,8 +252,9 @@ pub async fn update_user_phone_number_handler(
     }
   }
 
-  if let Some(is_primary) = request.is_primary {
-    if is_primary {
+  if let Some(is_primary) = request.is_primary
+    && is_primary
+  {
       let phone_model = match update_user_phone_number_primary(
         &state.database_connection,
         user_id_parsed,
@@ -278,7 +279,6 @@ pub async fn update_user_phone_number_handler(
       let phone: UserPhoneNumber = phone_model.into();
       return axum::Json(phone).into_response();
     }
-  }
 
   // If no changes, just return the current phone number
   match get_user_phone_number_by_id(&state.database_connection, phone_id_parsed).await {

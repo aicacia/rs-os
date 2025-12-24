@@ -29,10 +29,10 @@ pub fn to_public_jwk(jwk: &jsonwebtoken::jwk::Jwk) -> jsonwebtoken::jwk::Jwk {
 }
 
 pub fn is_public_key_operation(key_operation: &jsonwebtoken::jwk::KeyOperations) -> bool {
-  match key_operation {
-    jsonwebtoken::jwk::KeyOperations::Verify => true,
-    jsonwebtoken::jwk::KeyOperations::Encrypt => true,
-    jsonwebtoken::jwk::KeyOperations::WrapKey => true,
-    _ => false,
-  }
+  matches!(
+    key_operation,
+    jsonwebtoken::jwk::KeyOperations::Verify
+      | jsonwebtoken::jwk::KeyOperations::Encrypt
+      | jsonwebtoken::jwk::KeyOperations::WrapKey
+  )
 }

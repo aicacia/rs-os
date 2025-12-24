@@ -1,9 +1,10 @@
+#![allow(clippy::module_inception)]
 pub mod client;
 pub mod common;
 pub mod current_user;
 pub mod entity;
 pub mod middleware;
-mod router;
+pub mod router;
 pub mod user;
 pub mod user_email;
 pub mod user_oauth2_provider;

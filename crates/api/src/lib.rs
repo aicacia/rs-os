@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 pub mod claims;
 pub mod config;
 pub mod error;

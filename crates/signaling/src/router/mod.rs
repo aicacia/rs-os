@@ -1,6 +1,7 @@
+#![allow(clippy::module_inception)]
 pub mod common;
 pub mod entity;
-mod router;
+pub mod router;
 pub mod util;
 pub mod ws;
 

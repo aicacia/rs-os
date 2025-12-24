@@ -100,7 +100,7 @@ impl Default for AppConfig {
     Self {
       server: ServerConfig::default(),
       database: DatabaseConfig::default(),
-      log_level: tracing::Level::DEBUG.to_string(),
+      log_level: "DEBUG".to_owned(),
       env: Environment::default(),
       password: PasswordConfig::default(),
       user: UserConfig::default(),
@@ -137,14 +137,12 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
   type Error = config::ConfigError;
 
   fn try_from(config_path: &'a Path) -> Result<Self, Self::Error> {
-    Ok(
-      config::Config::builder()
-        .add_source(config::File::with_name(
-          config_path.to_string_lossy().as_ref(),
-        ))
-        .add_source(config::Environment::with_prefix("APP"))
-        .build()?
-        .try_deserialize()?,
-    )
+    config::Config::builder()
+      .add_source(config::File::with_name(
+        config_path.to_string_lossy().as_ref(),
+      ))
+      .add_source(config::Environment::with_prefix("APP"))
+      .build()?
+      .try_deserialize()
   }
 }

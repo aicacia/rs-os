@@ -83,10 +83,10 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
 
     app_config.oidc_api.database = app_config.database.clone();
 
-    if let Some(ui_url) = &app_config.ui_url {
-      if app_config.oidc_api.ui_url.is_none() {
-        app_config.oidc_api.ui_url = Some(format!("{}{}", ui_url, OIDC_UI_URL_PREFIX));
-      }
+    if let Some(ui_url) = &app_config.ui_url
+      && app_config.oidc_api.ui_url.is_none()
+    {
+      app_config.oidc_api.ui_url = Some(format!("{}{}", ui_url, OIDC_UI_URL_PREFIX));
     }
     if let Some(url) = &app_config.url {
       if app_config.oidc_api.url.is_none() {
@@ -111,10 +111,10 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
 
     app_config.admin_api.database = app_config.database.clone();
 
-    if let Some(ui_url) = &app_config.ui_url {
-      if app_config.admin_api.ui_url.is_none() {
-        app_config.admin_api.ui_url = Some(format!("{}{}", ui_url, ADMIN_UI_URL_PREFIX));
-      }
+    if let Some(ui_url) = &app_config.ui_url
+      && app_config.admin_api.ui_url.is_none()
+    {
+      app_config.admin_api.ui_url = Some(format!("{}{}", ui_url, ADMIN_UI_URL_PREFIX));
     }
     if let Some(url) = &app_config.url {
       if app_config.admin_api.url.is_none() {
@@ -137,10 +137,10 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.signaling_api.server.gzip = app_config.server.gzip;
     app_config.signaling_api.log_level = app_config.log_level.clone();
 
-    if let Some(url) = &app_config.url {
-      if app_config.signaling_api.url.is_none() {
-        app_config.signaling_api.url = Some(format!("{}{}", url, SIGNALING_API_URL_PREFIX));
-      }
+    if let Some(url) = &app_config.url
+      && app_config.signaling_api.url.is_none()
+    {
+      app_config.signaling_api.url = Some(format!("{}{}", url, SIGNALING_API_URL_PREFIX));
     }
 
     Ok(app_config)

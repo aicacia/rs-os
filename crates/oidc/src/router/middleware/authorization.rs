@@ -74,7 +74,7 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
   };
-  let alg = header.alg.clone();
+  let alg = header.alg;
   let jwk_row = match get_jwk_by_kid(db, kid).await {
     Ok(Some(jwk)) => jwk,
     Ok(None) => {

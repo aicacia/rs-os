@@ -67,7 +67,7 @@ pub fn authorization_from_header(
   }
 }
 
-static JWK_CACHE: Lazy<DashMap<String, JwkEntry>> = Lazy::new(|| DashMap::new());
+static JWK_CACHE: Lazy<DashMap<String, JwkEntry>> = Lazy::new(DashMap::new);
 
 async fn fetch_jwk_from_server(jku: &str, kid: &str) -> Result<DecodingKey, HttpError> {
   let resp = reqwest::get(jku).await.map_err(|e| {
@@ -227,7 +227,7 @@ where
       .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, REQUIRED_ERROR))?;
     let authorization_string = authorization_from_header(authorization_header_value)?;
 
-    let token_data = parse_token_data::<T>(&authorization_string).await?;
+    let token_data = parse_token_data::<T>(authorization_string).await?;
 
     Ok(Self {
       claims: token_data.claims,

@@ -20,7 +20,7 @@ pub fn string_vec_to_json(vec: &Vec<String>) -> String {
     Ok(json) => json,
     Err(e) => {
       log::error!("Error formatting JSON: {}", e);
-      "[]".to_string()
+      "[]".to_owned()
     }
   }
 }
@@ -38,5 +38,5 @@ where
   let mut b_set = HashSet::with_capacity(b.len());
   b_set.extend(b.iter());
 
-  return a_set == b_set;
+  a_set == b_set
 }

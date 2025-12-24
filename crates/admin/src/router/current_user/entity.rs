@@ -92,10 +92,8 @@ impl From<user_infos::Model> for UserInfo {
       } else {
         Some(given_name.clone())
       }
-    } else if let Some(family_name) = &user_info_model.family_name {
-      Some(family_name.clone())
     } else {
-      None
+      user_info_model.family_name.clone()
     };
 
     Self {
@@ -233,20 +231,20 @@ pub struct UpdateUserInfoRequest {
   pub address: Option<String>,
 }
 
-impl Into<UserInfoUpdate> for UpdateUserInfoRequest {
-  fn into(self) -> UserInfoUpdate {
+impl From<UpdateUserInfoRequest> for UserInfoUpdate {
+  fn from(req: UpdateUserInfoRequest) -> Self {
     UserInfoUpdate {
-      given_name: self.given_name,
-      family_name: self.family_name,
-      middle_name: self.middle_name,
-      nickname: self.nickname,
-      profile_picture: self.profile_picture,
-      website: self.website,
-      gender: self.gender,
-      birthdate: self.birthdate,
-      zone_info: self.zone_info,
-      locale: self.locale,
-      address: self.address,
+      given_name: req.given_name,
+      family_name: req.family_name,
+      middle_name: req.middle_name,
+      nickname: req.nickname,
+      profile_picture: req.profile_picture,
+      website: req.website,
+      gender: req.gender,
+      birthdate: req.birthdate,
+      zone_info: req.zone_info,
+      locale: req.locale,
+      address: req.address,
     }
   }
 }

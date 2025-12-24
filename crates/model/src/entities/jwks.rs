@@ -224,7 +224,7 @@ pub fn jwk_to_model(jwk: jsonwebtoken::jwk::Jwk) -> Model {
     .common
     .key_operations
     .as_ref()
-    .map(|ko| serde_json::to_string(ko).unwrap_or_else(|_| "[]".to_string()));
+    .map(|ko| serde_json::to_string(ko).unwrap_or_else(|_| "[]".to_owned()));
   let common_x5c = jwk
     .common
     .x509_chain
@@ -369,17 +369,17 @@ fn generate_es_jwk(alg: Algorithm) -> Result<Model, io::Error> {
       let affine = public_key.as_affine();
       let point = affine.to_encoded_point(false);
 
-      let x = BASE64_URL_SAFE_NO_PAD.encode(
-        &point
+      let x = BASE64_URL_SAFE_NO_PAD.encode::<&[u8]>(
+        point
           .x()
           .ok_or_else(|| io::Error::other("invalid x"))?
-          .to_vec(),
+          .as_ref(),
       );
-      let y = BASE64_URL_SAFE_NO_PAD.encode(
-        &point
+      let y = BASE64_URL_SAFE_NO_PAD.encode::<&[u8]>(
+        point
           .y()
           .ok_or_else(|| io::Error::other("invalid y"))?
-          .to_vec(),
+          .as_ref(),
       );
 
       let jwk = Model {
@@ -407,17 +407,17 @@ fn generate_es_jwk(alg: Algorithm) -> Result<Model, io::Error> {
       let affine = public_key.as_affine();
       let point = affine.to_encoded_point(false);
 
-      let x = BASE64_URL_SAFE_NO_PAD.encode(
-        &point
+      let x = BASE64_URL_SAFE_NO_PAD.encode::<&[u8]>(
+        point
           .x()
           .ok_or_else(|| io::Error::other("invalid x"))?
-          .to_vec(),
+          .as_ref(),
       );
-      let y = BASE64_URL_SAFE_NO_PAD.encode(
-        &point
+      let y = BASE64_URL_SAFE_NO_PAD.encode::<&[u8]>(
+        point
           .y()
           .ok_or_else(|| io::Error::other("invalid y"))?
-          .to_vec(),
+          .as_ref(),
       );
 
       let jwk = Model {
@@ -463,13 +463,13 @@ fn generate_rsa_jwk(alg: Algorithm) -> Result<Model, io::Error> {
     .ok_or_else(|| io::Error::other("inverse should exist"))?;
   let (_, qi_bytes) = qi.to_bytes_be();
 
-  let n = BASE64_URL_SAFE_NO_PAD.encode(&public_key.n().to_bytes_be());
-  let e = BASE64_URL_SAFE_NO_PAD.encode(&public_key.e().to_bytes_be());
-  let d = BASE64_URL_SAFE_NO_PAD.encode(&private_key.d().to_bytes_be());
-  let p = BASE64_URL_SAFE_NO_PAD.encode(&p.to_bytes_be());
-  let q = BASE64_URL_SAFE_NO_PAD.encode(&q.to_bytes_be());
-  let dp = BASE64_URL_SAFE_NO_PAD.encode(&dp.to_bytes_be());
-  let dq = BASE64_URL_SAFE_NO_PAD.encode(&dq.to_bytes_be());
+  let n = BASE64_URL_SAFE_NO_PAD.encode(public_key.n().to_bytes_be());
+  let e = BASE64_URL_SAFE_NO_PAD.encode(public_key.e().to_bytes_be());
+  let d = BASE64_URL_SAFE_NO_PAD.encode(private_key.d().to_bytes_be());
+  let p = BASE64_URL_SAFE_NO_PAD.encode(p.to_bytes_be());
+  let q = BASE64_URL_SAFE_NO_PAD.encode(q.to_bytes_be());
+  let dp = BASE64_URL_SAFE_NO_PAD.encode(dp.to_bytes_be());
+  let dq = BASE64_URL_SAFE_NO_PAD.encode(dq.to_bytes_be());
   let qi = BASE64_URL_SAFE_NO_PAD.encode(&qi_bytes);
 
   let jwk_model = Model {
@@ -545,7 +545,7 @@ fn encoding_key_es256(jwk_model: &Model) -> Result<EncodingKey, io::Error> {
   let d_bytes = BASE64_URL_SAFE_NO_PAD.decode(d).map_err(io::Error::other)?;
   let secret_key: p256::elliptic_curve::SecretKey<p256::NistP256> =
     p256::elliptic_curve::SecretKey::from_slice(&d_bytes)
-      .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+      .map_err(|e| io::Error::other(e.to_string()))?;
   Ok(EncodingKey::from_ec_der(
     P256EncodePrivateKey::to_pkcs8_der(&secret_key)
       .map_err(io::Error::other)?
@@ -561,7 +561,7 @@ fn encoding_key_es384(jwk_model: &Model) -> Result<EncodingKey, io::Error> {
   let d_bytes = BASE64_URL_SAFE_NO_PAD.decode(d).map_err(io::Error::other)?;
   let secret_key: p384::elliptic_curve::SecretKey<p384::NistP384> =
     p384::elliptic_curve::SecretKey::from_slice(&d_bytes)
-      .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+      .map_err(|e| io::Error::other(e.to_string()))?;
   Ok(EncodingKey::from_ec_der(
     P384EncodePrivateKey::to_pkcs8_der(&secret_key)
       .map_err(io::Error::other)?
@@ -664,9 +664,6 @@ pub fn to_encoding_key(jwk_model: &Model) -> Result<EncodingKey, io::Error> {
   }
 }
 
-pub fn is_public_key_op(key_op: &String) -> bool {
-  match key_op.as_str() {
-    "verify" | "encrypt" | "wrapKey" => true,
-    _ => false,
-  }
+pub fn is_public_key_op(key_op: &str) -> bool {
+  matches!(key_op, "verify" | "encrypt" | "wrapKey")
 }

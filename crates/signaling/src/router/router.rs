@@ -12,7 +12,9 @@ use crate::router::{entity::RouterState, util, ws};
 pub struct ApiDoc;
 
 pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) -> OpenApiRouter {
-  let mut openapi_router = OpenApiRouter::with_openapi(ApiDoc::openapi());
+  // Build OpenAPI once at startup and reuse; avoid unnecessary clones
+  let openapi_spec = ApiDoc::openapi();
+  let mut openapi_router = OpenApiRouter::with_openapi(openapi_spec.clone());
 
   let app_router = OpenApiRouter::new()
     .merge(util::router::create_router(state.clone()))
@@ -23,8 +25,6 @@ pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) 
   } else {
     openapi_router = openapi_router.merge(app_router)
   }
-
-  let openapi_spec = openapi_router.get_openapi().clone();
 
   let base_url_app_config = state.config.clone();
   let base_url = move || base_url_app_config.base_url();

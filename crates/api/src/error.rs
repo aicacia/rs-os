@@ -120,7 +120,7 @@ impl From<StatusCode> for HttpError {
 impl From<ValidationErrors> for HttpError {
   fn from(validation_errors: ValidationErrors) -> Self {
     let mut new = Self::bad_request();
-    handle_validation_errors(&mut new, &mut String::new(), &validation_errors);
+    handle_validation_errors(&mut new, "", &validation_errors);
     new
   }
 }
@@ -143,36 +143,44 @@ impl IntoResponse for HttpError {
 }
 
 impl HttpError {
+  /// Creates a bad request (400) HTTP error.
   pub fn bad_request() -> Self {
     Self::from(StatusCode::BAD_REQUEST)
   }
 
+  /// Creates an internal server error (500).
   pub fn internal_error() -> Self {
     Self::from(StatusCode::INTERNAL_SERVER_ERROR)
   }
 
+  /// Creates an unauthorized (401) HTTP error.
   pub fn unauthorized() -> Self {
     Self::from(StatusCode::UNAUTHORIZED)
   }
 
+  /// Creates a not found (404) HTTP error.
   pub fn not_found() -> Self {
     Self::from(StatusCode::NOT_FOUND)
   }
 
+  /// Creates a forbidden (403) HTTP error.
   pub fn forbidden() -> Self {
     Self::from(StatusCode::FORBIDDEN)
   }
 
+  /// Sets the status code for this error.
   pub fn status(&mut self, status: StatusCode) -> &mut Self {
     self.status_code = status.as_u16();
     self
   }
 
+  /// Returns a new error with the given status code.
   pub fn with_status(mut self, status: StatusCode) -> Self {
     self.status(status);
     self
   }
 
+  /// Adds an error message under the provided field name.
   pub fn error(&mut self, name: impl Into<String>, msg: impl Into<HttpErrorMessage>) -> &mut Self {
     self
       .messages
@@ -182,15 +190,18 @@ impl HttpError {
     self
   }
 
+  /// Returns a new error with the provided field error added.
   pub fn with_error(mut self, name: impl Into<String>, msg: impl Into<HttpErrorMessage>) -> Self {
     self.error(name, msg);
     self
   }
 
+  /// Adds an application-level error.
   pub fn application_error(&mut self, msg: impl Into<HttpErrorMessage>) -> &mut Self {
     self.error(APPLICATION, msg)
   }
 
+  /// Returns a new error with an application-level error added.
   pub fn with_application_error(self, msg: impl Into<HttpErrorMessage>) -> Self {
     self.with_error(APPLICATION, msg)
   }
@@ -233,7 +244,7 @@ fn handle_validation_errors_kind(
       for (index, e) in validation_errors {
         let mut name = current_name.to_owned();
         name.push_str(&format!("[{}]", index));
-        handle_validation_errors(errors, &mut name, e);
+        handle_validation_errors(errors, &name, e);
       }
     }
     ValidationErrorsKind::Field(validation_errors) => {

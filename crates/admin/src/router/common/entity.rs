@@ -110,10 +110,8 @@ impl From<os_model::entities::user_infos::Model> for OpenIdProfile {
       } else {
         Some(given_name.clone())
       }
-    } else if let Some(family_name) = &user_info_model.family_name {
-      Some(family_name.clone())
     } else {
-      None
+      user_info_model.family_name.clone()
     };
 
     Self {

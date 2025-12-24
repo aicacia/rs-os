@@ -23,6 +23,7 @@ use crate::{
 };
 use sea_orm::DatabaseConnection;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn create_user_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
@@ -60,7 +61,7 @@ pub(crate) async fn create_user_token(
       );
     }
   };
-  let jwk = match model_to_jwt_jwk(jwk_model.clone().into()) {
+  let jwk = match model_to_jwt_jwk(jwk_model.clone()) {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("error getting converting into json web key: {}", e);
@@ -217,12 +218,13 @@ pub(crate) async fn create_user_token(
     issued_at: DateTime::<Utc>::from_timestamp(claims.iat, 0).unwrap_or_default(),
     expires_in: app_config.token.expires_in_seconds as i64,
     scope,
-    refresh_token: refresh_token,
-    refresh_token_expires_in: refresh_token_expires_in,
-    id_token: id_token,
+    refresh_token,
+    refresh_token_expires_in,
+    id_token,
   })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn create_user_authorization_code_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
@@ -261,7 +263,7 @@ pub(crate) async fn create_user_authorization_code_token(
         .timestamp()
         .saturating_add(app_config.token.expires_in_seconds as i64),
       iss: issuer.clone(),
-      scope: scope,
+      scope,
     },
     code_challenge,
     code_challenge_method,
@@ -276,7 +278,7 @@ pub(crate) async fn create_user_authorization_code_token(
       );
     }
   };
-  let jwk = match model_to_jwt_jwk(jwk_model.clone().into()) {
+  let jwk = match model_to_jwt_jwk(jwk_model.clone()) {
     Ok(jwk) => jwk,
     Err(e) => {
       log::error!("error getting converting into json web key: {}", e);
@@ -328,10 +330,10 @@ pub fn to_public_jwk(jwk: &jsonwebtoken::jwk::Jwk) -> jsonwebtoken::jwk::Jwk {
 }
 
 pub fn is_public_key_operation(key_operation: &jsonwebtoken::jwk::KeyOperations) -> bool {
-  match key_operation {
-    jsonwebtoken::jwk::KeyOperations::Verify => true,
-    jsonwebtoken::jwk::KeyOperations::Encrypt => true,
-    jsonwebtoken::jwk::KeyOperations::WrapKey => true,
-    _ => false,
-  }
+  matches!(
+    key_operation,
+    jsonwebtoken::jwk::KeyOperations::Verify
+      | jsonwebtoken::jwk::KeyOperations::Encrypt
+      | jsonwebtoken::jwk::KeyOperations::WrapKey
+  )
 }

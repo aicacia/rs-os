@@ -105,8 +105,7 @@ pub async fn run() -> io::Result<()> {
     .layer(TraceLayer::new_for_http())
     .merge(oidc_ui_router.reset_fallback())
     .merge(admin_ui_router.reset_fallback())
-    .layer(CompressionLayer::new().gzip(app_config.server.gzip))
-    .into();
+    .layer(CompressionLayer::new().gzip(app_config.server.gzip));
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {
     let addr = SocketAddr::from((

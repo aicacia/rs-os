@@ -1,8 +1,7 @@
 use rand::Rng;
 
 pub fn random_bytes(size: usize) -> Vec<u8> {
-  let mut bytes = Vec::with_capacity(size);
-  bytes.resize(size, 0);
+  let mut bytes = vec![0; size];
   rand::thread_rng().fill(bytes.as_mut_slice());
   bytes
 }

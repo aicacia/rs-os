@@ -245,8 +245,9 @@ pub async fn update_user_email_handler(
     }
   }
 
-  if let Some(is_primary) = request.is_primary {
-    if is_primary {
+  if let Some(is_primary) = request.is_primary
+    && is_primary
+  {
       let email_model = match update_user_email_primary(
         &state.database_connection,
         user_id_parsed,
@@ -271,7 +272,6 @@ pub async fn update_user_email_handler(
       let email: UserEmail = email_model.into();
       return axum::Json(email).into_response();
     }
-  }
 
   // If no changes, just return the current email
   match get_user_email_by_id(&state.database_connection, email_id_parsed).await {
