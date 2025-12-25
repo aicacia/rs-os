@@ -9,7 +9,6 @@ use os_model::{
   create_database_connection,
   entities::jwks::{create_jwk, generate_jwk, list_jwks},
 };
-use tokio::{fs::remove_file, runtime::Handle, task::block_in_place};
 use tokio_util::sync::CancellationToken;
 
 pub async fn setup() -> Result<
@@ -29,16 +28,20 @@ pub async fn setup() -> Result<
     app_config
   });
 
-  let db = create_database_connection(&app_config.database).await?;
+  let database_connection = create_database_connection(&app_config.database).await?;
 
-  if list_jwks(&db).await?.is_empty() {
-    let _ = create_jwk(&db, generate_jwk(app_config.token.default_jwt_algorithm)?).await?;
+  if list_jwks(&database_connection).await?.is_empty() {
+    let _ = create_jwk(
+      &database_connection,
+      generate_jwk(app_config.token.default_jwt_algorithm)?,
+    )
+    .await?;
   }
 
   let cancellation_token = CancellationToken::new();
   let router = create_openapi_router(
     RouterState {
-      database_connection: db.clone(),
+      database_connection: database_connection.clone(),
       config: app_config.clone(),
     },
     None,
@@ -46,25 +49,36 @@ pub async fn setup() -> Result<
   .into();
 
   let teardown_config = app_config.clone();
-  let teardown_db = db.clone();
+  let teardown_database_connection = database_connection.clone();
   let teardown_cancellation_token = cancellation_token.clone();
-  let teardown_fn = move || teardown(teardown_config, teardown_db, teardown_cancellation_token);
+  let teardown_fn = move || {
+    teardown(
+      teardown_config,
+      teardown_database_connection,
+      teardown_cancellation_token,
+    )
+  };
 
-  Ok((teardown_fn, router, app_config, db))
+  Ok((teardown_fn, router, app_config, database_connection))
 }
 
 fn teardown(
   app_config: Arc<AppConfig>,
-  _db: sea_orm::DatabaseConnection,
+  database_connection: sea_orm::DatabaseConnection,
   cancellation_token: CancellationToken,
 ) {
   cancellation_token.cancel();
 
-  block_in_place(move || {
-    Handle::current().block_on(async move {
+  tokio::task::block_in_place(move || {
+    tokio::runtime::Handle::current().block_on(async move {
+      match database_connection.close().await {
+        Ok(_) => {}
+        Err(e) => log::error!("failed to close database connection: {}", e),
+      }
+
       if app_config.database.url.starts_with("sqlite:") {
         let path = Path::new(&app_config.database.url["sqlite:".len()..]);
-        match remove_file(path).await {
+        match tokio::fs::remove_file(path).await {
           Ok(_) => {}
           Err(e) => log::error!("failed to delete file {:?}: {}", path, e),
         }

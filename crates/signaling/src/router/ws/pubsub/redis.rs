@@ -1,11 +1,33 @@
 use std::io;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use futures_util::{StreamExt, stream};
+use futures_util::{Stream, StreamExt, stream};
 use redis::AsyncCommands;
 use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use super::{MessageStream, pubsub::PubSubAdapterInternal};
+
+struct GuardedStream<S> {
+  stream: Pin<Box<S>>,
+  handle: JoinHandle<()>,
+}
+
+impl<S: Stream> Stream for GuardedStream<S> {
+  type Item = S::Item;
+
+  fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    self.stream.as_mut().poll_next(cx)
+  }
+}
+
+impl<S> Drop for GuardedStream<S> {
+  fn drop(&mut self) {
+    self.handle.abort();
+  }
+}
 
 #[derive(Clone)]
 pub struct RedisPubSub {
@@ -127,7 +149,7 @@ impl PubSubAdapterInternal for RedisPubSub {
 
     let (tx, rx) = mpsc::unbounded_channel();
 
-    tokio::spawn(async move {
+    let stream_handle = tokio::spawn(async move {
       {
         let mut stream = pubsub.on_message();
 
@@ -167,8 +189,11 @@ impl PubSubAdapterInternal for RedisPubSub {
       rx.recv().await.map(|payload| (payload, rx))
     });
 
-    let stream: MessageStream = Box::pin(stream);
+    let guarded_stream = GuardedStream {
+      stream: Box::pin(stream),
+      handle: stream_handle,
+    };
 
-    Ok(stream)
+    Ok(Box::pin(guarded_stream))
   }
 }

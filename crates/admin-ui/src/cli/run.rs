@@ -76,8 +76,20 @@ pub async fn run() -> io::Result<()> {
 
   shutdown_signal(cancellation_token).await;
 
-  match command_handle.await {
-    Ok(_) => Ok(()),
-    Err(e) => Err(io::Error::other(e)),
+  let shutdown_timeout = std::time::Duration::from_secs(10);
+  let mut command_handle = command_handle;
+  tokio::select! {
+    res = &mut command_handle => {
+      match res {
+        Ok(_) => Ok(()),
+        Err(e) => Err(io::Error::other(e)),
+      }
+    }
+    _ = tokio::time::sleep(shutdown_timeout) => {
+      log::warn!("server shutdown timed out after {:?}, aborting serve task", shutdown_timeout);
+      command_handle.abort();
+      tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+      Ok(())
+    }
   }
 }

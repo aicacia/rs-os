@@ -9,6 +9,7 @@ use os_signaling::{
   config::AppConfig,
   router::{create_openapi_router, entity::RouterState, ws::pubsub::PubSub},
 };
+use tokio_util::sync::CancellationToken;
 
 pub async fn setup() -> Result<(Router, Arc<AppConfig>), Box<dyn Error>> {
   dotenvy::from_path("./.env.test").ok();
@@ -41,6 +42,7 @@ pub async fn setup() -> Result<(Router, Arc<AppConfig>), Box<dyn Error>> {
     RouterState {
       config: app_config.clone(),
       pubsub,
+      cancellation_token: CancellationToken::new(),
     },
     None,
   )

@@ -78,12 +78,15 @@ impl PubSubAdapterInternal for InMemoryPubSub {
     let room = room.to_owned();
     let user_id = user_id.to_owned();
 
-    if let Some(mut entry) = self.rooms.get_mut(&room) {
+    let should_cleanup = if let Some(mut entry) = self.rooms.get_mut(&room) {
       entry.users.remove(&user_id);
+      entry.users.is_empty()
+    } else {
+      false
+    };
 
-      if entry.users.is_empty() {
-        self.rooms.remove(&room);
-      }
+    if should_cleanup {
+      self.rooms.remove(&room);
     }
 
     Ok(())

@@ -10,7 +10,6 @@ use axum::{
 };
 use futures_util::{SinkExt, StreamExt};
 use os_api::{BasicClaims, HttpError, parse_token_data};
-use scopeguard::defer;
 use tokio_util::sync::CancellationToken;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
@@ -22,6 +21,10 @@ use crate::router::{
     pubsub::PubSub,
   },
 };
+
+const DEFAULT_BUFFER_CAPACITY: usize = 64;
+const SEND_TIMEOUT_SECS: u64 = 10;
+const CLEANUP_TIMEOUT_SECS: u64 = 5;
 
 #[utoipa::path(
   get,
@@ -53,9 +56,33 @@ async fn user(
   let user_id = claims.sub;
   let room = format!("user:{}", claims.user);
 
+  if state.cancellation_token.is_cancelled() {
+    log::info!("WebSocket connection attempt during server shutdown");
+    return HttpError::internal_error()
+      .with_application_error("Server is shutting down")
+      .into_response();
+  }
+
   ws.on_upgrade(move |socket| async move {
-    if let Err(err) = handle_ws(socket, user_id, room, state.pubsub).await {
-      log::error!("WebSocket error: {}", err);
+    match handle_ws(
+      socket,
+      user_id.clone(),
+      room.clone(),
+      state.pubsub,
+      state.cancellation_token,
+    )
+    .await
+    {
+      Ok(()) => {
+        log::debug!(
+          "Client WebSocket connection for user {} in room {} closed",
+          user_id,
+          room
+        );
+      }
+      Err(err) => {
+        log::error!("WebSocket error: {}", err);
+      }
     }
   })
   .into_response()
@@ -91,9 +118,33 @@ async fn client(
   let user_id = claims.sub;
   let room = format!("client:{}", claims.client);
 
+  if state.cancellation_token.is_cancelled() {
+    log::info!("WebSocket connection attempt during server shutdown");
+    return HttpError::internal_error()
+      .with_application_error("Server is shutting down")
+      .into_response();
+  }
+
   ws.on_upgrade(move |socket| async move {
-    if let Err(err) = handle_ws(socket, user_id, room, state.pubsub).await {
-      log::error!("WebSocket error: {}", err);
+    match handle_ws(
+      socket,
+      user_id.clone(),
+      room.clone(),
+      state.pubsub,
+      state.cancellation_token,
+    )
+    .await
+    {
+      Ok(()) => {
+        log::debug!(
+          "Client WebSocket connection for user {} in room {} closed",
+          user_id,
+          room
+        );
+      }
+      Err(err) => {
+        log::error!("WebSocket error: {}", err);
+      }
     }
   })
   .into_response()
@@ -119,9 +170,33 @@ async fn anonymous(
   let user_id = uuid::Uuid::new_v4().to_string();
   let room = format!("anonymous:{}", room_request.room);
 
+  if state.cancellation_token.is_cancelled() {
+    log::info!("WebSocket connection attempt during server shutdown");
+    return HttpError::internal_error()
+      .with_application_error("Server is shutting down")
+      .into_response();
+  }
+
   ws.on_upgrade(move |socket| async move {
-    if let Err(err) = handle_ws(socket, user_id, room, state.pubsub).await {
-      log::error!("WebSocket error: {}", err);
+    match handle_ws(
+      socket,
+      user_id.clone(),
+      room.clone(),
+      state.pubsub,
+      state.cancellation_token,
+    )
+    .await
+    {
+      Ok(()) => {
+        log::debug!(
+          "Anonymous WebSocket connection for user {} in room {} closed",
+          user_id,
+          room
+        );
+      }
+      Err(err) => {
+        log::error!("WebSocket error: {}", err);
+      }
     }
   })
   .into_response()
@@ -132,17 +207,64 @@ async fn handle_ws(
   user_id: String,
   room: String,
   pubsub: Arc<PubSub>,
+  cancellation_token: CancellationToken,
 ) -> Result<(), HttpError> {
-  let cancellation_token = CancellationToken::new();
-
   let result = handle_ws_inner(
     socket,
     user_id.clone(),
     room.clone(),
     pubsub.clone(),
-    cancellation_token.clone(),
+    cancellation_token,
   )
   .await;
+
+  log::debug!(
+    "Starting WebSocket cleanup for user {} in room {}",
+    user_id,
+    room
+  );
+
+  let cleanup_timeout = Duration::from_secs(CLEANUP_TIMEOUT_SECS);
+  let cleanup = async {
+    if let Err(e) = pubsub.remove_user(&room, &user_id).await {
+      log::error!(
+        "Failed to remove user {} from room {} during cleanup: {}",
+        user_id,
+        room,
+        e
+      );
+    }
+
+    let leave_msg = RoomMessage::Leave {
+      user_id: user_id.clone(),
+    };
+    if let Ok(leave_json) = serde_json::to_string(&leave_msg) {
+      if let Err(e) = pubsub.publish(&room, &leave_json).await {
+        log::error!(
+          "Failed to publish leave message for room {} during cleanup: {}",
+          room,
+          e
+        );
+      }
+    }
+  };
+
+  match tokio::time::timeout(cleanup_timeout, cleanup).await {
+    Ok(_) => {
+      log::debug!(
+        "WebSocket connection for user {} in room {} cleaned up",
+        user_id,
+        room
+      );
+    }
+    Err(_) => {
+      log::warn!(
+        "WebSocket cleanup timed out after {:?} for room {}",
+        cleanup_timeout,
+        room
+      );
+    }
+  }
 
   result
 }
@@ -154,43 +276,10 @@ async fn handle_ws_inner(
   pubsub: Arc<PubSub>,
   cancellation_token: CancellationToken,
 ) -> Result<(), HttpError> {
-  // Add user to room
   pubsub.add_user(&room, &user_id).await.map_err(|e| {
     log::error!("Failed to add user to room: {}", e);
     HttpError::internal_error()
   })?;
-
-  // Set up cleanup to run on scope exit
-  let pubsub_cleanup = pubsub.clone();
-  let room_cleanup = room.clone();
-  let user_id_cleanup = user_id.clone();
-  defer! {
-    let pubsub = pubsub_cleanup;
-    let room = room_cleanup;
-    let user_id = user_id_cleanup;
-
-    tokio::spawn(async move {
-      if let Err(e) = pubsub.remove_user(&room, &user_id).await {
-        log::error!(
-          "Failed to remove user {} from room {} during cleanup: {}",
-          user_id,
-          room,
-          e
-        );
-      }
-
-      let leave_msg = RoomMessage::Leave { user_id };
-      if let Ok(leave_json) = serde_json::to_string(&leave_msg) {
-        if let Err(e) = pubsub.publish(&room, &leave_json).await {
-          log::error!(
-            "Failed to publish leave message for room {} during cleanup: {}",
-            room,
-            e
-          );
-        }
-      }
-    });
-  }
 
   let peers = pubsub.get_peers(&room).await.map_err(|e| {
     log::error!("Failed to get peers: {}", e);
@@ -215,7 +304,6 @@ async fn handle_ws_inner(
     })?;
 
   let (mut ws_sender, mut ws_receiver) = socket.split();
-  let (tx, mut rx) = tokio::sync::mpsc::channel(32);
 
   if let Err(e) = ws_sender
     .send(Message::text(
@@ -230,7 +318,8 @@ async fn handle_ws_inner(
     return Err(HttpError::internal_error());
   }
 
-  let pubsub_user_id = user_id.clone();
+  let (tx, mut rx) = tokio::sync::mpsc::channel::<Message>(DEFAULT_BUFFER_CAPACITY);
+
   let mut pubsub_stream = pubsub
     .subscribe(&room, cancellation_token.clone())
     .await
@@ -239,7 +328,9 @@ async fn handle_ws_inner(
       HttpError::internal_error()
     })?;
 
-  let mut pubsub_task_handle = tokio::spawn({
+  let pubsub_user_id = user_id.clone();
+  let pubsub_tx = tx.clone();
+  let pubsub_task = tokio::spawn({
     let cancellation_token = cancellation_token.clone();
     async move {
       loop {
@@ -255,12 +346,8 @@ async fn handle_ws_inner(
 
             if let Ok(room_msg) = serde_json::from_str::<RoomMessage>(&payload) {
               match room_msg {
-                RoomMessage::Join {
-                  user_id: msg_user_id,
-                }
-                | RoomMessage::Leave {
-                  user_id: msg_user_id,
-                } => {
+                RoomMessage::Join { user_id: msg_user_id }
+                | RoomMessage::Leave { user_id: msg_user_id } => {
                   if msg_user_id == pubsub_user_id {
                     continue;
                   }
@@ -272,12 +359,9 @@ async fn handle_ws_inner(
               }
             }
 
-            match tx.send(payload).await {
-              Ok(_) => {}
-              Err(tokio::sync::mpsc::error::SendError(_)) => {
-                log::debug!("Message channel closed, pubsub task exiting");
-                break;
-              }
+            if pubsub_tx.send(Message::text(payload)).await.is_err() {
+              log::debug!("Message channel closed, pubsub task exiting");
+              break;
             }
           }
         }
@@ -285,107 +369,104 @@ async fn handle_ws_inner(
     }
   });
 
-  let mut ws_sender_task_handle = tokio::spawn({
+  let ws_sender_task = tokio::spawn({
     let cancellation_token = cancellation_token.clone();
     async move {
       loop {
-        tokio::select! {
+        let msg = tokio::select! {
           _ = cancellation_token.cancelled() => {
             log::debug!("WebSocket sender task cancelled");
             break;
           }
-          payload = rx.recv() => {
-            let Some(payload) = payload else {
-              break;
-            };
-
-            match tokio::time::timeout(
-              Duration::from_secs(10),
-              ws_sender.send(Message::text(payload)),
-            )
-            .await
-            {
-              Ok(Ok(())) => {
-              }
-              Ok(Err(_)) => {
-                break;
-              }
-              Err(_) => {
-                log::warn!("WebSocket send timeout, closing connection due to slow client");
-                break;
-              }
+          msg = rx.recv() => {
+            match msg {
+              Some(msg) => msg,
+              None => break,
             }
+          }
+        };
+
+        match tokio::time::timeout(Duration::from_secs(SEND_TIMEOUT_SECS), ws_sender.send(msg))
+          .await
+        {
+          Ok(Ok(())) => {}
+          Ok(Err(e)) => {
+            log::error!("WebSocket send error: {}", e);
+            break;
+          }
+          Err(_) => {
+            log::warn!("WebSocket send timeout, closing connection due to slow client");
+            break;
           }
         }
       }
     }
   });
 
-  while let Some(msg) = ws_receiver.next().await {
-    match msg {
-      Ok(Message::Text(text)) => {
-        let msg = RoomMessage::Message {
-          user_id: user_id.clone(),
-          content: text.to_string(),
-        };
-        let msg_json = match serde_json::to_string(&msg) {
-          Ok(json) => json,
-          Err(e) => {
-            log::error!("Failed to serialize message: {}", e);
-            continue;
-          }
+  let tx_control = tx.clone();
+
+  loop {
+    tokio::select! {
+      _ = cancellation_token.cancelled() => {
+        log::debug!("WebSocket receiver loop cancelled, closing connection");
+        break;
+      }
+      msg = ws_receiver.next() => {
+        let Some(msg) = msg else {
+          break;
         };
 
-        if let Err(e) = pubsub.publish(&room, &msg_json).await {
-          log::error!("Failed to publish message: {}", e);
+        match msg {
+          Ok(Message::Text(text)) => {
+            let msg = RoomMessage::Message {
+              user_id: user_id.clone(),
+              content: text.to_string(),
+            };
+            let msg_json = match serde_json::to_string(&msg) {
+              Ok(json) => json,
+              Err(e) => {
+                log::error!("Failed to serialize message: {}", e);
+                continue;
+              }
+            };
+
+            if let Err(e) = pubsub.publish(&room, &msg_json).await {
+              log::error!("Failed to publish message: {}", e);
+            }
+          }
+          Ok(Message::Ping(payload)) => {
+            if tx_control.send(Message::Pong(payload)).await.is_err() {
+              log::debug!("WebSocket sender channel closed, stopping ping handling");
+              break;
+            }
+          }
+          Ok(Message::Pong(_)) => {
+          }
+          Ok(Message::Close(frame)) => {
+            log::debug!("WebSocket close frame received, closing connection");
+            let _ = tx_control.send(Message::Close(frame)).await;
+            break;
+          }
+          Err(e) => {
+            log::error!("WebSocket error: {}", e);
+            break;
+          }
+          _ => {
+            log::warn!("Unsupported WebSocket message received");
+          }
         }
-      }
-      Ok(Message::Close(_)) => {
-        break;
-      }
-      Err(e) => {
-        log::error!("WebSocket error: {}", e);
-        break;
-      }
-      _ => {
-        log::warn!("Unsupported WebSocket message received");
       }
     }
   }
 
-  cancellation_token.cancel();
+  pubsub_task.abort();
+  ws_sender_task.abort();
 
-  let shutdown_timeout = std::time::Duration::from_secs(5);
-
-  match tokio::time::timeout(shutdown_timeout, async {
-    let (pubsub_result, ws_sender_result) =
-      tokio::join!(&mut pubsub_task_handle, &mut ws_sender_task_handle);
-
-    if let Err(e) = pubsub_result {
-      if e.is_panic() {
-        log::error!("PubSub task panicked: {:?}", e);
-      }
-    }
-
-    if let Err(e) = ws_sender_result {
-      if e.is_panic() {
-        log::error!("WebSocket sender task panicked: {:?}", e);
-      }
-    }
-  })
-  .await
-  {
-    Err(_) => {
-      log::warn!(
-        "Task shutdown timed out after {:?}, forcefully aborting",
-        shutdown_timeout
-      );
-      pubsub_task_handle.abort();
-      ws_sender_task_handle.abort();
-
-      tokio::time::sleep(Duration::from_millis(100)).await;
-    }
-    Ok(_) => {}
+  if let Err(join_err) = pubsub_task.await {
+    log::warn!("PubSub task join error: {}", join_err);
+  }
+  if let Err(join_err) = ws_sender_task.await {
+    log::warn!("WebSocket sender task join error: {}", join_err);
   }
 
   Ok(())

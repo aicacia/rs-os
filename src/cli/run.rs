@@ -105,6 +105,7 @@ pub async fn run() -> io::Result<()> {
     os_signaling::router::entity::RouterState {
       pubsub,
       config: Arc::new(app_config.signaling_api.clone()),
+      cancellation_token: cancellation_token.clone(),
     },
     Some(SIGNALING_API_URL_PREFIX),
   );
@@ -140,15 +141,25 @@ pub async fn run() -> io::Result<()> {
 
   shutdown_signal(cancellation_token).await;
 
-  match command_handle.await {
-    Ok(_) => {}
-    Err(e) => {
-      log::error!("command error: {}", e);
+  let shutdown_timeout = std::time::Duration::from_secs(10);
+  let mut command_handle = command_handle;
+  tokio::select! {
+    res = &mut command_handle => {
+      match res {
+        Ok(Ok(_)) => log::info!("server shutdown complete"),
+        Ok(Err(e)) => log::error!("command error: {}", e),
+        Err(e) => log::error!("join error: {}", e),
+      }
+    }
+    _ = tokio::time::sleep(shutdown_timeout) => {
+      log::warn!("server shutdown timed out after {:?}, aborting serve task", shutdown_timeout);
+      command_handle.abort();
+      tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
   }
 
   match os_model::connection::close_database_connection(database_connection).await {
-    Ok(_) => {}
+    Ok(_) => log::info!("database connection closed"),
     Err(e) => log::error!("failed to close pool: {}", e),
   }
 

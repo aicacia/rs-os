@@ -65,7 +65,7 @@ async fn handle_ws(socket: WebSocket, shared_sync: StorageSystem) -> Result<(), 
   let (mut ws_sender, ws_receiver) = socket.split();
   let (peer_sender, mut peer_receiver) = mpsc::unbounded_channel();
 
-  tokio::spawn(async move {
+  let mut sender_task_handle = tokio::spawn(async move {
     while let Some(msg) = peer_receiver.recv().await {
       if let Err(err) = ws_sender.send(msg).await {
         log::error!("Failed to send message to WebSocket: {}", err);
@@ -77,6 +77,10 @@ async fn handle_ws(socket: WebSocket, shared_sync: StorageSystem) -> Result<(), 
   shared_sync
     .handle_ws_messages(peer_sender, ws_receiver)
     .await;
+
+  // Ensure the sender task terminates promptly when the receiver side ends.
+  sender_task_handle.abort();
+  tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
   Ok(())
 }

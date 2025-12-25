@@ -9,13 +9,14 @@ pub async fn serve(
   addr: SocketAddr,
   cancellation_token: CancellationToken,
 ) -> io::Result<()> {
-  let serve_shutdown_signal = async move {
-    cancellation_token.cancelled().await;
-  };
-
   let listener = TcpListener::bind(addr).await?;
   let local_addr = listener.local_addr()?;
   log::info!("listening on {}", local_addr);
+
+  let serve_shutdown_signal = async move {
+    cancellation_token.cancelled().await;
+    log::info!("Graceful shutdown initiated");
+  };
 
   axum::serve(
     listener,

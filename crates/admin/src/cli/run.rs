@@ -11,8 +11,8 @@ use os_cli::{run::shutdown_signal, serve::serve};
 use os_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use tokio_util::sync::CancellationToken;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
-use tracing_subscriber::layer::SubscriberExt;
 use tracing_log::LogTracer;
+use tracing_subscriber::layer::SubscriberExt;
 
 #[cfg(feature = "completions")]
 use crate::cli::completions;
@@ -111,10 +111,20 @@ pub async fn run() -> io::Result<()> {
 
   shutdown_signal(cancellation_token).await;
 
-  match command_handle.await {
-    Ok(_) => {}
-    Err(e) => {
-      log::error!("command error: {}", e);
+  let shutdown_timeout = std::time::Duration::from_secs(10);
+  let mut command_handle = command_handle;
+  tokio::select! {
+    res = &mut command_handle => {
+      match res {
+        Ok(Ok(_)) => log::info!("server shutdown complete"),
+        Ok(Err(e)) => log::error!("command error: {}", e),
+        Err(e) => log::error!("join error: {}", e),
+      }
+    }
+    _ = tokio::time::sleep(shutdown_timeout) => {
+      log::warn!("server shutdown timed out after {:?}, aborting serve task", shutdown_timeout);
+      command_handle.abort();
+      tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
   }
 

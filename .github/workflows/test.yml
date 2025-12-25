@@ -71,7 +71,8 @@ jobs:
           PUBLIC_URL: "http://localhost:5173/admin"
           VITE_BASE_PATH: "/admin"
         run: |
-          echo "PUBLIC_OS_ADMIN_API_URL=${PUBLIC_OS_ADMIN_API_URL}" > .env
+          echo "PUBLIC_OS_OIDC_API_URL=${PUBLIC_OS_OIDC_API_URL}" > .env
+          echo "PUBLIC_OS_ADMIN_API_URL=${PUBLIC_OS_ADMIN_API_URL}" >> .env
           echo "PUBLIC_URL=${PUBLIC_URL}" >> .env
           echo "VITE_BASE_PATH=${VITE_BASE_PATH}" >> .env
       - name: Install frontend dependencies

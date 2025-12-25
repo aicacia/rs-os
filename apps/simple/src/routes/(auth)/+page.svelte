@@ -10,8 +10,8 @@
 	}
 
 	onMount(() => {
-		websocket.on('open', () => {
-			console.log('WebSocket connection opened');
+		websocket.on('message', (e) => {
+			console.log('Received a message via WebSocket', e);
 		});
 	});
 </script>
