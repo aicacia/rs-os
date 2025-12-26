@@ -57,7 +57,7 @@ utoipa = { version = "5.4", features = [
   "macros",
 ], default-features = false }
 utoipa-axum = { version = "0.2", default-features = false }
-uuid = { version = "1.18", features = ["serde", "v4"] }
+uuid = { version = "1.18", features = ["serde", "v7", "std"] }
 
 # bin dependencies
 dotenvy = { version = "0.15", default-features = false, optional = true }

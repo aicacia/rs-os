@@ -53,7 +53,7 @@ async fn user(
     }
   };
 
-  let user_id = claims.sub;
+  let user_id = uuid::Uuid::now_v7().to_string();
   let room = format!("user:{}", claims.user);
 
   if state.cancellation_token.is_cancelled() {
@@ -115,7 +115,7 @@ async fn client(
     }
   };
 
-  let user_id = claims.sub;
+  let user_id = uuid::Uuid::now_v7().to_string();
   let room = format!("client:{}", claims.client);
 
   if state.cancellation_token.is_cancelled() {
@@ -167,7 +167,7 @@ async fn anonymous(
   Query(room_request): Query<WSRoomRequest>,
   ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
-  let user_id = uuid::Uuid::new_v4().to_string();
+  let user_id = uuid::Uuid::now_v7().to_string();
   let room = format!("anonymous:{}", room_request.room);
 
   if state.cancellation_token.is_cancelled() {
@@ -236,16 +236,17 @@ async fn handle_ws(
     }
 
     let leave_msg = RoomMessage::Leave {
-      user_id: user_id.clone(),
+      from: user_id.clone(),
     };
     if let Ok(leave_json) = serde_json::to_string(&leave_msg)
-      && let Err(e) = pubsub.publish(&room, &leave_json).await {
-        log::error!(
-          "Failed to publish leave message for room {} during cleanup: {}",
-          room,
-          e
-        );
-      }
+      && let Err(e) = pubsub.publish(&room, &leave_json).await
+    {
+      log::error!(
+        "Failed to publish leave message for room {} during cleanup: {}",
+        room,
+        e
+      );
+    }
   };
 
   match tokio::time::timeout(cleanup_timeout, cleanup).await {
@@ -275,13 +276,13 @@ async fn handle_ws_inner(
   pubsub: Arc<PubSub>,
   cancellation_token: CancellationToken,
 ) -> Result<(), HttpError> {
-  pubsub.add_user(&room, &user_id).await.map_err(|e| {
-    log::error!("Failed to add user to room: {}", e);
+  let peers = pubsub.get_peers(&room).await.map_err(|e| {
+    log::error!("Failed to get peers: {}", e);
     HttpError::internal_error()
   })?;
 
-  let peers = pubsub.get_peers(&room).await.map_err(|e| {
-    log::error!("Failed to get peers: {}", e);
+  pubsub.add_user(&room, &user_id).await.map_err(|e| {
+    log::error!("Failed to add user to room: {}", e);
     HttpError::internal_error()
   })?;
 
@@ -289,7 +290,7 @@ async fn handle_ws_inner(
     .publish(
       &room,
       &serde_json::to_string(&RoomMessage::Join {
-        user_id: user_id.clone(),
+        from: user_id.clone(),
       })
       .map_err(|e| {
         log::error!("Failed to serialize join message: {}", e);
@@ -306,7 +307,11 @@ async fn handle_ws_inner(
 
   if let Err(e) = ws_sender
     .send(Message::text(
-      serde_json::to_string(&RoomMessage::Peers { user_ids: peers }).map_err(|e| {
+      serde_json::to_string(&RoomMessage::Peers {
+        user_id: user_id.clone(),
+        peers,
+      })
+      .map_err(|e| {
         log::error!("Failed to serialize peers message: {}", e);
         HttpError::internal_error()
       })?,
@@ -345,8 +350,8 @@ async fn handle_ws_inner(
 
             if let Ok(room_msg) = serde_json::from_str::<RoomMessage>(&payload) {
               match room_msg {
-                RoomMessage::Join { user_id: msg_user_id }
-                | RoomMessage::Leave { user_id: msg_user_id } => {
+                RoomMessage::Join { from: msg_user_id }
+                | RoomMessage::Leave { from: msg_user_id } => {
                   if msg_user_id == pubsub_user_id {
                     continue;
                   }
@@ -417,9 +422,17 @@ async fn handle_ws_inner(
 
         match msg {
           Ok(Message::Text(text)) => {
+            let payload = match serde_json::from_str::<serde_json::Value>(&text) {
+              Ok(payload) => payload,
+              Err(e) => {
+                log::error!("Failed to parse message payload: {}", e);
+                continue;
+              }
+            };
+
             let msg = RoomMessage::Message {
-              user_id: user_id.clone(),
-              content: text.to_string(),
+              from: user_id.clone(),
+              payload,
             };
             let msg_json = match serde_json::to_string(&msg) {
               Ok(json) => json,

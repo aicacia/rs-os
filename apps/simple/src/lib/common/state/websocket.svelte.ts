@@ -3,10 +3,7 @@ import { getUserManager } from './user.svelte';
 import { PUBLIC_OS_SIGNALING_WS_URL } from '$env/static/public';
 import { KeepAliveWebSocket } from '@aicacia/keepalivewebsocket';
 
-const websocketType = $state<'user' | 'client' | 'anonymous'>('anonymous');
-const websocketRoom = $state('test-room');
-
-let websocketURL = $state(`${PUBLIC_OS_SIGNALING_WS_URL}/${websocketType}?room=${websocketRoom}`);
+let websocketURL = $state(`${PUBLIC_OS_SIGNALING_WS_URL}/user`);
 
 export const websocket = new KeepAliveWebSocket({
 	autoconnect: false,
@@ -16,6 +13,8 @@ export const websocket = new KeepAliveWebSocket({
 if (browser) {
 	$effect.root(() => {
 		$effect(() => {
+			websocket.close();
+
 			getUserManager()
 				.getUser()
 				.then(async (user) => {
@@ -23,16 +22,8 @@ if (browser) {
 						console.warn('No user found, cannot connect to document store WebSocket');
 						return;
 					}
-					console.log('User found, connecting to document store WebSocket');
-					switch (websocketType) {
-						case 'anonymous':
-							websocketURL = `${PUBLIC_OS_SIGNALING_WS_URL}/${websocketType}?room=${websocketRoom}`;
-							break;
-						default:
-							websocketURL = `${PUBLIC_OS_SIGNALING_WS_URL}/${websocketType}?token=${user.access_token}`;
-							break;
-					}
-					await websocket.close().connect();
+					websocketURL = `${PUBLIC_OS_SIGNALING_WS_URL}/user?token=${user.access_token}`;
+					await websocket.connect();
 				});
 		});
 	});

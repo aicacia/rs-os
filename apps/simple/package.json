@@ -40,10 +40,12 @@
 	},
 	"dependencies": {
 		"@aicacia/keepalivewebsocket": "^0.1.6",
+		"@aicacia/peer": "^0.1.5",
 		"@automerge/automerge-repo": "^2.5.1",
 		"@automerge/automerge-repo-storage-indexeddb": "^2.5.1",
 		"@lucide/svelte": "0.553.0",
 		"cbor-x": "^1.6.0",
+		"eventemitter3": "^5.0.1",
 		"oidc-client-ts": "^3.4.1",
 		"uuidv7": "^1.1.0"
 	}
