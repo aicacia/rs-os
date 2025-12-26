@@ -238,15 +238,14 @@ async fn handle_ws(
     let leave_msg = RoomMessage::Leave {
       user_id: user_id.clone(),
     };
-    if let Ok(leave_json) = serde_json::to_string(&leave_msg) {
-      if let Err(e) = pubsub.publish(&room, &leave_json).await {
+    if let Ok(leave_json) = serde_json::to_string(&leave_msg)
+      && let Err(e) = pubsub.publish(&room, &leave_json).await {
         log::error!(
           "Failed to publish leave message for room {} during cleanup: {}",
           room,
           e
         );
       }
-    }
   };
 
   match tokio::time::timeout(cleanup_timeout, cleanup).await {
