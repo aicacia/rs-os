@@ -1,4 +1,4 @@
-use std::{error::Error, path::Path, sync::Arc};
+use std::{error::Error, io::Write, path::Path, sync::Arc};
 
 use axum::Router;
 use os_admin::{
@@ -22,11 +22,25 @@ pub async fn setup() -> Result<
 > {
   dotenvy::from_path("./.env.test").ok();
 
-  let app_config = Arc::new({
-    let mut app_config = AppConfig::try_from(Path::new("./config.test.json"))?;
-    app_config.database.url = format!("sqlite:tests/.dbs/os-{}-test.db", uuid::Uuid::new_v4());
-    app_config
-  });
+  let test_uuid = uuid::Uuid::new_v4();
+  let test_dir = format!("tests/.tmp/{}", test_uuid);
+  tokio::fs::create_dir_all(&test_dir).await?;
+
+  let config_path = Path::new(&test_dir).join("config.json");
+  {
+    let mut config_file = std::fs::File::create(&config_path)?;
+    config_file.write_all(
+      serde_json::json!({
+        "database": {
+          "url": format!("sqlite:{}/db.sqlite", test_dir)
+        }
+      })
+      .to_string()
+      .as_bytes(),
+    )?;
+  }
+
+  let app_config = Arc::new(AppConfig::try_from(config_path.as_path())?);
 
   let database_connection = create_database_connection(&app_config.database).await?;
 
@@ -51,11 +65,13 @@ pub async fn setup() -> Result<
   let teardown_config = app_config.clone();
   let teardown_database_connection = database_connection.clone();
   let teardown_cancellation_token = cancellation_token.clone();
+  let teardown_test_dir = test_dir.clone();
   let teardown_fn = move || {
     teardown(
       teardown_config,
       teardown_database_connection,
       teardown_cancellation_token,
+      teardown_test_dir,
     )
   };
 
@@ -66,6 +82,7 @@ fn teardown(
   app_config: Arc<AppConfig>,
   database_connection: sea_orm::DatabaseConnection,
   cancellation_token: CancellationToken,
+  test_dir: String,
 ) {
   cancellation_token.cancel();
 
@@ -82,6 +99,11 @@ fn teardown(
           Ok(_) => {}
           Err(e) => log::error!("failed to delete file {:?}: {}", path, e),
         }
+      }
+
+      match tokio::fs::remove_dir_all(&test_dir).await {
+        Ok(_) => {}
+        Err(e) => log::error!("failed to delete test directory {:?}: {}", test_dir, e),
       }
     });
   });

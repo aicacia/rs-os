@@ -36,7 +36,10 @@ use crate::{
       CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
       NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
     },
-    middleware::{authorization::parse_authorization, user_authorization::UserAuthorization},
+    middleware::{
+      authorization::{Authorization, parse_authorization},
+      user_authorization::UserAuthorization,
+    },
     oidc::{
       constants::{
         ALWAYS_ALLOWED_GRANT_TYPES, GRANT_TYPE_AUTHORIZATION_CODE, GRANT_TYPE_PASSWORD,
@@ -884,15 +887,20 @@ pub async fn revoke(
   tags = [TAG],
   request_body(content = String, content_type = "application/x-www-form-urlencoded"),
   responses(
-    (status = 200, description = "Token introspection result"),
+    (status = 200, description = "Token introspection result", body = BasicClaims),
     (status = 400, description = "Invalid request", body = HttpError),
     (status = 401, description = "Unauthorized", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
   )
 )]
-pub async fn introspect(State(_state): State<RouterState>) -> impl IntoResponse {
-  // TODO: Implement RFC 7662 token introspection
-  (StatusCode::NOT_IMPLEMENTED, "Not implemented").into_response()
+pub async fn introspect(
+  State(_state): State<RouterState>,
+  Authorization { claims }: Authorization<BasicClaims>,
+) -> impl IntoResponse {
+  axum::Json(claims).into_response()
 }
 
 #[utoipa::path(

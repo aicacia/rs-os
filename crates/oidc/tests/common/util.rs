@@ -1,4 +1,4 @@
-use std::{error::Error, path::Path, sync::Arc};
+use std::{error::Error, io::Write, path::Path, sync::Arc};
 
 use axum::Router;
 use os_model::{
@@ -22,14 +22,26 @@ pub async fn setup() -> Result<
 > {
   dotenvy::from_path("./.env.test").ok();
 
-  let app_config = Arc::new({
-    let mut app_config = AppConfig::try_from(Path::new("./config.test.json"))?;
-    app_config.database.url = format!(
-      "sqlite:tests/.database_connections/os-{}-test.database_connection",
-      uuid::Uuid::new_v4()
-    );
-    app_config
-  });
+  let test_uuid = uuid::Uuid::new_v4();
+  let test_dir = format!("tests/.tmp/{}", test_uuid);
+  tokio::fs::create_dir_all(&test_dir).await?;
+
+  let config_path = Path::new(&test_dir).join("config.json");
+  {
+    let mut config_file = std::fs::File::create(&config_path)?;
+    config_file.write_all(
+      serde_json::json!({
+        "database": {
+          "url": format!("sqlite:{}/db.sqlite", test_dir)
+        },
+        "ui_url": "http://localhost:5173"
+      })
+      .to_string()
+      .as_bytes(),
+    )?;
+  }
+
+  let app_config = Arc::new(AppConfig::try_from(config_path.as_path())?);
 
   let database_connection = create_database_connection(&app_config.database).await?;
 
@@ -59,6 +71,7 @@ pub async fn setup() -> Result<
       teardown_config,
       teardown_database_connection,
       teardown_cancellation_token,
+      test_dir,
     )
   };
 
@@ -69,6 +82,7 @@ fn teardown(
   app_config: Arc<AppConfig>,
   database_connection: sea_orm::DatabaseConnection,
   cancellation_token: CancellationToken,
+  test_dir: String,
 ) {
   cancellation_token.cancel();
 
@@ -85,6 +99,11 @@ fn teardown(
           Ok(_) => {}
           Err(e) => log::error!("failed to delete file {:?}: {}", path, e),
         }
+      }
+
+      match tokio::fs::remove_dir_all(&test_dir).await {
+        Ok(_) => {}
+        Err(e) => log::error!("failed to delete test directory {:?}: {}", test_dir, e),
       }
     });
   });

@@ -32,7 +32,6 @@ jsonwebtoken = { version = "9.3", features = [
 ], default-features = false }
 log = { version = "0.4", default-features = false }
 os-api = { version = "0.1", path = "../api", default-features = false }
-os-model = { version = "0.1", path = "../model", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
 serde_json = { version = "1.0", default-features = false }
 tokio = { version = "1.48", features = [
@@ -83,9 +82,17 @@ clap = { version = "4.5", features = [
 clap_complete = { version = "4.5", optional = true, default-features = false }
 
 [dev-dependencies]
+tokio = { version = "1.48", features = [
+  "rt",
+  "rt-multi-thread",
+  "fs",
+  "macros",
+  "signal",
+], default-features = false }
 tracing-subscriber = "0.3"
 dotenvy = "0.15"
 tower = "0.5"
+uuid = { version = "1.18", features = ["v4"] }
 
 [lib]
 name = "os_signaling"

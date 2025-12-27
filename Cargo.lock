@@ -2118,7 +2118,6 @@ dependencies = [
  "log",
  "os-api",
  "os-cli",
- "os-model",
  "redis",
  "scopeguard",
  "serde",

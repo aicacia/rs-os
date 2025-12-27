@@ -5,11 +5,15 @@ use std::error::Error;
 use axum::body::Body;
 use http::{Request, StatusCode};
 use os_api::util::entity::{Health, Version};
+use scopeguard::defer;
 use tower::ServiceExt;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn health() -> Result<(), Box<dyn Error>> {
-  let (router, _config) = common::util::setup().await?;
+  let (teardown, router, _app_config) = common::util::setup().await?;
+  defer! {
+    teardown();
+  }
 
   let response = router
     .oneshot(Request::builder().uri("/health").body(Body::empty())?)
@@ -30,7 +34,10 @@ async fn health() -> Result<(), Box<dyn Error>> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn version() -> Result<(), Box<dyn Error>> {
-  let (router, _config) = common::util::setup().await?;
+  let (teardown, router, _app_config) = common::util::setup().await?;
+  defer! {
+    teardown();
+  }
 
   let response = router
     .oneshot(Request::builder().uri("/version").body(Body::empty())?)

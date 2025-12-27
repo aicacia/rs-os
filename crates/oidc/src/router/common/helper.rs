@@ -24,7 +24,7 @@ use crate::{
 use sea_orm::DatabaseConnection;
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) async fn create_user_token(
+pub async fn create_user_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
   jwk_model: os_model::entities::jwks::Model,
