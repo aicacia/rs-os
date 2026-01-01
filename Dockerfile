@@ -5,8 +5,6 @@ RUN apt -yq install musl-tools libpq-dev
 
 WORKDIR /app
 
-RUN rustup default stable
-
 ARG TARGETPLATFORM=linux/amd64
 RUN set -e; \
   case "${TARGETPLATFORM}" in \
