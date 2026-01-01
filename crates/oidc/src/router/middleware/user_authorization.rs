@@ -19,7 +19,7 @@ use crate::router::{
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
   middleware::authorization::Authorization,
 };
-use os_model::entities::{
+use os_oidc_model::entities::{
   permissions,
   roles::{self, list_roles_by_user_id},
   user_emails::get_user_primary_email_by_user_id,

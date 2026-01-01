@@ -18,4 +18,6 @@ done
 echo -n "};" >> $ENV_FILE_JS
 echo "$ENV_FILE_JS"
 
-exit 0
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi

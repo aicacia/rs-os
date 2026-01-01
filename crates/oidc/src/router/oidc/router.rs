@@ -7,7 +7,7 @@ use axum::{
 };
 use base64::Engine;
 use http::{StatusCode, header};
-use os_model::entities::{
+use os_oidc_model::entities::{
   clients,
   jwks::{get_jwk_for_sign_and_verify, list_jwks},
   revoked_tokens,

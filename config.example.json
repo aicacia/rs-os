@@ -1,6 +1,5 @@
 {
   "url": "http://localhost:3000",
-  "api_url": "http://localhost:3000",
   "ui_url": "http://localhost:5173",
   "server": {
     "host": "0.0.0.0",
@@ -16,5 +15,11 @@
     "user": {
       "register_enabled": true
     }
+  },
+  "oidc_ui": {
+    "static_dir": "./apps/oidc/build"
+  },
+  "oidc_admin_ui": {
+    "static_dir": "./apps/oidc-admin/build"
   }
 }

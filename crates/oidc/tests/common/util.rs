@@ -1,13 +1,13 @@
 use std::{error::Error, io::Write, path::Path, sync::Arc};
 
 use axum::Router;
-use os_model::{
-  create_database_connection,
-  entities::jwks::{create_jwk, generate_jwk, list_jwks},
-};
 use os_oidc::{
   config::AppConfig,
   router::{create_openapi_router, entity::RouterState},
+};
+use os_oidc_model::{
+  create_database_connection,
+  entities::jwks::{create_jwk, generate_jwk, list_jwks},
 };
 use tokio_util::sync::CancellationToken;
 

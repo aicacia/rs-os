@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use os_api::{Environment, ServerConfig};
-use os_model::DatabaseConfig;
+use os_oidc_model::DatabaseConfig;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]

@@ -8,6 +8,12 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/aicacia/rs-os"
 rust-version = "1.92"
 
+[[bin]]
+name = "os-signaling"
+
+[lib]
+name = "os_signaling"
+
 [dependencies]
 async-trait = { version = "0.1", default-features = false }
 axum = { version = "0.8", features = [
@@ -93,9 +99,6 @@ tracing-subscriber = "0.3"
 dotenvy = "0.15"
 tower = "0.5"
 uuid = { version = "1.18", features = ["v4"] }
-
-[lib]
-name = "os_signaling"
 
 [features]
 completions = ["dep:clap_complete"]

@@ -4,7 +4,7 @@ use jsonwebtoken::DecodingKey;
 use os_api::{
   AUTHORIZATION_HEADER, HttpError, INVALID_ERROR, REQUIRED_ERROR, authorization_from_header,
 };
-use os_model::entities::{
+use os_oidc_model::entities::{
   jwks::{get_jwk_by_kid, model_to_jwt_jwk},
   revoked_tokens,
 };
@@ -56,7 +56,7 @@ pub async fn parse_authorization<T>(
   db: &sea_orm::DatabaseConnection,
   app_config: &AppConfig,
   authorization_string: &str,
-) -> Result<(jsonwebtoken::TokenData<T>, os_model::entities::jwks::Model), HttpError>
+) -> Result<(jsonwebtoken::TokenData<T>, os_oidc_model::entities::jwks::Model), HttpError>
 where
   T: Claims,
 {

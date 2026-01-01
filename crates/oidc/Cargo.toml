@@ -8,6 +8,12 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/aicacia/rs-os"
 rust-version = "1.92"
 
+[[bin]]
+name = "os-oidc"
+
+[lib]
+name = "os_oidc"
+
 [dependencies]
 axum = { version = "0.8", features = [
   "tokio",
@@ -34,7 +40,7 @@ jsonwebtoken = { version = "9.3", features = [
 ], default-features = false }
 log = { version = "0.4", default-features = false }
 os-api = { version = "0.1", path = "../api", default-features = false }
-os-model = { version = "0.1", path = "../model", default-features = false }
+os-oidc-model = { version = "0.1", path = "../oidc-model", default-features = false }
 hex = { version = "0.4", default-features = false }
 rand = { version = "0.8", features = [
   "std",
@@ -90,9 +96,6 @@ tracing-subscriber = "0.3"
 dotenvy = "0.15"
 scopeguard = "1.2"
 tower = "0.5"
-
-[lib]
-name = "os_oidc"
 
 [features]
 completions = ["dep:clap_complete"]

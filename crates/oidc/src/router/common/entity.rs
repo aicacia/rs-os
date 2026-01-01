@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
 pub use os_api::claims::{BasicClaims, Claims};
-use os_model::entities::users;
+use os_oidc_model::entities::users;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -101,8 +101,8 @@ pub struct OpenIdProfile {
   pub address: Option<String>,
 }
 
-impl From<os_model::entities::user_infos::Model> for OpenIdProfile {
-  fn from(user_info_model: os_model::entities::user_infos::Model) -> Self {
+impl From<os_oidc_model::entities::user_infos::Model> for OpenIdProfile {
+  fn from(user_info_model: os_oidc_model::entities::user_infos::Model) -> Self {
     let name: Option<String> = if let Some(given_name) = &user_info_model.given_name {
       if let Some(family_name) = &user_info_model.family_name {
         Some(format!("{} {}", given_name, family_name))

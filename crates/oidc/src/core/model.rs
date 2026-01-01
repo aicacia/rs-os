@@ -1,8 +1,8 @@
 use std::io;
 
 use jsonwebtoken::Algorithm;
-use os_model::entities::clients::{self, ActiveModel};
-use os_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
+use os_oidc_model::entities::clients::{self, ActiveModel};
+use os_oidc_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use sea_orm::DatabaseConnection;
 use sea_orm::Set;
 

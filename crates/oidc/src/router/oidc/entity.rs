@@ -264,8 +264,8 @@ pub struct Client {
   pub created_at: DateTime<Utc>,
 }
 
-impl From<os_model::entities::clients::Model> for Client {
-  fn from(client_model: os_model::entities::clients::Model) -> Self {
+impl From<os_oidc_model::entities::clients::Model> for Client {
+  fn from(client_model: os_oidc_model::entities::clients::Model) -> Self {
     Self {
       active: client_model.is_active(),
       id: client_model.id,
@@ -322,7 +322,7 @@ pub struct ClientRegisterRequest {
   pub refresh_expires_in_seconds: i64,
 }
 
-impl From<ClientRegisterRequest> for os_model::entities::clients::ActiveModel {
+impl From<ClientRegisterRequest> for os_oidc_model::entities::clients::ActiveModel {
   fn from(request: ClientRegisterRequest) -> Self {
     use sea_orm::Set;
 

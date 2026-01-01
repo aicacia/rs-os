@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use http::StatusCode;
-use os_model::entities::{
+use os_oidc_model::entities::{
   jwks::{get_jwk_for_sign_and_verify, model_to_jwt_jwk, to_encoding_key},
   user_emails, user_infos, user_phone_numbers, users,
 };
@@ -27,7 +27,7 @@ use sea_orm::DatabaseConnection;
 pub async fn create_user_token(
   db: &DatabaseConnection,
   app_config: &AppConfig,
-  jwk_model: os_model::entities::jwks::Model,
+  jwk_model: os_oidc_model::entities::jwks::Model,
   user: users::Model,
   client_id: String,
   audience: String,
@@ -139,7 +139,7 @@ pub async fn create_user_token(
       Ok(None) => {
         // Create a default user info model
         let now = chrono::Utc::now().timestamp();
-        os_model::entities::user_infos::Model {
+        os_oidc_model::entities::user_infos::Model {
           user_id: user.id,
           given_name: None,
           family_name: None,

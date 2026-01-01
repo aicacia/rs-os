@@ -58,7 +58,7 @@ pub async fn run() -> io::Result<()> {
 
   let cancellation_token = CancellationToken::new();
 
-  let database_connection = match os_model::create_database_connection(&app_config.database).await {
+  let database_connection = match os_oidc_model::create_database_connection(&app_config.database).await {
     Ok(db) => db,
     Err(e) => return Err(io::Error::other(e)),
   };
@@ -117,7 +117,7 @@ pub async fn run() -> io::Result<()> {
     }
   }
 
-  match os_model::connection::close_database_connection(database_connection).await {
+  match os_oidc_model::connection::close_database_connection(database_connection).await {
     Ok(_) => {}
     Err(e) => log::error!("failed to close pool: {}", e),
   }

@@ -196,7 +196,7 @@ version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b098575ebe77cb6d14fc7f32749631a6e44edbef6b796f89b020e99ba20d425"
 dependencies = [
- "axum-core 0.5.5",
+ "axum-core",
  "axum-macros",
  "base64",
  "bytes",
@@ -229,26 +229,6 @@ dependencies = [
 
 [[package]]
 name = "axum-core"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09f2bd6146b97ae3359fa0cc6d6b376d9539582c7b4220f041a33ec24c226199"
-dependencies = [
- "async-trait",
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "http-body-util",
- "mime",
- "pin-project-lite",
- "rustversion",
- "sync_wrapper",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
-name = "axum-core"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59446ce19cd142f8833f856eb31f3eb097812d1479ab224f54d72428ca21ea22"
@@ -264,20 +244,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "axum-embed"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "077959a7f8cf438676af90b483304528eb7e16eadadb7f44e9ada4f9dceb9e62"
-dependencies = [
- "axum-core 0.4.5",
- "chrono",
- "http",
- "mime_guess",
- "rust-embed",
- "tower-service",
 ]
 
 [[package]]
@@ -469,10 +435,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "145052bdd345b87320e369255277e3fb5152762ad123a901ef5c262dd38fe8d2"
 dependencies = [
  "iana-time-zone",
- "js-sys",
  "num-traits",
  "serde",
- "wasm-bindgen",
  "windows-link",
 ]
 
@@ -1328,6 +1292,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-range-header"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9171a2ea8a68358193d15dd5d70c1c10a2afc3e7e4c5bc92bc9f025cebd7359c"
+
+[[package]]
 name = "httparse"
 version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1899,79 +1869,17 @@ dependencies = [
  "config",
  "dotenvy",
  "log",
- "os-admin",
- "os-admin-ui",
  "os-cli",
- "os-model",
  "os-oidc",
- "os-oidc-ui",
+ "os-oidc-admin",
+ "os-oidc-model",
  "os-signaling",
+ "os-ui",
  "redis",
  "serde",
  "tokio",
  "tokio-util",
  "tower-http",
- "tracing",
- "tracing-log",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "os-admin"
-version = "0.1.0"
-dependencies = [
- "axum",
- "build-time",
- "chrono",
- "clap",
- "clap_complete",
- "config",
- "dotenvy",
- "hashbrown 0.16.1",
- "hex",
- "http",
- "jsonwebtoken",
- "log",
- "os-api",
- "os-cli",
- "os-model",
- "rand 0.8.5",
- "rust-argon2",
- "scopeguard",
- "sea-orm",
- "serde",
- "serde_json",
- "tokio",
- "tokio-util",
- "tower",
- "tower-http",
- "tracing",
- "tracing-log",
- "tracing-subscriber",
- "url",
- "utoipa",
- "utoipa-axum",
- "uuid",
- "validator",
-]
-
-[[package]]
-name = "os-admin-ui"
-version = "0.1.0"
-dependencies = [
- "axum",
- "axum-embed",
- "clap",
- "clap_complete",
- "config",
- "dotenvy",
- "log",
- "os-api",
- "os-cli",
- "rust-embed",
- "serde",
- "tokio",
- "tokio-util",
  "tracing",
  "tracing-log",
  "tracing-subscriber",
@@ -2013,30 +1921,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "os-model"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "base64",
- "chrono",
- "ed25519-dalek",
- "elliptic-curve",
- "hashbrown 0.16.1",
- "hex",
- "jsonwebtoken",
- "log",
- "num-bigint-dig",
- "p256",
- "p384",
- "rand 0.8.5",
- "rsa",
- "sea-orm",
- "sea-orm-migration",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "os-oidc"
 version = "0.1.0"
 dependencies = [
@@ -2056,7 +1940,7 @@ dependencies = [
  "log",
  "os-api",
  "os-cli",
- "os-model",
+ "os-oidc-model",
  "rand 0.8.5",
  "rust-argon2",
  "scopeguard",
@@ -2078,25 +1962,66 @@ dependencies = [
 ]
 
 [[package]]
-name = "os-oidc-ui"
+name = "os-oidc-admin"
 version = "0.1.0"
 dependencies = [
  "axum",
- "axum-embed",
+ "build-time",
+ "chrono",
  "clap",
  "clap_complete",
  "config",
  "dotenvy",
+ "hashbrown 0.16.1",
+ "hex",
+ "http",
+ "jsonwebtoken",
  "log",
  "os-api",
  "os-cli",
- "rust-embed",
+ "os-oidc-model",
+ "rand 0.8.5",
+ "rust-argon2",
+ "scopeguard",
+ "sea-orm",
  "serde",
+ "serde_json",
  "tokio",
  "tokio-util",
+ "tower",
+ "tower-http",
  "tracing",
  "tracing-log",
  "tracing-subscriber",
+ "url",
+ "utoipa",
+ "utoipa-axum",
+ "uuid",
+ "validator",
+]
+
+[[package]]
+name = "os-oidc-model"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "base64",
+ "chrono",
+ "ed25519-dalek",
+ "elliptic-curve",
+ "hashbrown 0.16.1",
+ "hex",
+ "jsonwebtoken",
+ "log",
+ "num-bigint-dig",
+ "p256",
+ "p384",
+ "rand 0.8.5",
+ "rsa",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2133,6 +2058,29 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "uuid",
+]
+
+[[package]]
+name = "os-ui"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap",
+ "clap_complete",
+ "config",
+ "dotenvy",
+ "log",
+ "os-api",
+ "os-cli",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -2798,40 +2746,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-embed"
-version = "8.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "947d7f3fad52b283d261c4c99a084937e2fe492248cb9a68a8435a861b8798ca"
-dependencies = [
- "rust-embed-impl",
- "rust-embed-utils",
- "walkdir",
-]
-
-[[package]]
-name = "rust-embed-impl"
-version = "8.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fa2c8c9e8711e10f9c4fd2d64317ef13feaab820a4c51541f1a8c8e2e851ab2"
-dependencies = [
- "proc-macro2",
- "quote",
- "rust-embed-utils",
- "syn 2.0.111",
- "walkdir",
-]
-
-[[package]]
-name = "rust-embed-utils"
-version = "8.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60b161f275cb337fe0a44d924a5f4df0ed69c2c39519858f931ce61c779d3475"
-dependencies = [
- "sha2",
- "walkdir",
-]
-
-[[package]]
 name = "rust-ini"
 version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2918,15 +2832,6 @@ name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
-
-[[package]]
-name = "same-file"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
-dependencies = [
- "winapi-util",
-]
 
 [[package]]
 name = "scopeguard"
@@ -3888,7 +3793,13 @@ dependencies = [
  "futures-util",
  "http",
  "http-body",
+ "http-body-util",
+ "http-range-header",
+ "httpdate",
  "iri-string",
+ "mime",
+ "mime_guess",
+ "percent-encoding",
  "pin-project-lite",
  "tokio",
  "tokio-util",
@@ -4193,16 +4104,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "walkdir"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b"
-dependencies = [
- "same-file",
- "winapi-util",
-]
-
-[[package]]
 name = "want"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4336,15 +4237,6 @@ checksum = "5d4a4db5077702ca3015d3d02d74974948aba2ad9e12ab7df718ee64ccd7e97d"
 dependencies = [
  "libredox",
  "wasite",
-]
-
-[[package]]
-name = "winapi-util"
-version = "0.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
-dependencies = [
- "windows-sys 0.61.2",
 ]
 
 [[package]]

@@ -8,8 +8,8 @@ use serde::Deserialize;
 pub const OIDC_UI_URL_PREFIX: &str = "/oidc";
 pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
 
-pub const ADMIN_UI_URL_PREFIX: &str = "/admin";
-pub const ADMIN_API_URL_PREFIX: &str = "/admin/api";
+pub const OIDC_ADMIN_UI_URL_PREFIX: &str = "/oidc-admin";
+pub const OIDC_ADMIN_API_URL_PREFIX: &str = "/oidc-admin/api";
 
 pub const SIGNALING_API_URL_PREFIX: &str = "/signaling/api";
 
@@ -35,11 +35,11 @@ impl Default for ServerConfig {
 #[serde(default)]
 pub struct AppConfig {
   pub server: ServerConfig,
-  pub database: os_model::DatabaseConfig,
+  pub database: os_oidc_model::DatabaseConfig,
   pub oidc_api: os_oidc::config::AppConfig,
-  pub oidc_ui: os_oidc_ui::config::AppConfig,
-  pub admin_api: os_admin::config::AppConfig,
-  pub admin_ui: os_admin_ui::config::AppConfig,
+  pub oidc_ui: os_ui::config::AppConfig,
+  pub oidc_admin_api: os_oidc_admin::config::AppConfig,
+  pub oidc_admin_ui: os_ui::config::AppConfig,
   pub signaling_api: os_signaling::config::AppConfig,
   pub log_level: String,
   pub url: Option<String>,
@@ -53,8 +53,8 @@ impl Default for AppConfig {
       database: Default::default(),
       oidc_api: Default::default(),
       oidc_ui: Default::default(),
-      admin_api: Default::default(),
-      admin_ui: Default::default(),
+      oidc_admin_api: Default::default(),
+      oidc_admin_ui: Default::default(),
       signaling_api: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: None,
@@ -94,6 +94,7 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
       }
       if app_config.oidc_api.ui_url.is_none() {
         app_config.oidc_api.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
+        app_config.oidc_ui.url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
       }
     }
 
@@ -104,32 +105,33 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
     app_config.oidc_ui.log_level = app_config.log_level.clone();
 
     // Admin API Config Adjustments
-    app_config.admin_api.server.host = app_config.server.host;
-    app_config.admin_api.server.port = app_config.server.port;
-    app_config.admin_api.server.gzip = app_config.server.gzip;
-    app_config.admin_api.log_level = app_config.log_level.clone();
+    app_config.oidc_admin_api.server.host = app_config.server.host;
+    app_config.oidc_admin_api.server.port = app_config.server.port;
+    app_config.oidc_admin_api.server.gzip = app_config.server.gzip;
+    app_config.oidc_admin_api.log_level = app_config.log_level.clone();
 
-    app_config.admin_api.database = app_config.database.clone();
+    app_config.oidc_admin_api.database = app_config.database.clone();
 
     if let Some(ui_url) = &app_config.ui_url
-      && app_config.admin_api.ui_url.is_none()
+      && app_config.oidc_admin_api.ui_url.is_none()
     {
-      app_config.admin_api.ui_url = Some(format!("{}{}", ui_url, ADMIN_UI_URL_PREFIX));
+      app_config.oidc_admin_api.ui_url = Some(format!("{}{}", ui_url, OIDC_ADMIN_UI_URL_PREFIX));
     }
     if let Some(url) = &app_config.url {
-      if app_config.admin_api.url.is_none() {
-        app_config.admin_api.url = Some(format!("{}{}", url, ADMIN_API_URL_PREFIX));
+      if app_config.oidc_admin_api.url.is_none() {
+        app_config.oidc_admin_api.url = Some(format!("{}{}", url, OIDC_ADMIN_API_URL_PREFIX));
       }
-      if app_config.admin_api.ui_url.is_none() {
-        app_config.admin_api.ui_url = Some(format!("{}{}", url, ADMIN_UI_URL_PREFIX));
+      if app_config.oidc_admin_api.ui_url.is_none() {
+        app_config.oidc_admin_api.ui_url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
+        app_config.oidc_admin_ui.url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
       }
     }
 
     // Admin UI Config Adjustments
-    app_config.admin_ui.server.host = app_config.server.host;
-    app_config.admin_ui.server.port = app_config.server.port;
-    app_config.admin_ui.server.gzip = app_config.server.gzip;
-    app_config.admin_ui.log_level = app_config.log_level.clone();
+    app_config.oidc_admin_ui.server.host = app_config.server.host;
+    app_config.oidc_admin_ui.server.port = app_config.server.port;
+    app_config.oidc_admin_ui.server.gzip = app_config.server.gzip;
+    app_config.oidc_admin_ui.log_level = app_config.log_level.clone();
 
     // Signaling API Config Adjustments
     app_config.signaling_api.server.host = app_config.server.host;

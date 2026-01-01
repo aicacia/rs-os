@@ -9,6 +9,7 @@ use std::{
 use axum::Router;
 use clap::Parser;
 use os_cli::{run::shutdown_signal, serve::serve};
+use os_ui::helper::write_public_env_file;
 use tokio_util::sync::CancellationToken;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing_log::LogTracer;
@@ -19,8 +20,8 @@ use crate::cli::completions;
 use crate::{
   cli::args::{CliArgs, CliCommand},
   config::{
-    ADMIN_API_URL_PREFIX, ADMIN_UI_URL_PREFIX, AppConfig, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX,
-    SIGNALING_API_URL_PREFIX,
+    AppConfig, OIDC_ADMIN_API_URL_PREFIX, OIDC_ADMIN_UI_URL_PREFIX, OIDC_API_URL_PREFIX,
+    OIDC_UI_URL_PREFIX, SIGNALING_API_URL_PREFIX,
   },
 };
 
@@ -62,10 +63,11 @@ pub async fn run() -> io::Result<()> {
 
   let cancellation_token = CancellationToken::new();
 
-  let database_connection = match os_model::create_database_connection(&app_config.database).await {
-    Ok(db) => db,
-    Err(e) => return Err(io::Error::other(e)),
-  };
+  let database_connection =
+    match os_oidc_model::create_database_connection(&app_config.database).await {
+      Ok(db) => db,
+      Err(e) => return Err(io::Error::other(e)),
+    };
 
   os_oidc::core::model::init(&database_connection, &app_config.oidc_api).await?;
 
@@ -76,16 +78,21 @@ pub async fn run() -> io::Result<()> {
     },
     Some(OIDC_API_URL_PREFIX),
   );
-  let oidc_ui_router = os_oidc_ui::router::create_router(Some(OIDC_UI_URL_PREFIX));
 
-  let admin_openapi_router = os_admin::router::create_openapi_router(
-    os_admin::router::entity::RouterState {
+  write_public_env_file(&app_config.oidc_ui).await?;
+  let oidc_ui_router = os_ui::router::create_router(&app_config.oidc_ui, Some(OIDC_UI_URL_PREFIX));
+
+  let oidc_admin_openapi_router = os_oidc_admin::router::create_openapi_router(
+    os_oidc_admin::router::entity::RouterState {
       database_connection: database_connection.clone(),
-      config: Arc::new(app_config.admin_api.clone()),
+      config: Arc::new(app_config.oidc_admin_api.clone()),
     },
-    Some(ADMIN_API_URL_PREFIX),
+    Some(OIDC_ADMIN_API_URL_PREFIX),
   );
-  let admin_ui_router = os_admin_ui::router::create_router(Some(ADMIN_UI_URL_PREFIX));
+
+  write_public_env_file(&app_config.oidc_admin_ui).await?;
+  let oidc_admin_ui_router =
+    os_ui::router::create_router(&app_config.oidc_admin_ui, Some(OIDC_ADMIN_UI_URL_PREFIX));
 
   let pubsub = Arc::new(
     if let Some(redis_url) = &app_config.signaling_api.redis_url {
@@ -112,12 +119,12 @@ pub async fn run() -> io::Result<()> {
 
   let router = Router::new()
     .merge(oidc_openapi_router)
-    .merge(admin_openapi_router)
+    .merge(oidc_admin_openapi_router)
     .merge(signaling_openapi_router)
     .layer(CorsLayer::very_permissive())
     .layer(TraceLayer::new_for_http())
     .merge(oidc_ui_router.reset_fallback())
-    .merge(admin_ui_router.reset_fallback())
+    .merge(oidc_admin_ui_router.reset_fallback())
     .layer(CompressionLayer::new().gzip(app_config.server.gzip));
 
   let run_serve = |host: Option<IpAddr>, port: Option<u16>| {
@@ -158,7 +165,7 @@ pub async fn run() -> io::Result<()> {
     }
   }
 
-  match os_model::connection::close_database_connection(database_connection).await {
+  match os_oidc_model::connection::close_database_connection(database_connection).await {
     Ok(_) => log::info!("database connection closed"),
     Err(e) => log::error!("failed to close pool: {}", e),
   }

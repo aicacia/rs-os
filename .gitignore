@@ -11,4 +11,5 @@
 /os*.db*
 /values.yaml
 /storage/
+/node_modules/
 .sea-orm-cli.json

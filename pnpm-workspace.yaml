@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@openapitools/openapi-generator-cli'
+  - '@tailwindcss/oxide'
+  - cbor-extract
+  - esbuild

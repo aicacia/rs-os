@@ -1,16 +1,16 @@
 use std::error::Error;
 
 use chrono::Utc;
-use os_model::entities::{
+use os_oidc::router::common::entity::{Permission, Token};
+use os_oidc_model::entities::{
   clients, jwks::get_jwk_for_sign_and_verify, permissions, roles, roles_permissions, user_roles,
   users,
 };
-use os_oidc::router::common::entity::{Permission, Token};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
-use os_model::entities::users::upsert_user_client;
 use os_oidc::config::AppConfig;
 use os_oidc::router::common::helper::create_user_token;
+use os_oidc_model::entities::users::upsert_user_client;
 
 pub async fn create_test_user(
   db: &DatabaseConnection,
