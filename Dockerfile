@@ -8,17 +8,19 @@ WORKDIR /app
 RUN rustup default stable
 
 ARG TARGETPLATFORM=linux/amd64
-RUN case "${TARGETPLATFORM}" in \
-  linux/amd64) echo "x86_64-unknown-linux-musl" > /tmp/target ;; \
-  linux/arm64) echo "aarch64-unknown-linux-musl" > /tmp/target ;; \
-  linux/arm/v7) echo "armv7-unknown-linux-musleabihf" > /tmp/target ;; \
-  linux/arm/v6) echo "arm-unknown-linux-musleabi" > /tmp/target ;; \
-  linux/386) echo "i686-unknown-linux-musl" > /tmp/target ;; \
-  linux/riscv64) echo "riscv64gc-unknown-linux-musl" > /tmp/target ;; \
-  linux/ppc64le) echo "powerpc64le-unknown-linux-musl" > /tmp/target ;; \
-  linux/s390x) echo "s390x-unknown-linux-musl" > /tmp/target ;; \
-  *) echo "x86_64-unknown-linux-musl" > /tmp/target ;; \
-  esac
+RUN set -e; \
+  case "${TARGETPLATFORM}" in \
+  linux/amd64) TARGET_TRIPLE="x86_64-unknown-linux-musl" ;; \
+  linux/arm64) TARGET_TRIPLE="aarch64-unknown-linux-musl" ;; \
+  linux/arm/v7) TARGET_TRIPLE="armv7-unknown-linux-musleabihf" ;; \
+  linux/arm/v6) TARGET_TRIPLE="arm-unknown-linux-musleabi" ;; \
+  linux/386) TARGET_TRIPLE="i686-unknown-linux-musl" ;; \
+  linux/riscv64) TARGET_TRIPLE="riscv64gc-unknown-linux-musl" ;; \
+  linux/ppc64le) TARGET_TRIPLE="powerpc64le-unknown-linux-musl" ;; \
+  linux/s390x) TARGET_TRIPLE="s390x-unknown-linux-musl" ;; \
+  *) TARGET_TRIPLE="x86_64-unknown-linux-musl" ;; \
+  esac; \
+  echo "${TARGET_TRIPLE}" > /tmp/target
 
 RUN rustup target add $(cat /tmp/target)
 
