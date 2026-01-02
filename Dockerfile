@@ -42,6 +42,7 @@ RUN cargo chef cook --release --target $(cat /tmp/target) --recipe-path recipe.j
 ARG PROJECT=os
 
 COPY . .
+RUN rustup target add $(cat /tmp/target)
 RUN cargo build -p ${PROJECT} --target $(cat /tmp/target) --release --bin ${PROJECT}
 
 
