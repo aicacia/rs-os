@@ -1,7 +1,7 @@
 FROM rust:1.92-trixie AS chef
 
-RUN apt update && apt -yq upgrade
-RUN apt -yq install musl-tools libpq-dev
+RUN apt-get update && apt-get -yq upgrade
+RUN apt-get -yq install musl-tools libpq-dev
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ FROM chef AS planner
 WORKDIR /app
 
 COPY . .
-RUN cargo chef prepare --target $(cat /tmp/target) --recipe-path recipe.json
+RUN cargo chef prepare --recipe-path recipe.json
 
 
 FROM chef AS builder
