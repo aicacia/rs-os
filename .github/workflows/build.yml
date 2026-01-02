@@ -25,7 +25,6 @@ jobs:
           - linux/arm/v7
           - linux/riscv64
           - linux/ppc64le
-          - linux/s390x
           - linux/386
     steps:
       - name: Checkout repository
@@ -87,14 +86,13 @@ jobs:
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm-v7 \
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-riscv64 \
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-ppc64le \
-            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-s390x \
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-386
           docker manifest push ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}
 
       - name: Delete individual platform images
         if: always()
         run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-s390x linux-386; do
+          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-386; do
             curl -X DELETE \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
@@ -114,7 +112,6 @@ jobs:
           - linux/arm/v7
           - linux/riscv64
           - linux/ppc64le
-          - linux/s390x
           - linux/386
     steps:
       - name: Checkout repository
@@ -168,14 +165,13 @@ jobs:
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm-v7 \
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-riscv64 \
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-ppc64le \
-            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-s390x \
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-386
           docker manifest push ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}
 
       - name: Delete individual platform images
         if: always()
         run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-s390x linux-386; do
+          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-386; do
             curl -X DELETE \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \

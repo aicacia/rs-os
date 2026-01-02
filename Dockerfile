@@ -15,7 +15,6 @@ RUN set -e; \
   linux/386) TARGET_TRIPLE="i686-unknown-linux-musl" ;; \
   linux/riscv64) TARGET_TRIPLE="riscv64gc-unknown-linux-musl" ;; \
   linux/ppc64le) TARGET_TRIPLE="powerpc64le-unknown-linux-musl" ;; \
-  linux/s390x) TARGET_TRIPLE="s390x-unknown-linux-musl" ;; \
   *) TARGET_TRIPLE="x86_64-unknown-linux-musl" ;; \
   esac; \
   echo "${TARGET_TRIPLE}" > /tmp/target
