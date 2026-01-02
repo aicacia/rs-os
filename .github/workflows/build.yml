@@ -19,6 +19,14 @@ jobs:
           - os-oidc-admin
           - os-signaling
           - os-ui
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/arm/v7
+          - linux/riscv64
+          - linux/ppc64le
+          - linux/s390x
+          - linux/386
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,24 +38,91 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker system prune -af
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build ${{ matrix.project }} multi-arch image
+      - name: Prepare platform tag
+        id: prep
+        run: |
+          PLATFORM_TAG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
+          echo "platform_tag=${PLATFORM_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build ${{ matrix.project }} for ${{ matrix.platform }}
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/riscv64,linux/ppc64le,linux/s390x,linux/386
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
+
+  manifest-individual:
+    name: Create service manifests
+    needs: build-individual
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - os-oidc
+          - os-oidc-admin
+          - os-signaling
+          - os-ui
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest for ${{ matrix.project }}
+        run: |
+          docker manifest create ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }} \
+            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-amd64 \
+            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm64 \
+            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm-v7 \
+            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-riscv64 \
+            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-ppc64le \
+            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-s390x \
+            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-386
+          docker manifest push ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}
+
+      - name: Delete individual platform images
+        run: |
+          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-s390x linux-386; do
+            curl -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://ghcr.io/v2/${{ github.repository_owner }}/${{ matrix.project }}/manifests/${{ github.sha }}-${platform}" || true
+          done
 
   build-unified:
     name: Build unified image
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/arm/v7
+          - linux/riscv64
+          - linux/ppc64le
+          - linux/s390x
+          - linux/386
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,17 +134,64 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker system prune -af
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build unified multi-arch image
+      - name: Prepare platform tag
+        id: prep
+        run: |
+          PLATFORM_TAG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
+          echo "platform_tag=${PLATFORM_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build unified image for ${{ matrix.platform }}
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/riscv64,linux/ppc64le,linux/s390x,linux/386
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os
+
+  manifest-unified:
+    name: Create unified manifest
+    needs: build-unified
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest for os
+        run: |
+          docker manifest create ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }} \
+            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-amd64 \
+            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm64 \
+            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm-v7 \
+            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-riscv64 \
+            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-ppc64le \
+            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-s390x \
+            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-386
+          docker manifest push ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}
+
+      - name: Delete individual platform images
+        run: |
+          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-s390x linux-386; do
+            curl -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://ghcr.io/v2/${{ github.repository_owner }}/os/manifests/${{ github.sha }}-${platform}" || true
+          done
