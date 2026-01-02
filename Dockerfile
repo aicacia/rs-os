@@ -5,7 +5,7 @@ RUN apt-get -yq install musl-tools libpq-dev
 
 WORKDIR /app
 
-ARG TARGETPLATFORM=linux/amd64
+ARG TARGETPLATFORM
 RUN set -e; \
   case "${TARGETPLATFORM}" in \
   linux/amd64) TARGET_TRIPLE="x86_64-unknown-linux-musl" ;; \
