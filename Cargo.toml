@@ -77,6 +77,9 @@ tracing-subscriber = { version = "0.3", features = [
 completions = ["dep:clap_complete"]
 default = ["completions"]
 
+[target.riscv64gc-unknown-linux-musl]
+rustflags = ["-C", "link-arg=-lm"]
+
 [profile.release]
 opt-level = "s"
 lto = "thin"
