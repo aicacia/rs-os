@@ -6,6 +6,10 @@ on:
     types:
       - completed
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-individual:
     name: Build service images
@@ -273,3 +277,32 @@ jobs:
               -H "Accept: application/vnd.github.v3+json" \
               "https://ghcr.io/v2/${{ github.repository_owner }}/os/manifests/${{ github.sha }}-${platform}" || true
           done
+
+  delete-old-versions:
+    name: Delete untagged images
+    needs:
+      - manifest-individual
+      - manifest-ui
+      - manifest-unified
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - os-oidc
+          - os-oidc-admin
+          - os-signaling
+          - os-oidc-ui
+          - os-oidc-admin-ui
+          - os
+    steps:
+      - name: Delete untagged versions for ${{ matrix.package }}
+        uses: actions/delete-package-versions@v5
+        with:
+          owner: ${{ github.repository_owner }}
+          package-name: ${{ matrix.package }}
+          package-type: container
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: true
+          token: ${{ secrets.GITHUB_TOKEN }}
