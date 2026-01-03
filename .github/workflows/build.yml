@@ -29,12 +29,7 @@ jobs:
           - linux/amd64
           - linux/arm64
           - linux/arm/v7
-          - linux/riscv64
-          - linux/ppc64le
           - linux/386
-        include:
-          - platform: linux/ppc64le
-            rust_image: messense/rust-musl-cross:powerpc64le-musl
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -65,7 +60,7 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
-            RUST_IMAGE=${{ matrix.rust_image || env.RUST_IMAGE_DEFAULT }}
+            RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
 
   manifest-individual:
     name: Create service manifests
@@ -93,15 +88,13 @@ jobs:
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-amd64 \
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm64 \
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm-v7 \
-            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-riscv64 \
-            --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-ppc64le \
             --amend ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-386
           docker manifest push ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}
 
       - name: Delete individual platform images
         if: always()
         run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-386; do
+          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-386; do
             curl -X DELETE \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
@@ -122,12 +115,7 @@ jobs:
           - linux/amd64
           - linux/arm64
           - linux/arm/v7
-          - linux/riscv64
-          - linux/ppc64le
           - linux/386
-        include:
-          - platform: linux/ppc64le
-            rust_image: messense/rust-musl-cross:powerpc64le-musl
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -158,7 +146,7 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/os-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os-ui
-            RUST_IMAGE=${{ matrix.rust_image || env.RUST_IMAGE_DEFAULT }}
+            RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
 
       - name: Build os-${{ matrix.project }}-ui for ${{ matrix.platform }}
         uses: docker/build-push-action@v6
@@ -171,7 +159,7 @@ jobs:
           build-args: |
             PROJECT=${{ matrix.project }}
             BASE=ghcr.io/${{ github.repository_owner }}/os-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
-            RUST_IMAGE=${{ matrix.rust_image || env.RUST_IMAGE_DEFAULT }}
+            RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
 
   manifest-ui:
     name: Create UI manifests
@@ -198,15 +186,13 @@ jobs:
             --amend ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-amd64 \
             --amend ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-arm64 \
             --amend ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-arm-v7 \
-            --amend ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-riscv64 \
-            --amend ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-ppc64le \
             --amend ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-386
           docker manifest push ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}
 
       - name: Delete individual platform images
         if: always()
         run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-386; do
+          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-386; do
             curl -X DELETE \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
@@ -224,12 +210,7 @@ jobs:
           - linux/amd64
           - linux/arm64
           - linux/arm/v7
-          - linux/riscv64
-          - linux/ppc64le
           - linux/386
-        include:
-          - platform: linux/ppc64le
-            rust_image: messense/rust-musl-cross:powerpc64le-musl
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -260,7 +241,7 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os
-            RUST_IMAGE=${{ matrix.rust_image || env.RUST_IMAGE_DEFAULT }}
+            RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
 
   manifest-unified:
     name: Create unified manifest
@@ -281,15 +262,13 @@ jobs:
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-amd64 \
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm64 \
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm-v7 \
-            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-riscv64 \
-            --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-ppc64le \
             --amend ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-386
           docker manifest push ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}
 
       - name: Delete individual platform images
         if: always()
         run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-riscv64 linux-ppc64le linux-386; do
+          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-386; do
             curl -X DELETE \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \

@@ -1870,6 +1870,7 @@ dependencies = [
  "dotenvy",
  "log",
  "os-cli",
+ "os-fs",
  "os-oidc",
  "os-oidc-admin",
  "os-oidc-model",
@@ -1918,6 +1919,41 @@ dependencies = [
  "log",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "os-fs"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "build-time",
+ "chrono",
+ "clap",
+ "clap_complete",
+ "config",
+ "dotenvy",
+ "hashbrown 0.16.1",
+ "http",
+ "jsonwebtoken",
+ "log",
+ "os-api",
+ "os-cli",
+ "rand 0.8.5",
+ "scopeguard",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
+ "url",
+ "utoipa",
+ "utoipa-axum",
+ "uuid",
+ "validator",
 ]
 
 [[package]]

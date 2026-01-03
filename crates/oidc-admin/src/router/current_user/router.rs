@@ -1,11 +1,11 @@
 use axum::{extract::State, response::IntoResponse};
 use http::StatusCode;
+use os_api::{Json, error::HttpError};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
   core::encryption::encrypt_password,
   router::{
-    Json,
     current_user::{
       constants::TAG,
       entity::{
@@ -13,7 +13,6 @@ use crate::{
       },
     },
     entity::RouterState,
-    error::HttpError,
     middleware::user_authorization::UserAuthorization,
   },
 };

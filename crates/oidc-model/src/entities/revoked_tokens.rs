@@ -62,4 +62,3 @@ pub async fn cleanup_expired_tokens(db: &DatabaseConnection) -> Result<u64, DbEr
 
   Ok(result.rows_affected)
 }
-

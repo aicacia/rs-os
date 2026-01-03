@@ -5,6 +5,7 @@ use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
 use os_api::Authorization;
 use os_api::error::INVALID_TYPE_ERROR;
+use os_api::error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR};
 
 use crate::router::{
   common::{
@@ -16,7 +17,6 @@ use crate::router::{
   },
   current_user::entity::{CurrentUser, UserOAuth2Provider, UserRole},
   entity::RouterState,
-  error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
 };
 use os_oidc_model::entities::{
   permissions, roles,

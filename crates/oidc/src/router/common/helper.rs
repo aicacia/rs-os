@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use http::StatusCode;
+use os_api::error::{HttpError, INTERNAL_ERROR};
 use os_oidc_model::entities::{
   jwks::{get_jwk_for_sign_and_verify, model_to_jwt_jwk, to_encoding_key},
   user_emails, user_infos, user_phone_numbers, users,
@@ -7,18 +8,15 @@ use os_oidc_model::entities::{
 
 use crate::{
   config::AppConfig,
-  router::{
-    common::{
-      constants::{
-        SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE, SCOPE_PROFILE,
-        TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
-      },
-      entity::{
-        AuthorizationCodeClaims, BasicClaims, Claims, EncodeClaims, OpenIdClaims, OpenIdProfile,
-        Token,
-      },
+  router::common::{
+    constants::{
+      SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_PHONE, SCOPE_PROFILE, TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE,
+      TOKEN_TYPE_BEARER, TOKEN_TYPE_ID, TOKEN_TYPE_REFRESH,
     },
-    error::{HttpError, INTERNAL_ERROR},
+    entity::{
+      AuthorizationCodeClaims, BasicClaims, Claims, EncodeClaims, OpenIdClaims, OpenIdProfile,
+      Token,
+    },
   },
 };
 use sea_orm::DatabaseConnection;

@@ -14,8 +14,6 @@ RUN set -e; \
   linux/arm/v7) TARGET_TRIPLE="armv7-unknown-linux-musleabihf" ;; \
   linux/arm/v6) TARGET_TRIPLE="arm-unknown-linux-musleabi" ;; \
   linux/386) TARGET_TRIPLE="i686-unknown-linux-musl" ;; \
-  linux/riscv64) TARGET_TRIPLE="riscv64gc-unknown-linux-musl" ;; \
-  linux/ppc64le) TARGET_TRIPLE="powerpc64le-unknown-linux-musl" ;; \
   *) TARGET_TRIPLE="x86_64-unknown-linux-musl" ;; \
   esac; \
   echo "${TARGET_TRIPLE}" > /tmp/target
@@ -23,17 +21,6 @@ RUN set -e; \
 RUN rustup target add $(cat /tmp/target)
 
 RUN cargo install cargo-chef --locked
-
-RUN mkdir -p .cargo \
-  && cat <<'EOF' > .cargo/config.toml
-[target.powerpc64le-unknown-linux-musl]
-linker = "rust-lld"
-rustflags = ["-Clink-self-contained=yes", "-Ctarget-feature=+crt-static"]
-
-[target.riscv64gc-unknown-linux-musl]
-linker = "rust-lld"
-rustflags = ["-Clink-self-contained=yes", "-Ctarget-feature=+crt-static"]
-EOF
 
 
 FROM chef AS planner

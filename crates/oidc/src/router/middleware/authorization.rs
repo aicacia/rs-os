@@ -56,7 +56,13 @@ pub async fn parse_authorization<T>(
   db: &sea_orm::DatabaseConnection,
   app_config: &AppConfig,
   authorization_string: &str,
-) -> Result<(jsonwebtoken::TokenData<T>, os_oidc_model::entities::jwks::Model), HttpError>
+) -> Result<
+  (
+    jsonwebtoken::TokenData<T>,
+    os_oidc_model::entities::jwks::Model,
+  ),
+  HttpError,
+>
 where
   T: Claims,
 {

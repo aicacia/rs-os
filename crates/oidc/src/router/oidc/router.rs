@@ -7,6 +7,13 @@ use axum::{
 };
 use base64::Engine;
 use http::{StatusCode, header};
+use os_api::{
+  Form, Json,
+  error::{
+    CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
+    NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
+  },
+};
 use os_oidc_model::entities::{
   clients,
   jwks::{get_jwk_for_sign_and_verify, list_jwks},
@@ -21,7 +28,6 @@ use crate::{
   config::AppConfig,
   core::{encryption::verify_password, helper::json_to_string_vec},
   router::{
-    Form, Json,
     common::{
       constants::{
         SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_OPENID, SCOPE_PHONE, SCOPE_PROFILE,
@@ -32,10 +38,6 @@ use crate::{
       helper::{create_user_authorization_code_token, create_user_token},
     },
     entity::RouterState,
-    error::{
-      CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
-      NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
-    },
     middleware::{
       authorization::{Authorization, parse_authorization},
       user_authorization::UserAuthorization,

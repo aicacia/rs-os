@@ -1,4 +1,3 @@
-
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
@@ -48,8 +47,8 @@ impl Related<super::users::Entity> for Entity {
 impl ActiveModelBehavior for ActiveModel {}
 
 // Database operations for user_o_auth2_providers
-use sea_orm::Set;
 use super::o_auth2_providers;
+use sea_orm::Set;
 
 pub async fn get_user_oauth2_providers(
   db: &DatabaseConnection,

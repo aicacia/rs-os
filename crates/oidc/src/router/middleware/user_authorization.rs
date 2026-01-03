@@ -5,7 +5,10 @@ use std::{
 
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
-use os_api::Claims;
+use os_api::{
+  Claims,
+  error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
+};
 
 use crate::router::{
   common::{
@@ -16,7 +19,6 @@ use crate::router::{
     entity::{BasicClaims, Permission, UserInfo},
   },
   entity::RouterState,
-  error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
   middleware::authorization::Authorization,
 };
 use os_oidc_model::entities::{
@@ -202,9 +204,7 @@ where
           permissions,
         })
       }
-      Ok(None) => {
-        Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))
-      }
+      Ok(None) => Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)),
       Err(e) => {
         log::error!("invalid authorization user not found for sub: {}", e);
         Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR))

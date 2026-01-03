@@ -1,7 +1,10 @@
 use axum::{
-  Json,
   extract::{Path, State},
   response::IntoResponse,
+};
+use os_api::{
+  Json,
+  error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 
@@ -12,7 +15,6 @@ use crate::router::{
   },
   common::entity::Permission,
   entity::RouterState,
-  error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
   middleware::user_authorization::UserAuthorization,
 };
 use os_oidc_model::entities::clients::{
