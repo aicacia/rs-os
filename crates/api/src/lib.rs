@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 pub mod claims;
 pub mod config;
+pub mod constants;
 pub mod error;
 pub mod extractors;
 pub mod middleware;

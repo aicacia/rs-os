@@ -6,7 +6,6 @@ use std::{
   sync::Arc,
 };
 
-use crate::core::model::ensure_jwk_exists;
 use clap::Parser;
 use os_cli::{run::shutdown_signal, serve::serve};
 use tokio_util::sync::CancellationToken;
@@ -64,7 +63,7 @@ pub async fn run() -> io::Result<()> {
       Err(e) => return Err(io::Error::other(e)),
     };
 
-  ensure_jwk_exists(&database_connection, app_config.token.default_jwt_algorithm).await?;
+  crate::core::model::init(&database_connection, &app_config).await?;
 
   let open_api_router = crate::router::create_openapi_router(
     crate::router::entity::RouterState {

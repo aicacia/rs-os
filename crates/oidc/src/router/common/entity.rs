@@ -260,6 +260,18 @@ impl Permission {
       Permission::UserDelete => "user:delete",
     }
   }
+
+  pub fn all() -> Vec<Permission> {
+    vec![
+      Permission::AdminAll,
+      Permission::ClientRead,
+      Permission::ClientWrite,
+      Permission::ClientDelete,
+      Permission::UserRead,
+      Permission::UserWrite,
+      Permission::UserDelete,
+    ]
+  }
 }
 
 impl std::fmt::Display for Permission {

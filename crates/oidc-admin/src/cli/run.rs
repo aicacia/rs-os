@@ -8,7 +8,6 @@ use std::{
 
 use clap::Parser;
 use os_cli::{run::shutdown_signal, serve::serve};
-use os_oidc_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use tokio_util::sync::CancellationToken;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing_log::LogTracer;
@@ -63,19 +62,6 @@ pub async fn run() -> io::Result<()> {
       Ok(db) => db,
       Err(e) => return Err(io::Error::other(e)),
     };
-
-  if list_jwks(&database_connection)
-    .await
-    .map_err(io::Error::other)?
-    .is_empty()
-  {
-    let _ = create_jwk(
-      &database_connection,
-      generate_jwk(app_config.token.default_jwt_algorithm).map_err(io::Error::other)?,
-    )
-    .await
-    .map_err(io::Error::other)?;
-  }
 
   let open_api_router = crate::router::create_openapi_router(
     crate::router::entity::RouterState {

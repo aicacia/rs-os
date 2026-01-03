@@ -3,18 +3,16 @@ use std::str::FromStr;
 
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
-use os_api::Authorization;
-use os_api::error::INVALID_TYPE_ERROR;
-use os_api::error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR};
+use os_api::{
+  Authorization,
+  constants::{
+    AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE, SCOPE_PROFILE, TOKEN_TYPE_BEARER,
+  },
+  error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, INVALID_TYPE_ERROR, REQUIRED_ERROR},
+};
 
 use crate::router::{
-  common::{
-    constants::{
-      AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE, SCOPE_PROFILE,
-      TOKEN_TYPE_BEARER,
-    },
-    entity::{BasicClaims, Claims, Permission},
-  },
+  common::entity::{BasicClaims, Claims, Permission},
   current_user::entity::{CurrentUser, UserOAuth2Provider, UserRole},
   entity::RouterState,
 };

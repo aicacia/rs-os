@@ -11,6 +11,8 @@ pub const OIDC_API_URL_PREFIX: &str = "/oidc/api";
 pub const OIDC_ADMIN_UI_URL_PREFIX: &str = "/oidc-admin";
 pub const OIDC_ADMIN_API_URL_PREFIX: &str = "/oidc-admin/api";
 
+pub const FS_API_URL_PREFIX: &str = "/fs/api";
+
 pub const SIGNALING_API_URL_PREFIX: &str = "/signaling/api";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -40,9 +42,10 @@ pub struct AppConfig {
   pub oidc_ui: os_ui::config::AppConfig,
   pub oidc_admin_api: os_oidc_admin::config::AppConfig,
   pub oidc_admin_ui: os_ui::config::AppConfig,
+  pub fs_api: os_fs::config::AppConfig,
   pub signaling_api: os_signaling::config::AppConfig,
   pub log_level: String,
-  pub url: Option<String>,
+  pub url: String,
   pub ui_url: Option<String>,
 }
 
@@ -55,9 +58,10 @@ impl Default for AppConfig {
       oidc_ui: Default::default(),
       oidc_admin_api: Default::default(),
       oidc_admin_ui: Default::default(),
+      fs_api: Default::default(),
       signaling_api: Default::default(),
       log_level: "DEBUG".to_owned(),
-      url: None,
+      url: "http://localhost:3000".to_owned(),
       ui_url: None,
     }
   }
@@ -78,14 +82,12 @@ impl AppConfig {
     {
       self.oidc_api.ui_url = Some(format!("{}{}", ui_url, OIDC_UI_URL_PREFIX));
     }
-    if let Some(url) = &self.url {
-      if self.oidc_api.url.is_none() {
-        self.oidc_api.url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
-      }
-      if self.oidc_api.ui_url.is_none() {
-        self.oidc_api.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
-        self.oidc_ui.url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
-      }
+    if self.oidc_api.url.is_none() {
+      self.oidc_api.url = Some(format!("{}{}", self.url, OIDC_API_URL_PREFIX));
+    }
+    if self.oidc_api.ui_url.is_none() {
+      self.oidc_api.ui_url = Some(format!("{}{}", self.url, OIDC_UI_URL_PREFIX));
+      self.oidc_ui.url = Some(format!("{}{}", self.url, OIDC_UI_URL_PREFIX));
     }
 
     // OIDC UI Config Adjustments
@@ -107,14 +109,12 @@ impl AppConfig {
     {
       self.oidc_admin_api.ui_url = Some(format!("{}{}", ui_url, OIDC_ADMIN_UI_URL_PREFIX));
     }
-    if let Some(url) = &self.url {
-      if self.oidc_admin_api.url.is_none() {
-        self.oidc_admin_api.url = Some(format!("{}{}", url, OIDC_ADMIN_API_URL_PREFIX));
-      }
-      if self.oidc_admin_api.ui_url.is_none() {
-        self.oidc_admin_api.ui_url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
-        self.oidc_admin_ui.url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
-      }
+    if self.oidc_admin_api.url.is_none() {
+      self.oidc_admin_api.url = Some(format!("{}{}", self.url, OIDC_ADMIN_API_URL_PREFIX));
+    }
+    if self.oidc_admin_api.ui_url.is_none() {
+      self.oidc_admin_api.ui_url = Some(format!("{}{}", self.url, OIDC_ADMIN_UI_URL_PREFIX));
+      self.oidc_admin_ui.url = Some(format!("{}{}", self.url, OIDC_ADMIN_UI_URL_PREFIX));
     }
 
     // Admin UI Config Adjustments
@@ -123,16 +123,24 @@ impl AppConfig {
     self.oidc_admin_ui.server.gzip = self.server.gzip;
     self.oidc_admin_ui.log_level = self.log_level.clone();
 
+    // FS API Config Adjustments
+    self.fs_api.server.host = self.server.host;
+    self.fs_api.server.port = self.server.port;
+    self.fs_api.server.gzip = self.server.gzip;
+    self.fs_api.log_level = self.log_level.clone();
+
+    if self.fs_api.url.is_none() {
+      self.fs_api.url = Some(format!("{}{}", self.url, FS_API_URL_PREFIX));
+    }
+
     // Signaling API Config Adjustments
     self.signaling_api.server.host = self.server.host;
     self.signaling_api.server.port = self.server.port;
     self.signaling_api.server.gzip = self.server.gzip;
     self.signaling_api.log_level = self.log_level.clone();
 
-    if let Some(url) = &self.url
-      && self.signaling_api.url.is_none()
-    {
-      self.signaling_api.url = Some(format!("{}{}", url, SIGNALING_API_URL_PREFIX));
+    if self.signaling_api.url.is_none() {
+      self.signaling_api.url = Some(format!("{}{}", self.url, SIGNALING_API_URL_PREFIX));
     }
   }
 }
