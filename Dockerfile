@@ -1,4 +1,5 @@
-FROM rust:1.92-trixie AS chef
+ARG RUST_IMAGE=rust:1.92-trixie
+FROM ${RUST_IMAGE} AS chef
 
 RUN apt-get update && apt-get -yq upgrade
 RUN apt-get -yq install musl-tools libpq-dev
