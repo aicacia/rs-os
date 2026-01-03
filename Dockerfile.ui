@@ -10,7 +10,7 @@ COPY . .
 
 RUN pnpm -C /app/apps/${PROJECT} build
 
-FROM ghcr.io/aicacia/os-ui:latest
+FROM os-ui:local
 
 WORKDIR /app
 
