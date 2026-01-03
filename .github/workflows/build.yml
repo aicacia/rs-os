@@ -24,6 +24,7 @@ jobs:
           - linux/arm64
           - linux/arm/v7
           - linux/riscv64
+          - linux/ppc64le
           - linux/386
     steps:
       - name: Checkout repository
@@ -109,6 +110,7 @@ jobs:
           - linux/arm64
           - linux/arm/v7
           - linux/riscv64
+          - linux/ppc64le
           - linux/386
     steps:
       - name: Checkout repository

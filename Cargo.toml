@@ -80,6 +80,9 @@ default = ["completions"]
 [target.riscv64gc-unknown-linux-musl]
 rustflags = ["-C", "link-arg=-lm"]
 
+[target.powerpc64le-unknown-linux-musl]
+rustflags = ["-C", "link-arg=-lm"]
+
 [profile.release]
 opt-level = "s"
 lto = "thin"
