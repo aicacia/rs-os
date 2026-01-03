@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { getUserManager } from './user.svelte';
-import { PUBLIC_OS_DOCUMENT_STORE_WS_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import { WebSocketClientAdapter } from '../automerge/WebSocketClientAdapter';
 
 let websocketURL: string | null = $state(null);
@@ -18,7 +18,7 @@ if (browser) {
 				return;
 			}
 			console.log('User found, connecting to document store WebSocket');
-			websocketURL = `${PUBLIC_OS_DOCUMENT_STORE_WS_URL}/ws?token=${user.access_token}`;
+			websocketURL = `${env.PUBLIC_OS_DOCUMENT_STORE_WS_URL}/ws?token=${user.access_token}`;
 			webSocketClientAdapter.reconnect();
 		});
 }

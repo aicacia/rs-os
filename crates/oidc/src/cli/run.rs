@@ -35,7 +35,7 @@ pub async fn run() -> io::Result<()> {
     Ok(app_config) => app_config,
     Err(e) => {
       eprintln!("failed to load config {:?}: {}", args.config, e);
-      return Err(io::Error::other(e));
+      AppConfig::default()
     }
   });
 
@@ -58,10 +58,11 @@ pub async fn run() -> io::Result<()> {
 
   let cancellation_token = CancellationToken::new();
 
-  let database_connection = match os_oidc_model::create_database_connection(&app_config.database).await {
-    Ok(db) => db,
-    Err(e) => return Err(io::Error::other(e)),
-  };
+  let database_connection =
+    match os_oidc_model::create_database_connection(&app_config.database).await {
+      Ok(db) => db,
+      Err(e) => return Err(io::Error::other(e)),
+    };
 
   ensure_jwk_exists(&database_connection, app_config.token.default_jwt_algorithm).await?;
 

@@ -39,7 +39,9 @@ pub async fn run() -> io::Result<()> {
     Ok(app_config) => app_config,
     Err(e) => {
       eprintln!("failed to load config {:?}: {}", args.config, e);
-      return Err(io::Error::other(e));
+      let mut app_config = AppConfig::default();
+      app_config.overwrite_dependencies();
+      app_config
     }
   });
 

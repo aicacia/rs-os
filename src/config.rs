@@ -63,6 +63,80 @@ impl Default for AppConfig {
   }
 }
 
+impl AppConfig {
+  pub fn overwrite_dependencies(&mut self) {
+    // OIDC API Config Adjustments
+    self.oidc_api.server.host = self.server.host;
+    self.oidc_api.server.port = self.server.port;
+    self.oidc_api.server.gzip = self.server.gzip;
+    self.oidc_api.log_level = self.log_level.clone();
+
+    self.oidc_api.database = self.database.clone();
+
+    if let Some(ui_url) = &self.ui_url
+      && self.oidc_api.ui_url.is_none()
+    {
+      self.oidc_api.ui_url = Some(format!("{}{}", ui_url, OIDC_UI_URL_PREFIX));
+    }
+    if let Some(url) = &self.url {
+      if self.oidc_api.url.is_none() {
+        self.oidc_api.url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
+      }
+      if self.oidc_api.ui_url.is_none() {
+        self.oidc_api.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
+        self.oidc_ui.url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
+      }
+    }
+
+    // OIDC UI Config Adjustments
+    self.oidc_ui.server.host = self.server.host;
+    self.oidc_ui.server.port = self.server.port;
+    self.oidc_ui.server.gzip = self.server.gzip;
+    self.oidc_ui.log_level = self.log_level.clone();
+
+    // Admin API Config Adjustments
+    self.oidc_admin_api.server.host = self.server.host;
+    self.oidc_admin_api.server.port = self.server.port;
+    self.oidc_admin_api.server.gzip = self.server.gzip;
+    self.oidc_admin_api.log_level = self.log_level.clone();
+
+    self.oidc_admin_api.database = self.database.clone();
+
+    if let Some(ui_url) = &self.ui_url
+      && self.oidc_admin_api.ui_url.is_none()
+    {
+      self.oidc_admin_api.ui_url = Some(format!("{}{}", ui_url, OIDC_ADMIN_UI_URL_PREFIX));
+    }
+    if let Some(url) = &self.url {
+      if self.oidc_admin_api.url.is_none() {
+        self.oidc_admin_api.url = Some(format!("{}{}", url, OIDC_ADMIN_API_URL_PREFIX));
+      }
+      if self.oidc_admin_api.ui_url.is_none() {
+        self.oidc_admin_api.ui_url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
+        self.oidc_admin_ui.url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
+      }
+    }
+
+    // Admin UI Config Adjustments
+    self.oidc_admin_ui.server.host = self.server.host;
+    self.oidc_admin_ui.server.port = self.server.port;
+    self.oidc_admin_ui.server.gzip = self.server.gzip;
+    self.oidc_admin_ui.log_level = self.log_level.clone();
+
+    // Signaling API Config Adjustments
+    self.signaling_api.server.host = self.server.host;
+    self.signaling_api.server.port = self.server.port;
+    self.signaling_api.server.gzip = self.server.gzip;
+    self.signaling_api.log_level = self.log_level.clone();
+
+    if let Some(url) = &self.url
+      && self.signaling_api.url.is_none()
+    {
+      self.signaling_api.url = Some(format!("{}{}", url, SIGNALING_API_URL_PREFIX));
+    }
+  }
+}
+
 impl<'a> TryFrom<&'a Path> for AppConfig {
   type Error = config::ConfigError;
 
@@ -75,75 +149,7 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
       .build()?
       .try_deserialize()?;
 
-    // OIDC API Config Adjustments
-    app_config.oidc_api.server.host = app_config.server.host;
-    app_config.oidc_api.server.port = app_config.server.port;
-    app_config.oidc_api.server.gzip = app_config.server.gzip;
-    app_config.oidc_api.log_level = app_config.log_level.clone();
-
-    app_config.oidc_api.database = app_config.database.clone();
-
-    if let Some(ui_url) = &app_config.ui_url
-      && app_config.oidc_api.ui_url.is_none()
-    {
-      app_config.oidc_api.ui_url = Some(format!("{}{}", ui_url, OIDC_UI_URL_PREFIX));
-    }
-    if let Some(url) = &app_config.url {
-      if app_config.oidc_api.url.is_none() {
-        app_config.oidc_api.url = Some(format!("{}{}", url, OIDC_API_URL_PREFIX));
-      }
-      if app_config.oidc_api.ui_url.is_none() {
-        app_config.oidc_api.ui_url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
-        app_config.oidc_ui.url = Some(format!("{}{}", url, OIDC_UI_URL_PREFIX));
-      }
-    }
-
-    // OIDC UI Config Adjustments
-    app_config.oidc_ui.server.host = app_config.server.host;
-    app_config.oidc_ui.server.port = app_config.server.port;
-    app_config.oidc_ui.server.gzip = app_config.server.gzip;
-    app_config.oidc_ui.log_level = app_config.log_level.clone();
-
-    // Admin API Config Adjustments
-    app_config.oidc_admin_api.server.host = app_config.server.host;
-    app_config.oidc_admin_api.server.port = app_config.server.port;
-    app_config.oidc_admin_api.server.gzip = app_config.server.gzip;
-    app_config.oidc_admin_api.log_level = app_config.log_level.clone();
-
-    app_config.oidc_admin_api.database = app_config.database.clone();
-
-    if let Some(ui_url) = &app_config.ui_url
-      && app_config.oidc_admin_api.ui_url.is_none()
-    {
-      app_config.oidc_admin_api.ui_url = Some(format!("{}{}", ui_url, OIDC_ADMIN_UI_URL_PREFIX));
-    }
-    if let Some(url) = &app_config.url {
-      if app_config.oidc_admin_api.url.is_none() {
-        app_config.oidc_admin_api.url = Some(format!("{}{}", url, OIDC_ADMIN_API_URL_PREFIX));
-      }
-      if app_config.oidc_admin_api.ui_url.is_none() {
-        app_config.oidc_admin_api.ui_url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
-        app_config.oidc_admin_ui.url = Some(format!("{}{}", url, OIDC_ADMIN_UI_URL_PREFIX));
-      }
-    }
-
-    // Admin UI Config Adjustments
-    app_config.oidc_admin_ui.server.host = app_config.server.host;
-    app_config.oidc_admin_ui.server.port = app_config.server.port;
-    app_config.oidc_admin_ui.server.gzip = app_config.server.gzip;
-    app_config.oidc_admin_ui.log_level = app_config.log_level.clone();
-
-    // Signaling API Config Adjustments
-    app_config.signaling_api.server.host = app_config.server.host;
-    app_config.signaling_api.server.port = app_config.server.port;
-    app_config.signaling_api.server.gzip = app_config.server.gzip;
-    app_config.signaling_api.log_level = app_config.log_level.clone();
-
-    if let Some(url) = &app_config.url
-      && app_config.signaling_api.url.is_none()
-    {
-      app_config.signaling_api.url = Some(format!("{}{}", url, SIGNALING_API_URL_PREFIX));
-    }
+    app_config.overwrite_dependencies();
 
     Ok(app_config)
   }

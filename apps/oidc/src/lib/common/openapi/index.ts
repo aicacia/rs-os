@@ -1,5 +1,5 @@
 import { Configuration, type ConfigurationParameters, OidcApi } from './oidc';
-import { PUBLIC_OS_OIDC_API_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 let authToken: string | undefined;
 
@@ -18,7 +18,7 @@ export const defaultConfigurationParameters: ConfigurationParameters = {
 	accessToken() {
 		return authToken as string;
 	},
-	basePath: new URL(PUBLIC_OS_OIDC_API_URL).origin,
+	basePath: new URL(env.PUBLIC_OS_OIDC_API_URL).origin,
 	credentials: 'same-origin'
 };
 

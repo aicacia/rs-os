@@ -1,0 +1,19 @@
+FROM node:24-trixie-slim AS builder
+
+RUN npm install -g pnpm@10
+
+ARG PROJECT=oidc
+
+WORKDIR /app
+
+COPY . .
+
+RUN pnpm -C /app/apps/${PROJECT} build
+
+FROM ghcr.io/aicacia/os-ui:latest
+
+WORKDIR /app
+
+ARG PROJECT=oidc
+
+COPY --from=builder /app/apps/${PROJECT}/build /app/build

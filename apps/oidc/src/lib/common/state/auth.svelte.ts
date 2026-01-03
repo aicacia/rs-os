@@ -12,9 +12,7 @@ import { localStorageState } from '../util/localStorageState.svelte';
 import { afterSigninRedirect } from './afterSignInRedirectPath';
 import { isOnline } from './online.svelte';
 import { handleError } from '../errors';
-import { PUBLIC_URL } from '$env/static/public';
-
-const CLIENT_ID = PUBLIC_URL;
+import { env } from '$env/dynamic/public';
 
 const userInfo = localStorageState<UserInfo | null>('user_info', null, {
 	serializer: {
@@ -43,7 +41,7 @@ const currentUserInfo = $derived.by(async () => {
 						}
 						token.value = await oidcApi.token({
 							grantType: 'refresh_token',
-							clientId: CLIENT_ID,
+							clientId: env.PUBLIC_URL,
 							refreshToken: token.value.refreshToken,
 							scope: 'openid profile offline'
 						});
@@ -96,7 +94,7 @@ function hasPermissionInternal(user: UserInfo, permission: Permission): boolean 
 export async function signInUsernamePassword(username: string, password: string) {
 	token.value = await oidcApi.token({
 		grantType: 'password',
-		clientId: CLIENT_ID,
+		clientId: env.PUBLIC_URL,
 		username,
 		password,
 		scope: 'openid profile address email phone offline'
