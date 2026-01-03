@@ -23,6 +23,17 @@ RUN rustup target add $(cat /tmp/target)
 
 RUN cargo install cargo-chef --locked
 
+RUN mkdir -p .cargo \
+  && cat <<'EOF' > .cargo/config.toml
+[target.powerpc64le-unknown-linux-musl]
+linker = "rust-lld"
+rustflags = ["-Clink-self-contained=yes", "-Clink-arg=-lm"]
+
+[target.riscv64gc-unknown-linux-musl]
+linker = "rust-lld"
+rustflags = ["-Clink-self-contained=yes", "-Clink-arg=-lm"]
+EOF
+
 
 FROM chef AS planner
 
