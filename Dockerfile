@@ -27,11 +27,11 @@ RUN mkdir -p .cargo \
   && cat <<'EOF' > .cargo/config.toml
 [target.powerpc64le-unknown-linux-musl]
 linker = "rust-lld"
-rustflags = ["-Clink-self-contained=yes", "-Clink-arg=-lm"]
+rustflags = ["-Clink-self-contained=yes", "-Ctarget-feature=+crt-static"]
 
 [target.riscv64gc-unknown-linux-musl]
 linker = "rust-lld"
-rustflags = ["-Clink-self-contained=yes", "-Clink-arg=-lm"]
+rustflags = ["-Clink-self-contained=yes", "-Ctarget-feature=+crt-static"]
 EOF
 
 
