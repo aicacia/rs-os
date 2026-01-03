@@ -55,7 +55,7 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
-          push: ${{ matrix.project != 'os-ui' }}
+          push: true
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
@@ -143,9 +143,8 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
-          push: false
-          load: true
-          tags: os-ui:local
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/os-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os-ui
 
@@ -159,6 +158,7 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
+            BASE=ghcr.io/${{ github.repository_owner }}/os-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
 
   manifest-ui:
     name: Create UI manifests

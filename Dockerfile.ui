@@ -1,3 +1,5 @@
+ARG BASE=os-ui:local
+
 FROM node:24-trixie-slim AS builder
 
 RUN npm install -g pnpm@10
@@ -10,7 +12,7 @@ COPY . .
 
 RUN pnpm -C /app/apps/${PROJECT} build
 
-FROM os-ui:local
+FROM ${BASE}
 
 WORKDIR /app
 
