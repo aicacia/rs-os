@@ -7,10 +7,10 @@ pub async fn write_public_env_file(app_config: &AppConfig) -> io::Result<()> {
     .filter(|(key, _)| key.starts_with("PUBLIC_"))
     .collect();
 
-  if !env_vars.contains_key("PUBLIC_URL") {
-    if let Some(url) = &app_config.url {
-      env_vars.insert("PUBLIC_URL".to_owned(), url.to_owned());
-    }
+  if !env_vars.contains_key("PUBLIC_URL")
+    && let Some(url) = &app_config.url
+  {
+    env_vars.insert("PUBLIC_URL".to_owned(), url.to_owned());
   }
 
   let env_body = serde_json::to_string(&env_vars)

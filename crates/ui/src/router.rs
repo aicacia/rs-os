@@ -81,13 +81,21 @@ impl Service<axum::http::Request<axum::body::Body>> for HtmlFallbackService {
           {
             Ok(html_request) => {
               let mut inner = inner.clone();
-              if let Ok(s) = <ServeDir as tower::ServiceExt<
-                axum::http::Request<axum::body::Body>,
-              >>::ready(&mut inner)
+              match <ServeDir as tower::ServiceExt<axum::http::Request<axum::body::Body>>>::ready(
+                &mut inner,
+              )
               .await
               {
-                if let Ok(html_response) = s.call(html_request).await {
-                  return Ok(html_response.map(axum::body::Body::new));
+                Ok(s) => match s.call(html_request).await {
+                  Ok(html_response) => {
+                    return Ok(html_response.map(axum::body::Body::new));
+                  }
+                  Err(e) => {
+                    tracing::warn!("Error serving HTML fallback: {:?}", e);
+                  }
+                },
+                Err(e) => {
+                  tracing::warn!("Error preparing HTML fallback service: {:?}", e);
                 }
               }
             }
@@ -109,18 +117,19 @@ impl Service<axum::http::Request<axum::body::Body>> for HtmlFallbackService {
           {
             Ok(index_request) => {
               let mut inner = inner.clone();
-              if let Ok(s) = <ServeDir as tower::ServiceExt<
-                axum::http::Request<axum::body::Body>,
-              >>::ready(&mut inner)
+              match <ServeDir as tower::ServiceExt<axum::http::Request<axum::body::Body>>>::ready(
+                &mut inner,
+              )
               .await
               {
-                match s.call(index_request).await {
+                Ok(s) => match s.call(index_request).await {
                   Ok(index_response) if index_response.status().is_success() => {
                     return Ok(index_response.map(axum::body::Body::new));
                   }
                   Ok(_) => {}
                   Err(e) => tracing::warn!("Error serving index fallback: {:?}", e),
-                }
+                },
+                Err(e) => tracing::warn!("Error preparing index fallback service: {:?}", e),
               }
             }
             Err(e) => tracing::warn!("Failed to build index fallback request: {:?}", e),
