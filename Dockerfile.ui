@@ -10,6 +10,7 @@ WORKDIR /app
 
 COPY . .
 
+RUN pnpm install --frozen-lockfile
 RUN pnpm -C /app/apps/${PROJECT} build
 
 FROM ${BASE}
