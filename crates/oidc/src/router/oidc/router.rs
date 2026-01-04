@@ -137,11 +137,15 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     }
   }
 
-  // Query all clients to get unified supported values
-  let all_clients = match clients::list_clients(&state.database_connection).await {
-    Ok(clients) => clients,
+  let (grant_types_list, response_types_list, scopes_list, auth_methods_list) = match tokio::try_join!(
+    clients::get_distinct_grant_types(&state.database_connection),
+    clients::get_distinct_response_types(&state.database_connection),
+    clients::get_distinct_scopes(&state.database_connection),
+    clients::get_distinct_auth_methods(&state.database_connection),
+  ) {
+    Ok(result) => result,
     Err(e) => {
-      log::error!("error getting clients: {}", e);
+      log::error!("error getting client configuration: {}", e);
       return HttpError::internal_error()
         .with_application_error(INTERNAL_ERROR)
         .into_response();
@@ -149,11 +153,32 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
   };
 
   let mut grant_types_supported = HashSet::new();
-  let mut response_types_supported = HashSet::new();
-  let mut scopes_supported = HashSet::new();
-  let mut token_endpoint_auth_methods_supported = HashSet::new();
+  for grant_types_json in grant_types_list {
+    let grant_types: Vec<String> = json_to_string_vec(&grant_types_json);
+    for grant_type in grant_types {
+      grant_types_supported.insert(grant_type);
+    }
+  }
 
-  // Always include the base response mode supported by the server
+  let mut response_types_supported = HashSet::new();
+  for response_types_json in response_types_list {
+    let response_types: Vec<String> = json_to_string_vec(&response_types_json);
+    for response_type in response_types {
+      response_types_supported.insert(response_type);
+    }
+  }
+
+  let mut scopes_supported = HashSet::new();
+  for scopes_json in scopes_list {
+    let scopes: Vec<String> = json_to_string_vec(&scopes_json);
+    for scope in scopes {
+      scopes_supported.insert(scope);
+    }
+  }
+
+  let token_endpoint_auth_methods_supported: HashSet<String> =
+    auth_methods_list.into_iter().collect();
+
   let mut response_modes_supported = HashSet::from([
     "query".to_owned(),
     "fragment".to_owned(),
@@ -164,31 +189,6 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     response_modes_supported.insert("web_message".to_owned());
   }
 
-  // Aggregate supported values from all clients
-  for client in all_clients {
-    // Aggregate grant types
-    let client_grant_types: Vec<String> = json_to_string_vec(&client.grant_types);
-    for grant_type in client_grant_types {
-      grant_types_supported.insert(grant_type);
-    }
-
-    // Aggregate response types
-    let client_response_types: Vec<String> = json_to_string_vec(&client.response_types);
-    for response_type in client_response_types {
-      response_types_supported.insert(response_type);
-    }
-
-    // Aggregate scopes
-    let client_scopes: Vec<String> = json_to_string_vec(&client.scopes);
-    for scope in client_scopes {
-      scopes_supported.insert(scope);
-    }
-
-    // Aggregate auth methods
-    token_endpoint_auth_methods_supported.insert(client.auth_method.clone());
-  }
-
-  // Ensure standard claims are always included (using HashSet to avoid duplicates)
   let claims_supported = HashSet::from([
     "sub".to_owned(),
     "aud".to_owned(),
@@ -204,10 +204,8 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     "phone_verified".to_owned(),
   ]);
 
-  // Code challenge method is a server capability, not client-specific
   let code_challenge_methods_supported = HashSet::from(["S256".to_owned()]);
 
-  // Subject types are server capabilities
   let subject_types_supported = HashSet::from(["public".to_owned(), "pairwise".to_owned()]);
 
   axum::Json(OpenIdConfiguration {
@@ -448,7 +446,7 @@ async fn password_grant(
     jwk,
     user,
     client_model.client_id,
-    client_model.audience,
+    json_to_string_vec(client_model.audience),
     scope,
     TOKEN_ISSUE_TYPE_PASSWORD.to_owned(),
   )
@@ -505,7 +503,7 @@ async fn refresh_token_grant(
     jwk_model,
     user,
     client_model.client_id,
-    client_model.audience,
+    json_to_string_vec(client_model.audience),
     token_data.claims.scope,
     TOKEN_ISSUE_TYPE_REFRESH_TOKEN.to_owned(),
   )
@@ -588,7 +586,7 @@ async fn authorization_code_grant(
     jwk_model,
     user,
     client_model.client_id,
-    client_model.audience,
+    json_to_string_vec(client_model.audience),
     token_data.claims.basic_claims.scope,
     TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
   )
@@ -1105,7 +1103,7 @@ pub async fn authorize_client(
       &state.config,
       user_authorization.user_model.id,
       client_model.client_id,
-      client_model.audience,
+      json_to_string_vec(client_model.audience),
       authorization_request.scope,
       code_challenge,
       code_challenge_method,

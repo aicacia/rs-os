@@ -52,7 +52,7 @@ impl Claims for AuthorizationCodeClaims {
   fn client(&self) -> &str {
     &self.basic_claims.client
   }
-  fn aud(&self) -> &str {
+  fn aud(&self) -> &[String] {
     &self.basic_claims.aud
   }
   fn sub(&self) -> &str {
@@ -168,7 +168,7 @@ impl Claims for OpenIdClaims {
   fn client(&self) -> &str {
     &self.basic_claims.client
   }
-  fn aud(&self) -> &str {
+  fn aud(&self) -> &[String] {
     &self.basic_claims.aud
   }
   fn sub(&self) -> &str {

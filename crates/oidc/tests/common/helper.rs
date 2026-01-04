@@ -110,7 +110,7 @@ pub async fn create_jwt_for_user(
   app_config: &AppConfig,
   user: &users::Model,
   client_id: &str,
-  audience: &str,
+  audience: &[&str],
   scope: &str,
 ) -> Result<Token, Box<dyn Error>> {
   let jwk_model = match get_jwk_for_sign_and_verify(db).await {
@@ -129,7 +129,7 @@ pub async fn create_jwt_for_user(
     jwk_model,
     user.clone(),
     client_id.to_owned(),
-    audience.to_owned(),
+    audience.into_iter().map(ToString::to_string).collect(),
     scope.to_owned(),
     "urn:ietf:params:oauth:token-type:access_token".to_owned(),
   )

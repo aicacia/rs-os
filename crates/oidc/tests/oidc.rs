@@ -345,7 +345,7 @@ async fn test_introspect_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -387,7 +387,7 @@ async fn test_register_client_endpoint_with_auth() -> Result<(), Box<dyn Error>>
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -438,7 +438,7 @@ async fn test_user_info_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -477,7 +477,7 @@ async fn test_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -518,7 +518,7 @@ async fn test_client_allowed_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -552,7 +552,7 @@ async fn test_approve_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -594,7 +594,7 @@ async fn test_authorize_client_endpoint_with_auth() -> Result<(), Box<dyn Error>
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -639,7 +639,7 @@ async fn test_user_info_response_contains_required_claims() -> Result<(), Box<dy
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -686,7 +686,7 @@ async fn test_client_endpoint_returns_valid_client_object() -> Result<(), Box<dy
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -789,7 +789,7 @@ async fn test_register_client_requires_admin_permissions() -> Result<(), Box<dyn
     &config,
     &regular_user,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid",
   )
   .await?;
@@ -913,7 +913,7 @@ async fn test_authorize_client_validates_scopes() -> Result<(), Box<dyn Error>> 
     &config,
     &user,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid",
   )
   .await?;
@@ -1139,7 +1139,7 @@ async fn test_introspect_returns_token_metadata() -> Result<(), Box<dyn Error>> 
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid profile",
   )
   .await?;
@@ -1188,7 +1188,7 @@ async fn test_introspect_endpoint_with_invalid_token() -> Result<(), Box<dyn Err
     &config,
     &admin,
     &client.client_id,
-    "test_audience",
+    &["test_audience"],
     "openid",
   )
   .await?;

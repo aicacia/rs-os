@@ -28,7 +28,7 @@ pub async fn create_user_token(
   jwk_model: os_oidc_model::entities::jwks::Model,
   user: users::Model,
   client_id: String,
-  audience: String,
+  audience: Vec<String>,
   scope: String,
   issued_token_type: String,
 ) -> Result<Token, HttpError> {
@@ -228,7 +228,7 @@ pub(crate) async fn create_user_authorization_code_token(
   app_config: &AppConfig,
   user_id: i64,
   client_id: String,
-  audience: String,
+  audience: Vec<String>,
   scope: String,
   code_challenge: String,
   code_challenge_method: String,

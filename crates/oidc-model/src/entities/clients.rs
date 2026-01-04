@@ -1,5 +1,5 @@
 use sea_orm::entity::prelude::*;
-use sea_orm::{ConnectionTrait, Order, QueryOrder, Set, TransactionTrait};
+use sea_orm::{ConnectionTrait, Order, QueryOrder, QuerySelect, Set, TransactionTrait};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "clients")]
@@ -83,6 +83,43 @@ pub async fn get_client_by_client_id(
 pub async fn list_clients(db: &DatabaseConnection) -> Result<Vec<Model>, DbErr> {
   Entity::find()
     .order_by(Column::Id, Order::Asc)
+    .all(db)
+    .await
+}
+
+pub async fn get_distinct_grant_types(db: &DatabaseConnection) -> Result<Vec<String>, DbErr> {
+  Entity::find()
+    .select_only()
+    .column(Column::GrantTypes)
+    .into_tuple::<String>()
+    .all(db)
+    .await
+}
+
+pub async fn get_distinct_response_types(db: &DatabaseConnection) -> Result<Vec<String>, DbErr> {
+  Entity::find()
+    .select_only()
+    .column(Column::ResponseTypes)
+    .into_tuple::<String>()
+    .all(db)
+    .await
+}
+
+pub async fn get_distinct_scopes(db: &DatabaseConnection) -> Result<Vec<String>, DbErr> {
+  Entity::find()
+    .select_only()
+    .column(Column::Scopes)
+    .into_tuple::<String>()
+    .all(db)
+    .await
+}
+
+pub async fn get_distinct_auth_methods(db: &DatabaseConnection) -> Result<Vec<String>, DbErr> {
+  Entity::find()
+    .select_only()
+    .column(Column::AuthMethod)
+    .distinct()
+    .into_tuple::<String>()
     .all(db)
     .await
 }

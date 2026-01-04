@@ -9,7 +9,7 @@ pub struct BasicClaims {
   pub iss: String,
   pub user: i64,
   pub client: String,
-  pub aud: String,
+  pub aud: Vec<String>,
   pub sub: String,
   pub scope: String,
 }
@@ -22,7 +22,7 @@ pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
   fn iss(&self) -> &str;
   fn user(&self) -> i64;
   fn client(&self) -> &str;
-  fn aud(&self) -> &str;
+  fn aud(&self) -> &[String];
   fn sub(&self) -> &str;
   fn scope(&self) -> &str;
 
@@ -53,7 +53,7 @@ impl Claims for BasicClaims {
   fn client(&self) -> &str {
     &self.client
   }
-  fn aud(&self) -> &str {
+  fn aud(&self) -> &[String] {
     &self.aud
   }
   fn sub(&self) -> &str {
