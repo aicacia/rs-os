@@ -57,11 +57,23 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
-          push: true
+          push: false
+          load: true
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
             RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
+
+      - name: Save image to tar
+        run: |
+          docker save ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} -o ${{ matrix.project }}-${{ steps.prep.outputs.platform_tag }}.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.project }}-${{ steps.prep.outputs.platform_tag }}
+          path: ${{ matrix.project }}-${{ steps.prep.outputs.platform_tag }}.tar
+          retention-days: 1
 
   manifest-individual:
     name: Create service manifests
@@ -90,6 +102,40 @@ jobs:
         id: prep
         run: |
           echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Download linux-amd64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.project }}-linux-amd64
+
+      - name: Download linux-arm64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.project }}-linux-arm64
+
+      - name: Download linux-arm-v7 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.project }}-linux-arm-v7
+
+      - name: Download linux-386 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.project }}-linux-386
+
+      - name: Load images
+        run: |
+          docker load -i ${{ matrix.project }}-linux-amd64.tar
+          docker load -i ${{ matrix.project }}-linux-arm64.tar
+          docker load -i ${{ matrix.project }}-linux-arm-v7.tar
+          docker load -i ${{ matrix.project }}-linux-386.tar
+
+      - name: Push images to registry
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-amd64
+          docker push ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-arm64
+          docker push ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-arm-v7
+          docker push ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-386
 
       - name: Create and push manifest for ${{ matrix.project }}
         run: |
@@ -142,7 +188,8 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
-          push: true
+          push: false
+          load: true
           tags: ghcr.io/${{ github.repository_owner }}/os-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os-ui
@@ -154,12 +201,24 @@ jobs:
           context: .
           file: ./Dockerfile.ui
           platforms: ${{ matrix.platform }}
-          push: true
+          push: false
+          load: true
           tags: ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
             BASE=ghcr.io/${{ github.repository_owner }}/os-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
             RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
+
+      - name: Save image to tar
+        run: |
+          docker save ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} -o os-${{ matrix.project }}-ui-${{ steps.prep.outputs.platform_tag }}.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: os-${{ matrix.project }}-ui-${{ steps.prep.outputs.platform_tag }}
+          path: os-${{ matrix.project }}-ui-${{ steps.prep.outputs.platform_tag }}.tar
+          retention-days: 1
 
   manifest-ui:
     name: Create UI manifests
@@ -187,6 +246,40 @@ jobs:
         id: prep
         run: |
           echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Download linux-amd64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-${{ matrix.project }}-ui-linux-amd64
+
+      - name: Download linux-arm64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-${{ matrix.project }}-ui-linux-arm64
+
+      - name: Download linux-arm-v7 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-${{ matrix.project }}-ui-linux-arm-v7
+
+      - name: Download linux-386 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-${{ matrix.project }}-ui-linux-386
+
+      - name: Load images
+        run: |
+          docker load -i os-${{ matrix.project }}-ui-linux-amd64.tar
+          docker load -i os-${{ matrix.project }}-ui-linux-arm64.tar
+          docker load -i os-${{ matrix.project }}-ui-linux-arm-v7.tar
+          docker load -i os-${{ matrix.project }}-ui-linux-386.tar
+
+      - name: Push images to registry
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-amd64
+          docker push ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-arm64
+          docker push ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-arm-v7
+          docker push ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-386
 
       - name: Create and push manifest for os-${{ matrix.project }}-ui
         run: |
@@ -236,11 +329,23 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
-          push: true
+          push: false
+          load: true
           tags: ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os
             RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
+
+      - name: Save image to tar
+        run: |
+          docker save ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} -o os-${{ steps.prep.outputs.platform_tag }}.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: os-${{ steps.prep.outputs.platform_tag }}
+          path: os-${{ steps.prep.outputs.platform_tag }}.tar
+          retention-days: 1
 
   manifest-unified:
     name: Create unified manifest
@@ -262,6 +367,40 @@ jobs:
         id: prep
         run: |
           echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Download linux-amd64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-linux-amd64
+
+      - name: Download linux-arm64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-linux-arm64
+
+      - name: Download linux-arm-v7 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-linux-arm-v7
+
+      - name: Download linux-386 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: os-linux-386
+
+      - name: Load images
+        run: |
+          docker load -i os-linux-amd64.tar
+          docker load -i os-linux-arm64.tar
+          docker load -i os-linux-arm-v7.tar
+          docker load -i os-linux-386.tar
+
+      - name: Push images to registry
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-amd64
+          docker push ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-arm64
+          docker push ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-arm-v7
+          docker push ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-386
 
       - name: Create and push manifest for os
         run: |
