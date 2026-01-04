@@ -49,6 +49,7 @@ jobs:
         run: |
           PLATFORM_TAG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
           echo "platform_tag=${PLATFORM_TAG}" >> $GITHUB_OUTPUT
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Build ${{ matrix.project }} for ${{ matrix.platform }}
         uses: docker/build-push-action@v6
@@ -57,7 +58,7 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
             RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
@@ -85,14 +86,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Prepare short SHA
+        id: prep
+        run: |
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Create and push manifest for ${{ matrix.project }}
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }} \
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-amd64 \
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm64 \
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm-v7 \
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-386
+            -t ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }} \
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-amd64 \
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-arm64 \
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-arm-v7 \
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ steps.prep.outputs.short_sha }}-linux-386
 
   build-ui:
     name: Build UI images
@@ -128,6 +134,7 @@ jobs:
         run: |
           PLATFORM_TAG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
           echo "platform_tag=${PLATFORM_TAG}" >> $GITHUB_OUTPUT
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Build base UI image (os-ui) for ${{ matrix.platform }}
         uses: docker/build-push-action@v6
@@ -136,7 +143,7 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/os-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
+          tags: ghcr.io/${{ github.repository_owner }}/os-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os-ui
             RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
@@ -148,10 +155,10 @@ jobs:
           file: ./Dockerfile.ui
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
+          tags: ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=${{ matrix.project }}
-            BASE=ghcr.io/${{ github.repository_owner }}/os-ui:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
+            BASE=ghcr.io/${{ github.repository_owner }}/os-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
             RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
 
   manifest-ui:
@@ -176,14 +183,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Prepare short SHA
+        id: prep
+        run: |
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Create and push manifest for os-${{ matrix.project }}-ui
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }} \
-            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-amd64 \
-            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-arm64 \
-            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-arm-v7 \
-            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-386
+            -t ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }} \
+            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-amd64 \
+            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-arm64 \
+            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-arm-v7 \
+            ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-linux-386
 
   build-unified:
     name: Build unified image
@@ -216,6 +228,7 @@ jobs:
         run: |
           PLATFORM_TAG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
           echo "platform_tag=${PLATFORM_TAG}" >> $GITHUB_OUTPUT
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Build unified image for ${{ matrix.platform }}
         uses: docker/build-push-action@v6
@@ -224,7 +237,7 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-${{ steps.prep.outputs.platform_tag }}
+          tags: ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
             PROJECT=os
             RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
@@ -245,40 +258,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Prepare short SHA
+        id: prep
+        run: |
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Create and push manifest for os
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }} \
-            ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-amd64 \
-            ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm64 \
-            ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm-v7 \
-            ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-386
-
-  delete-old-versions:
-    name: Delete untagged images
-    needs:
-      - manifest-individual
-      - manifest-ui
-      - manifest-unified
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - os-oidc
-          - os-oidc-admin
-          - os-signaling
-          - os-oidc-ui
-          - os-oidc-admin-ui
-          - os
-    steps:
-      - name: Delete untagged versions for ${{ matrix.package }}
-        uses: actions/delete-package-versions@v5
-        with:
-          owner: ${{ github.repository_owner }}
-          package-name: ${{ matrix.package }}
-          package-type: container
-          min-versions-to-keep: 1
-          delete-only-untagged-versions: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+            -t ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }} \
+            ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-amd64 \
+            ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-arm64 \
+            ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-arm-v7 \
+            ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-linux-386
