@@ -94,16 +94,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-arm-v7 \
             ghcr.io/${{ github.repository_owner }}/${{ matrix.project }}:${{ github.sha }}-linux-386
 
-      - name: Delete individual platform images
-        if: always()
-        run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-386; do
-            curl -X DELETE \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://ghcr.io/v2/${{ github.repository_owner }}/${{ matrix.project }}/manifests/${{ github.sha }}-${platform}" || true
-          done
-
   build-ui:
     name: Build UI images
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -195,16 +185,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-arm-v7 \
             ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ github.sha }}-linux-386
 
-      - name: Delete individual platform images
-        if: always()
-        run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-386; do
-            curl -X DELETE \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://ghcr.io/v2/${{ github.repository_owner }}/os-${{ matrix.project }}-ui/manifests/${{ github.sha }}-${platform}" || true
-          done
-
   build-unified:
     name: Build unified image
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -274,16 +254,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-arm-v7 \
             ghcr.io/${{ github.repository_owner }}/os:${{ github.sha }}-linux-386
 
-      - name: Delete individual platform images
-        if: always()
-        run: |
-          for platform in linux-amd64 linux-arm64 linux-arm-v7 linux-386; do
-            curl -X DELETE \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://ghcr.io/v2/${{ github.repository_owner }}/os/manifests/${{ github.sha }}-${platform}" || true
-          done
-
   delete-old-versions:
     name: Delete untagged images
     needs:
@@ -309,6 +279,6 @@ jobs:
           owner: ${{ github.repository_owner }}
           package-name: ${{ matrix.package }}
           package-type: container
-          min-versions-to-keep: 0
+          min-versions-to-keep: 1
           delete-only-untagged-versions: true
           token: ${{ secrets.GITHUB_TOKEN }}
