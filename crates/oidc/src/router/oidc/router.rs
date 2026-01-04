@@ -30,7 +30,6 @@ use crate::{
   router::{
     common::{
       constants::{
-        SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_OFFLINE, SCOPE_OPENID, SCOPE_PHONE, SCOPE_PROFILE,
         TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
         TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
       },
@@ -138,15 +137,78 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     }
   }
 
-  let mut response_modes_supported = vec![
+  // Query all clients to get unified supported values
+  let all_clients = match clients::list_clients(&state.database_connection).await {
+    Ok(clients) => clients,
+    Err(e) => {
+      log::error!("error getting clients: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
+
+  let mut grant_types_supported = HashSet::new();
+  let mut response_types_supported = HashSet::new();
+  let mut scopes_supported = HashSet::new();
+  let mut token_endpoint_auth_methods_supported = HashSet::new();
+
+  // Always include the base response mode supported by the server
+  let mut response_modes_supported = HashSet::from([
     "query".to_owned(),
     "fragment".to_owned(),
     "form_post".to_owned(),
-  ];
+  ]);
 
   if state.config.ui_url.is_some() {
-    response_modes_supported.push("web_message".to_owned());
+    response_modes_supported.insert("web_message".to_owned());
   }
+
+  // Aggregate supported values from all clients
+  for client in all_clients {
+    // Aggregate grant types
+    let client_grant_types: Vec<String> = json_to_string_vec(&client.grant_types);
+    for grant_type in client_grant_types {
+      grant_types_supported.insert(grant_type);
+    }
+
+    // Aggregate response types
+    let client_response_types: Vec<String> = json_to_string_vec(&client.response_types);
+    for response_type in client_response_types {
+      response_types_supported.insert(response_type);
+    }
+
+    // Aggregate scopes
+    let client_scopes: Vec<String> = json_to_string_vec(&client.scopes);
+    for scope in client_scopes {
+      scopes_supported.insert(scope);
+    }
+
+    // Aggregate auth methods
+    token_endpoint_auth_methods_supported.insert(client.auth_method.clone());
+  }
+
+  // Ensure standard claims are always included (using HashSet to avoid duplicates)
+  let claims_supported = HashSet::from([
+    "sub".to_owned(),
+    "aud".to_owned(),
+    "exp".to_owned(),
+    "iat".to_owned(),
+    "iss".to_owned(),
+    "name".to_owned(),
+    "family_name".to_owned(),
+    "given_name".to_owned(),
+    "email".to_owned(),
+    "email_verified".to_owned(),
+    "phone".to_owned(),
+    "phone_verified".to_owned(),
+  ]);
+
+  // Code challenge method is a server capability, not client-specific
+  let code_challenge_methods_supported = HashSet::from(["S256".to_owned()]);
+
+  // Subject types are server capabilities
+  let subject_types_supported = HashSet::from(["public".to_owned(), "pairwise".to_owned()]);
 
   axum::Json(OpenIdConfiguration {
     authorization_endpoint: format!("{}/authorize", api_url),
@@ -157,45 +219,17 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     revocation_endpoint: Some(format!("{}/revoke", api_url)),
     registration_endpoint: Some(format!("{}/register-client", api_url)),
     jwks_uri: format!("{}/.well-known/jwks.json", api_url),
-    response_types_supported: vec!["code".to_owned(), "none".to_owned()],
-    response_modes_supported,
-    subject_types_supported: vec!["public".to_owned(), "pairwise".to_owned()],
+    response_types_supported: response_types_supported.into_iter().collect(),
+    response_modes_supported: response_modes_supported.into_iter().collect(),
+    subject_types_supported: subject_types_supported.into_iter().collect(),
     id_token_signing_alg_values_supported: signing_algs.into_iter().collect(),
-    scopes_supported: vec![
-      SCOPE_OPENID.to_owned(),
-      SCOPE_PROFILE.to_owned(),
-      SCOPE_ADDRESS.to_owned(),
-      SCOPE_OFFLINE.to_owned(),
-      SCOPE_EMAIL.to_owned(),
-      SCOPE_PHONE.to_owned(),
-    ],
-    token_endpoint_auth_methods_supported: vec![
-      "client_secret_post".to_owned(),
-      "client_secret_basic".to_owned(),
-      "client_secret_jwt".to_owned(),
-      "private_key_jwt".to_owned(),
-      "none".to_owned(),
-    ],
-    claims_supported: vec![
-      "sub".to_owned(),
-      "aud".to_owned(),
-      "exp".to_owned(),
-      "iat".to_owned(),
-      "iss".to_owned(),
-      "name".to_owned(),
-      "family_name".to_owned(),
-      "given_name".to_owned(),
-      "email".to_owned(),
-      "email_verified".to_owned(),
-      "phone".to_owned(),
-      "phone_verified".to_owned(),
-    ],
-    code_challenge_methods_supported: vec!["S256".to_owned()],
-    grant_types_supported: vec![
-      "password".to_owned(),
-      "authorization_code".to_owned(),
-      "refresh_token".to_owned(),
-    ],
+    scopes_supported: scopes_supported.into_iter().collect(),
+    token_endpoint_auth_methods_supported: token_endpoint_auth_methods_supported
+      .into_iter()
+      .collect(),
+    claims_supported: claims_supported.into_iter().collect(),
+    code_challenge_methods_supported: code_challenge_methods_supported.into_iter().collect(),
+    grant_types_supported: grant_types_supported.into_iter().collect(),
     issuer: api_url,
   })
   .into_response()

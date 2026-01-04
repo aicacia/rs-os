@@ -47,7 +47,7 @@ pub async fn setup() -> Result<
   if list_jwks(&database_connection).await?.is_empty() {
     let _ = create_jwk(
       &database_connection,
-      generate_jwk(app_config.token.default_jwt_algorithm)?,
+      generate_jwk(jsonwebtoken::Algorithm::EdDSA)?,
     )
     .await?;
   }

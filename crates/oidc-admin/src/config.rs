@@ -32,65 +32,12 @@ impl Default for PasswordConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
-pub struct UserConfig {
-  pub register_enabled: bool,
-  pub allow_passwords: bool,
-}
-
-impl Default for UserConfig {
-  fn default() -> Self {
-    Self {
-      register_enabled: false,
-      allow_passwords: true,
-    }
-  }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(default)]
-pub struct OAuth2 {
-  pub register_enabled: bool,
-  pub code_timeout_in_seconds: u64,
-}
-
-impl Default for OAuth2 {
-  fn default() -> Self {
-    Self {
-      register_enabled: false,
-      code_timeout_in_seconds: 60 * 5,
-    }
-  }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(default)]
-pub struct TokenConfig {
-  pub default_jwt_algorithm: jsonwebtoken::Algorithm,
-  pub expires_in_seconds: u64,
-  pub refresh_expires_in_seconds: u64,
-}
-
-impl Default for TokenConfig {
-  fn default() -> Self {
-    Self {
-      default_jwt_algorithm: jsonwebtoken::Algorithm::EdDSA,
-      expires_in_seconds: 3600,           // 1 hour
-      refresh_expires_in_seconds: 604800, // 1 week
-    }
-  }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(default)]
 pub struct AppConfig {
   pub server: ServerConfig,
   pub database: DatabaseConfig,
   pub log_level: String,
   pub env: Environment,
   pub password: PasswordConfig,
-  pub user: UserConfig,
-  pub oauth2: OAuth2,
-  pub token: TokenConfig,
   pub url: Option<String>,
   pub ui_url: Option<String>,
 }
@@ -103,9 +50,6 @@ impl Default for AppConfig {
       log_level: "DEBUG".to_owned(),
       env: Environment::default(),
       password: PasswordConfig::default(),
-      user: UserConfig::default(),
-      oauth2: OAuth2::default(),
-      token: TokenConfig::default(),
       url: None,
       ui_url: None,
     }
