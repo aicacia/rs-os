@@ -2,6 +2,7 @@
 	"name": "@aicacia/os-example",
 	"version": "0.1.0",
 	"description": "example package for Aicacia OS",
+	"type": "module",
 	"keywords": [
 		"aicacia",
 		"os",
@@ -14,8 +15,8 @@
 	"main": "cjs/index.js",
 	"types": "types/index.d.ts",
 	"scripts": {
-		"buildTSC": "tsc",
-		"buildESM": "tsc -b tsconfig.esm.json",
+		"buildTSC": "tsc -b tsconfig.cjs.json",
+		"buildESM": "tsc",
 		"buildBrowser": "rollup -c",
 		"build": "pnpm run clean && pnpm run buildTSC && pnpm run buildESM && pnpm run buildBrowser",
 		"doc": "typedoc",

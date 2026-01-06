@@ -1,18 +1,24 @@
-import prettier from 'eslint-config-prettier';
-import { fileURLToPath } from 'node:url';
-import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import ts from 'typescript-eslint';
 
-const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
-
+/**
+ * Base ESLint configuration for all TypeScript projects in the monorepo.
+ * Import and spread this in your project's eslint.config.js:
+ * 
+ * import baseConfig from '../../eslint.config.base.js';
+ * 
+ * export default defineConfig(
+ *   ...baseConfig,
+ *   {
+ *     // Your project-specific overrides here
+ *   }
+ * );
+ */
 export default defineConfig(
-  includeIgnoreFile(gitignorePath),
   js.configs.recommended,
   ...ts.configs.recommended,
-  prettier,
   {
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
