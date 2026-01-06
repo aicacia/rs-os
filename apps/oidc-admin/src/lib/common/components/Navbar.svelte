@@ -1,13 +1,12 @@
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { Permission, type OpenIdClaims } from '../openapi/oidc-admin';
+	import { Permission, type UserInfo } from '../openapi/oidc-admin';
 	import { getUserManager, hasPermission } from '../state/user.svelte';
 	import { ChevronLeft, LogOut } from '@lucide/svelte';
-	import { goto } from '$app/navigation';
 
 	export interface SidebarProps {
-		user: OpenIdClaims;
+		user: UserInfo;
 		children: Snippet<[]>;
 	}
 </script>

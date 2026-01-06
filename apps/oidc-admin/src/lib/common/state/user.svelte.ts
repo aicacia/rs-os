@@ -2,7 +2,7 @@ import { UserManager, type UserManagerSettings } from 'oidc-client-ts';
 import { browser } from '$app/environment';
 import icon256x256Png from '$lib/assets/icon256x256.png';
 import { env } from '$env/dynamic/public';
-import { Permission, type UserInfo } from '../openapi/oidc';
+import { Permission, type UserInfo } from '../openapi/oidc-admin';
 import { setAuthToken } from '../openapi';
 
 const userSettings = browser
