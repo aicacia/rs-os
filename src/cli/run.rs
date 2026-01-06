@@ -110,6 +110,13 @@ pub async fn run() -> io::Result<()> {
     },
   );
 
+  let service_discovery_openapi_router = os_service_discovery::router::create_openapi_router(
+    os_service_discovery::router::entity::RouterState {
+      config: Arc::new(app_config.service_discovery_api.clone()),
+    },
+    None,
+  );
+
   let signaling_openapi_router = os_signaling::router::create_openapi_router(
     os_signaling::router::entity::RouterState {
       pubsub,
@@ -123,6 +130,7 @@ pub async fn run() -> io::Result<()> {
     .merge(oidc_openapi_router)
     .merge(oidc_admin_openapi_router)
     .merge(signaling_openapi_router)
+    .merge(service_discovery_openapi_router)
     .layer(CorsLayer::very_permissive())
     .layer(TraceLayer::new_for_http())
     .merge(oidc_ui_router.reset_fallback())

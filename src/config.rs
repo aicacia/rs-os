@@ -43,6 +43,7 @@ pub struct AppConfig {
   pub oidc_admin_api: os_oidc_admin::config::AppConfig,
   pub oidc_admin_ui: os_ui::config::AppConfig,
   pub fs_api: os_fs::config::AppConfig,
+  pub service_discovery_api: os_service_discovery::config::AppConfig,
   pub signaling_api: os_signaling::config::AppConfig,
   pub log_level: String,
   pub url: String,
@@ -59,6 +60,7 @@ impl Default for AppConfig {
       oidc_admin_api: Default::default(),
       oidc_admin_ui: Default::default(),
       fs_api: Default::default(),
+      service_discovery_api: Default::default(),
       signaling_api: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: "http://localhost:3000".to_owned(),
@@ -87,6 +89,8 @@ impl AppConfig {
     }
     if self.oidc_api.ui_url.is_none() {
       self.oidc_api.ui_url = Some(format!("{}{}", self.url, OIDC_UI_URL_PREFIX));
+    }
+    if self.oidc_ui.url.is_none() {
       self.oidc_ui.url = Some(format!("{}{}", self.url, OIDC_UI_URL_PREFIX));
     }
 
@@ -114,6 +118,8 @@ impl AppConfig {
     }
     if self.oidc_admin_api.ui_url.is_none() {
       self.oidc_admin_api.ui_url = Some(format!("{}{}", self.url, OIDC_ADMIN_UI_URL_PREFIX));
+    }
+    if self.oidc_admin_ui.url.is_none() {
       self.oidc_admin_ui.url = Some(format!("{}{}", self.url, OIDC_ADMIN_UI_URL_PREFIX));
     }
 
@@ -142,6 +148,13 @@ impl AppConfig {
     if self.signaling_api.url.is_none() {
       self.signaling_api.url = Some(format!("{}{}", self.url, SIGNALING_API_URL_PREFIX));
     }
+
+    self.service_discovery_api.services.fs_api = self.fs_api.url.clone();
+    self.service_discovery_api.services.oidc_api = self.oidc_api.url();
+    self.service_discovery_api.services.oidc_ui = self.oidc_ui.url();
+    self.service_discovery_api.services.oidc_admin_api = Some(self.oidc_admin_api.url());
+    self.service_discovery_api.services.oidc_admin_ui = Some(self.oidc_admin_ui.url());
+    self.service_discovery_api.services.signaling_api = Some(self.signaling_api.url());
   }
 }
 

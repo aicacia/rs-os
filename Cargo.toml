@@ -23,6 +23,7 @@ members = [
   "crates/oidc",
   "crates/oidc-admin",
   "crates/oidc-model",
+  "crates/service-discovery",
   "crates/signaling",
   "crates/ui",
 ]
@@ -49,6 +50,7 @@ os-fs = { version = "0.1", path = "./crates/fs", default-features = false }
 os-oidc = { version = "0.1", path = "./crates/oidc", default-features = false }
 os-oidc-admin = { version = "0.1", path = "./crates/oidc-admin", default-features = false }
 os-oidc-model = { version = "0.1", path = "./crates/oidc-model", default-features = false }
+os-service-discovery = { version = "0.1", path = "./crates/service-discovery", default-features = false }
 os-signaling = { version = "0.1", path = "./crates/signaling", default-features = false }
 os-ui = { version = "0.1", path = "./crates/ui", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
@@ -64,7 +66,6 @@ tower-http = { version = "0.6", features = [
   "trace",
   "compression-gzip",
 ], default-features = false }
-redis = { version = "1.0", default-features = false }
 tracing = { version = "0.1", features = ["std"], default-features = false }
 tracing-log = { version = "0.2", default-features = false }
 tracing-subscriber = { version = "0.3", features = [

@@ -25,6 +25,15 @@ impl Default for AppConfig {
   }
 }
 
+impl AppConfig {
+  pub fn url(&self) -> String {
+    self
+      .url
+      .to_owned()
+      .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
+  }
+}
+
 impl<'a> TryFrom<&'a Path> for AppConfig {
   type Error = config::ConfigError;
 

@@ -1874,9 +1874,9 @@ dependencies = [
  "os-oidc",
  "os-oidc-admin",
  "os-oidc-model",
+ "os-service-discovery",
  "os-signaling",
  "os-ui",
- "redis",
  "serde",
  "tokio",
  "tokio-util",
@@ -1926,19 +1926,14 @@ name = "os-fs"
 version = "0.1.0"
 dependencies = [
  "axum",
- "build-time",
- "chrono",
  "clap",
  "clap_complete",
  "config",
  "dotenvy",
- "hashbrown 0.16.1",
  "http",
- "jsonwebtoken",
  "log",
  "os-api",
  "os-cli",
- "rand 0.8.5",
  "scopeguard",
  "serde",
  "serde_json",
@@ -1953,7 +1948,6 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "uuid",
- "validator",
 ]
 
 [[package]]
@@ -1962,14 +1956,12 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "base64",
- "build-time",
  "chrono",
  "clap",
  "clap_complete",
  "config",
  "dotenvy",
  "form_urlencoded",
- "hashbrown 0.16.1",
  "hex",
  "http",
  "jsonwebtoken",
@@ -2002,7 +1994,6 @@ name = "os-oidc-admin"
 version = "0.1.0"
 dependencies = [
  "axum",
- "build-time",
  "chrono",
  "clap",
  "clap_complete",
@@ -2061,13 +2052,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "os-service-discovery"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap",
+ "clap_complete",
+ "config",
+ "dotenvy",
+ "http",
+ "log",
+ "os-api",
+ "os-cli",
+ "scopeguard",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
+ "url",
+ "utoipa",
+ "utoipa-axum",
+ "uuid",
+]
+
+[[package]]
 name = "os-signaling"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
- "build-time",
- "chrono",
  "clap",
  "clap_complete",
  "config",
@@ -2075,7 +2093,6 @@ dependencies = [
  "dotenvy",
  "futures-util",
  "http",
- "jsonwebtoken",
  "log",
  "os-api",
  "os-cli",
