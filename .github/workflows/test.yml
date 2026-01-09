@@ -48,16 +48,6 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
-      - name: Create .env file for os-oidc
-        working-directory: apps/oidc
-        env:
-          PUBLIC_OS_OIDC_API_URL: "http://localhost:3000/oidc/api"
-          PUBLIC_URL: "http://localhost:5174/oidc"
-          VITE_BASE_PATH: "/oidc"
-        run: |
-          echo "PUBLIC_OS_OIDC_API_URL=${PUBLIC_OS_OIDC_API_URL}" > .env
-          echo "PUBLIC_URL=${PUBLIC_URL}" >> .env
-          echo "VITE_BASE_PATH=${VITE_BASE_PATH}" >> .env
       - name: Test os-oidc (build)
         run: pnpm --filter os-oidc build
 
@@ -78,17 +68,5 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
-      - name: Create .env file for os-oidc-admin
-        working-directory: apps/oidc-admin
-        env:
-          PUBLIC_OS_OIDC_API_URL: "http://localhost:3000/oidc/api"
-          PUBLIC_OS_ADMIN_API_URL: "http://localhost:3000/oidc-admin/api"
-          PUBLIC_URL: "http://localhost:5174/oidc-admin"
-          VITE_BASE_PATH: "/oidc-admin"
-        run: |
-          echo "PUBLIC_OS_OIDC_API_URL=${PUBLIC_OS_OIDC_API_URL}" > .env
-          echo "PUBLIC_OS_ADMIN_API_URL=${PUBLIC_OS_ADMIN_API_URL}" >> .env
-          echo "PUBLIC_URL=${PUBLIC_URL}" >> .env
-          echo "VITE_BASE_PATH=${VITE_BASE_PATH}" >> .env
       - name: Test os-oidc-admin (build)
         run: pnpm --filter os-oidc-admin build

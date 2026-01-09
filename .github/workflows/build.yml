@@ -2,6 +2,8 @@ name: Build Images
 
 env:
   RUST_IMAGE_DEFAULT: rust:1.92-trixie
+  NODE_VERSION: "24"
+  PNPM_VERSION: "10"
 
 on:
   workflow_run:
@@ -324,18 +326,29 @@ jobs:
           echo "platform_tag=${PLATFORM_TAG}" >> $GITHUB_OUTPUT
           echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
-      - name: Build unified image for ${{ matrix.platform }}
+      - name: Build unified base os image for ${{ matrix.platform }}
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/os-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
+          build-args: |
+            PROJECT=os
+            RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
+
+      - name: Build unified image for ${{ matrix.platform }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.unified
+          platforms: ${{ matrix.platform }}
           push: false
           load: true
           tags: ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
           build-args: |
-            PROJECT=os
-            RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
+            BASE=ghcr.io/${{ github.repository_owner }}/os-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
 
       - name: Save image to tar
         run: |

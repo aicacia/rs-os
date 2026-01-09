@@ -1,0 +1,20 @@
+ARG BASE=os:local
+
+FROM --platform=linux/amd64 node:24-trixie-slim AS builder
+
+RUN npm install -g pnpm@10
+
+WORKDIR /app
+
+COPY . .
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter os-oidc build
+RUN pnpm --filter os-oidc-admin build
+
+FROM ${BASE}
+
+WORKDIR /app
+
+COPY --from=builder /app/apps/oidc/build /app/apps/oidc/build
+COPY --from=builder /app/apps/oidc-admin/build /app/apps/oidc-admin/build
