@@ -113,7 +113,7 @@ impl PubSubAdapterInternal for RedisPubSub {
     Ok(())
   }
 
-  async fn publish(&self, room: &str, payload: &str) -> io::Result<()> {
+  async fn broadcast(&self, room: &str, payload: &str) -> io::Result<()> {
     let client = self.client.clone();
     let room = room.to_owned();
     let payload = payload.to_owned();
@@ -129,13 +129,44 @@ impl PubSubAdapterInternal for RedisPubSub {
       .map_err(|e| io::Error::other(format!("Failed to publish message: {}", e)))
   }
 
+  async fn send(&self, room: &str, user_id: &str, payload: &str) -> io::Result<()> {
+    let client = self.client.clone();
+    let room = room.to_owned();
+    let user_id = user_id.to_owned();
+    let payload = payload.to_owned();
+
+    let users_key = format!("{room}:users");
+
+    let mut conn = client
+      .get_multiplexed_async_connection()
+      .await
+      .map_err(|e| io::Error::other(format!("Failed to get Redis connection: {}", e)))?;
+
+    let is_member: bool = conn
+      .sismember(&users_key, &user_id)
+      .await
+      .map_err(|e| io::Error::other(format!("Failed to check user membership: {}", e)))?;
+
+    if is_member {
+      let user_channel = format!("{room}:{user_id}");
+      conn
+        .publish::<_, _, ()>(&user_channel, payload)
+        .await
+        .map_err(|e| io::Error::other(format!("Failed to send message to user: {}", e)))?;
+    }
+
+    Ok(())
+  }
+
   async fn subscribe(
     &self,
     room: &str,
+    user_id: &str,
     cancellation_token: CancellationToken,
   ) -> io::Result<MessageStream> {
     let client = self.client.clone();
     let room = room.to_owned();
+    let user_id = user_id.to_owned();
 
     let mut pubsub = client
       .get_async_pubsub()
@@ -146,6 +177,12 @@ impl PubSubAdapterInternal for RedisPubSub {
       .subscribe(&room)
       .await
       .map_err(|e| io::Error::other(format!("Failed to subscribe to room channel: {}", e)))?;
+
+    let user_channel = format!("{room}:{user_id}");
+    pubsub
+      .subscribe(&user_channel)
+      .await
+      .map_err(|e| io::Error::other(format!("Failed to subscribe to user channel: {}", e)))?;
 
     let (tx, rx) = mpsc::unbounded_channel();
 

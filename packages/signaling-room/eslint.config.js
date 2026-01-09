@@ -7,6 +7,7 @@ import globals from 'globals';
 import ts from 'typescript-eslint';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+const tsconfigRootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig(
   includeIgnoreFile(gitignorePath),
@@ -17,7 +18,9 @@ export default defineConfig(
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
       parserOptions: {
-        projectService: true
+        projectService: true,
+        allowDefaultProject: true,
+        tsconfigRootDir
       }
     },
     rules: {

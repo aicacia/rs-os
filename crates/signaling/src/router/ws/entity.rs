@@ -11,14 +11,26 @@ pub struct WSRoomRequest {
   pub room: String,
 }
 
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ClientMessage {
+  Send {
+    to: String,
+    payload: serde_json::Value,
+  },
+  Broadcast {
+    payload: serde_json::Value,
+  },
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
-pub enum RoomMessage {
+pub enum ServerMessage {
   Join {
     from: String,
   },
-  Peers {
-    user_id: String,
+  Welcome {
+    id: String,
     peers: Vec<String>,
   },
   Message {

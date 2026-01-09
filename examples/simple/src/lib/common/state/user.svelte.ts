@@ -13,20 +13,13 @@ const userSettings = browser
 			scope: 'openid profile offline',
 			response_mode: 'query',
 			loadUserInfo: true,
-			popup_redirect_uri: `${env.PUBLIC_URL}/popup-callback`,
-			popup_post_logout_redirect_uri: `${env.PUBLIC_URL}/popup-callback`,
-			silent_redirect_uri: `${env.PUBLIC_URL}/silent-callback`,
 			automaticSilentRenew: true,
 			filterProtocolClaims: true,
 			extraQueryParams: {
 				registration: JSON.stringify({
 					name: 'Simple',
 					client_id: `${env.PUBLIC_URL}`,
-					redirect_uris: [
-						`${env.PUBLIC_URL}/callback`,
-						`${env.PUBLIC_URL}/popup-callback`,
-						`${env.PUBLIC_URL}/silent-callback`
-					],
+					redirect_uris: [`${env.PUBLIC_URL}/callback`],
 					post_logout_redirect_uris: [`${env.PUBLIC_URL}/logout`],
 					logo_uri: `${env.PUBLIC_URL}${icon256x256Png}`,
 					client_uri: `${env.PUBLIC_URL}`,

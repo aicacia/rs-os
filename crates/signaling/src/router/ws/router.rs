@@ -17,7 +17,7 @@ use crate::router::{
   entity::RouterState,
   ws::{
     constants::TAG,
-    entity::{RoomMessage, WSAuthorizationRequest, WSRoomRequest},
+    entity::{ClientMessage, ServerMessage, WSAuthorizationRequest, WSRoomRequest},
     pubsub::PubSub,
   },
 };
@@ -235,11 +235,11 @@ async fn handle_ws(
       );
     }
 
-    let leave_msg = RoomMessage::Leave {
+    let leave_msg = ServerMessage::Leave {
       from: user_id.clone(),
     };
     if let Ok(leave_json) = serde_json::to_string(&leave_msg)
-      && let Err(e) = pubsub.publish(&room, &leave_json).await
+      && let Err(e) = pubsub.broadcast(&room, &leave_json).await
     {
       log::error!(
         "Failed to publish leave message for room {} during cleanup: {}",
@@ -287,9 +287,9 @@ async fn handle_ws_inner(
   })?;
 
   pubsub
-    .publish(
+    .broadcast(
       &room,
-      &serde_json::to_string(&RoomMessage::Join {
+      &serde_json::to_string(&ServerMessage::Join {
         from: user_id.clone(),
       })
       .map_err(|e| {
@@ -307,8 +307,8 @@ async fn handle_ws_inner(
 
   if let Err(e) = ws_sender
     .send(Message::text(
-      serde_json::to_string(&RoomMessage::Peers {
-        user_id: user_id.clone(),
+      serde_json::to_string(&ServerMessage::Welcome {
+        id: user_id.clone(),
         peers,
       })
       .map_err(|e| {
@@ -325,7 +325,7 @@ async fn handle_ws_inner(
   let (tx, mut rx) = tokio::sync::mpsc::channel::<Message>(DEFAULT_BUFFER_CAPACITY);
 
   let mut pubsub_stream = pubsub
-    .subscribe(&room, cancellation_token.clone())
+    .subscribe(&room, &user_id, cancellation_token.clone())
     .await
     .map_err(|e| {
       log::error!("Failed to subscribe to room: {}", e);
@@ -348,18 +348,18 @@ async fn handle_ws_inner(
               break;
             };
 
-            if let Ok(room_msg) = serde_json::from_str::<RoomMessage>(&payload) {
-              match room_msg {
-                RoomMessage::Join { from: msg_user_id }
-                | RoomMessage::Leave { from: msg_user_id } => {
+            if let Ok(server_msg) = serde_json::from_str::<ServerMessage>(&payload) {
+              match server_msg {
+                ServerMessage::Join { from: msg_user_id }
+                | ServerMessage::Leave { from: msg_user_id } => {
                   if msg_user_id == pubsub_user_id {
                     continue;
                   }
                 }
-                RoomMessage::Peers { .. } => {
+                ServerMessage::Welcome { .. } => {
                   continue;
                 }
-                RoomMessage::Message { .. } => {}
+                ServerMessage::Message { .. } => {}
               }
             }
 
@@ -422,28 +422,49 @@ async fn handle_ws_inner(
 
         match msg {
           Ok(Message::Text(text)) => {
-            let payload = match serde_json::from_str::<serde_json::Value>(&text) {
-              Ok(payload) => payload,
+            let client_msg = match serde_json::from_str::<ClientMessage>(&text) {
+              Ok(msg) => msg,
               Err(e) => {
-                log::error!("Failed to parse message payload: {}", e);
+                log::error!("Failed to parse client message: {}", e);
                 continue;
               }
             };
 
-            let msg = RoomMessage::Message {
-              from: user_id.clone(),
-              payload,
-            };
-            let msg_json = match serde_json::to_string(&msg) {
-              Ok(json) => json,
-              Err(e) => {
-                log::error!("Failed to serialize message: {}", e);
-                continue;
-              }
-            };
+            match client_msg {
+              ClientMessage::Send { to, payload } => {
+                let server_msg = ServerMessage::Message {
+                  from: user_id.clone(),
+                  payload,
+                };
+                let msg_json = match serde_json::to_string(&server_msg) {
+                  Ok(json) => json,
+                  Err(e) => {
+                    log::error!("Failed to serialize message: {}", e);
+                    continue;
+                  }
+                };
 
-            if let Err(e) = pubsub.publish(&room, &msg_json).await {
-              log::error!("Failed to publish message: {}", e);
+                if let Err(e) = pubsub.send(&room, &to, &msg_json).await {
+                  log::error!("Failed to send message to user {}: {}", to, e);
+                }
+              }
+              ClientMessage::Broadcast { payload } => {
+                let server_msg = ServerMessage::Message {
+                  from: user_id.clone(),
+                  payload,
+                };
+                let msg_json = match serde_json::to_string(&server_msg) {
+                  Ok(json) => json,
+                  Err(e) => {
+                    log::error!("Failed to serialize message: {}", e);
+                    continue;
+                  }
+                };
+
+                if let Err(e) = pubsub.broadcast(&room, &msg_json).await {
+                  log::error!("Failed to publish broadcast message: {}", e);
+                }
+              }
             }
           }
           Ok(Message::Ping(payload)) => {

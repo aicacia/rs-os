@@ -9,10 +9,21 @@ import EventEmitter from 'eventemitter3';
 import { Peer, type SignalMessage } from '@aicacia/peer';
 import { Encoder, decode as cborXdecode } from 'cbor-x';
 
-type P2pMessage =
+type ClientMessage =
 	| {
-			type: 'peers';
-			from: string;
+			type: 'send';
+			to: string;
+			payload: unknown;
+	  }
+	| {
+			type: 'broadcast';
+			payload: unknown;
+	  };
+
+type ServerMessage =
+	| {
+			type: 'welcome';
+			id: string;
 			peers: string[];
 	  }
 	| {
@@ -41,13 +52,6 @@ type WelcomeSyncMessage = Message & {
 };
 
 type SyncMessage = ArriveSyncMessage | WelcomeSyncMessage | Message;
-
-type RoomSignalMessage = {
-	type: 'signal';
-	payload: SignalMessage;
-};
-
-type RoomMessage = RoomSignalMessage;
 
 interface WebRTCClientAdapterInternalEvents {
 	connect(): void;
@@ -216,9 +220,10 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 		peer.on('signal', async (signalPayload) => {
 			this.#websocket.send(
 				JSON.stringify({
-					type: 'signal',
+					type: 'send',
+					to: signalingId,
 					payload: signalPayload
-				} as RoomSignalMessage)
+				} as ClientMessage)
 			);
 		});
 		peer.on('data', (data) => {
@@ -257,11 +262,10 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 	#onWebSocketMessage = async (
 		data: string | ArrayBufferLike | Blob | ArrayBufferView<ArrayBufferLike>
 	) => {
-		const signalingMessage = JSON.parse(data as string) as P2pMessage;
-		const fromSignalingId = signalingMessage.from;
+		const signalingMessage = JSON.parse(data as string) as ServerMessage;
 
 		switch (signalingMessage.type) {
-			case 'peers': {
+			case 'welcome': {
 				try {
 					await Promise.all(
 						signalingMessage.peers.map((signalingId) => this.#createPeer(signalingId, true))
@@ -275,27 +279,21 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 				break;
 			}
 			case 'leave': {
-				const peer = this.#remotePeers.get(fromSignalingId);
+				const peer = this.#remotePeers.get(signalingMessage.from);
 				if (peer) {
 					peer.close();
 				}
 				break;
 			}
 			case 'message': {
-				const p2pPayload = signalingMessage.payload as RoomMessage;
+				const peer =
+					this.#remotePeers.get(signalingMessage.from) ??
+					(await this.#createPeer(signalingMessage.from, false));
 
-				switch (p2pPayload.type) {
-					case 'signal': {
-						const peer =
-							this.#remotePeers.get(fromSignalingId) ??
-							(await this.#createPeer(fromSignalingId, false));
-
-						if (peer) {
-							peer.signal(p2pPayload.payload as SignalMessage);
-						}
-						break;
-					}
+				if (peer) {
+					peer.signal(signalingMessage.payload as SignalMessage);
 				}
+				break;
 			}
 		}
 	};

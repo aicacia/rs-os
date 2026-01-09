@@ -1,12 +1,12 @@
 {
-	"name": "@aicacia/os-example",
+	"name": "@aicacia/signaling-room",
 	"version": "0.1.0",
-	"description": "example package for Aicacia OS",
+	"description": "Aicacia OS Signaling Room",
 	"type": "module",
 	"keywords": [
 		"aicacia",
-		"os",
-		"example"
+		"signaling",
+		"room"
 	],
 	"author": "Nathan Faucett",
 	"license": "(MIT OR Apache-2.0)",
@@ -45,15 +45,15 @@
 		"@types/benchmark": "^2.1.4",
 		"@types/tape": "^5.0.8",
 		"benchmark": "^2.1.4",
-		"husky": "^9.0.11",
-		"shx": "^0.3.4",
 		"eslint": "^9.39.2",
 		"eslint-config-prettier": "^10.1.8",
 		"globals": "^16.5.0",
-		"prettier": "^3.7.4",
+		"husky": "^9.0.11",
 		"nyc": "^17.1.0",
+		"prettier": "^3.7.4",
 		"rollup": "^4.9.6",
 		"rollup-plugin-esm-import-to-url": "^2.1.0",
+		"shx": "^0.3.4",
 		"tap-nyc": "^1.0.0",
 		"tap-spec": "^5.0.0",
 		"tape": "^5.7.0",
@@ -67,6 +67,8 @@
 		"tslib": "^2.6.0"
 	},
 	"dependencies": {
+		"@aicacia/keepalivewebsocket": "^0.1.7",
+		"@aicacia/peer": "^0.1.5",
 		"eventemitter3": "^5.0.1"
 	},
 	"nyc": {

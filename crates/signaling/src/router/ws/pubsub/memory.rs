@@ -92,27 +92,45 @@ impl PubSubAdapterInternal for InMemoryPubSub {
     Ok(())
   }
 
-  async fn publish(&self, room: &str, payload: &str) -> io::Result<()> {
+  async fn broadcast(&self, room: &str, payload: &str) -> io::Result<()> {
     let room = room.to_owned();
     let payload = payload.to_owned();
 
     let sender = self.ensure_room(&room);
+    // If there are no receivers, broadcast::Sender::send returns an error.
+    // Treat that as a no-op rather than a failure.
     let _ = sender.send(payload);
+    Ok(())
+  }
+
+  async fn send(&self, room: &str, user_id: &str, payload: &str) -> io::Result<()> {
+    let room = room.to_owned();
+    let user_id = user_id.to_owned();
+    let payload = payload.to_owned();
+
+    if let Some(room_data) = self.rooms.get(&room) {
+      if room_data.users.contains(&user_id) {
+        // If there are no receivers (e.g., client disconnected), treat as no-op.
+        let _ = room_data.sender.send(payload);
+      }
+    }
     Ok(())
   }
 
   async fn subscribe(
     &self,
     room: &str,
+    user_id: &str,
     cancellation_token: CancellationToken,
   ) -> io::Result<MessageStream> {
     let room = room.to_owned();
+    let user_id = user_id.to_owned();
 
     let receiver = self.ensure_room(&room).subscribe();
 
     let stream = stream::unfold(
-      (receiver, room.clone(), cancellation_token),
-      |(mut rx, room, token)| async move {
+      (receiver, room.clone(), user_id, cancellation_token),
+      |(mut rx, room, user_id, token)| async move {
         loop {
           tokio::select! {
             _ = token.cancelled() => {
@@ -121,7 +139,7 @@ impl PubSubAdapterInternal for InMemoryPubSub {
             }
             result = rx.recv() => {
               match result {
-                Ok(payload) => return Some((payload, (rx, room, token))),
+                Ok(payload) => return Some((payload, (rx, room, user_id, token))),
                 Err(broadcast::error::RecvError::Lagged(skipped)) => {
                   log::warn!("In-memory pubsub lagged by {skipped} messages for room {room}");
                   continue;

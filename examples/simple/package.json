@@ -39,8 +39,9 @@
 		"vite-plugin-wasm": "^3.5.0"
 	},
 	"dependencies": {
-		"@aicacia/keepalivewebsocket": "^0.1.6",
+		"@aicacia/keepalivewebsocket": "^0.1.7",
 		"@aicacia/peer": "^0.1.5",
+		"@aicacia/signaling-room": "workspace:./packages/signaling-room",
 		"@automerge/automerge-repo": "^2.5.1",
 		"@automerge/automerge-repo-storage-indexeddb": "^2.5.1",
 		"@lucide/svelte": "0.553.0",

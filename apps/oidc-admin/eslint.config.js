@@ -9,6 +9,7 @@ import ts from 'typescript-eslint';
 import svelteConfig from './svelte.config.js';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+const tsconfigRootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
@@ -31,7 +32,9 @@ export default defineConfig(
 
 		languageOptions: {
 			parserOptions: {
+				tsconfigRootDir,
 				projectService: true,
+				allowDefaultProject: true,
 				extraFileExtensions: ['.svelte'],
 				parser: ts.parser,
 				svelteConfig

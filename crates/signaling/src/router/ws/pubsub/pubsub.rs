@@ -12,10 +12,12 @@ pub trait PubSubAdapterInternal: Send + Sync {
   async fn get_peers(&self, room: &str) -> io::Result<Vec<String>>;
   async fn add_user(&self, room: &str, user_id: &str) -> io::Result<()>;
   async fn remove_user(&self, room: &str, user_id: &str) -> io::Result<()>;
-  async fn publish(&self, room: &str, payload: &str) -> io::Result<()>;
+  async fn broadcast(&self, room: &str, payload: &str) -> io::Result<()>;
+  async fn send(&self, room: &str, user_id: &str, payload: &str) -> io::Result<()>;
   async fn subscribe(
     &self,
     room: &str,
+    user_id: &str,
     cancellation_token: CancellationToken,
   ) -> io::Result<MessageStream>;
 }
@@ -53,15 +55,23 @@ impl PubSub {
     self.inner.remove_user(room, user_id).await
   }
 
-  pub async fn publish(&self, room: &str, payload: &str) -> io::Result<()> {
-    self.inner.publish(room, payload).await
+  pub async fn broadcast(&self, room: &str, payload: &str) -> io::Result<()> {
+    self.inner.broadcast(room, payload).await
+  }
+
+  pub async fn send(&self, room: &str, user_id: &str, payload: &str) -> io::Result<()> {
+    self.inner.send(room, user_id, payload).await
   }
 
   pub async fn subscribe(
     &self,
     room: &str,
+    user_id: &str,
     cancellation_token: CancellationToken,
   ) -> io::Result<MessageStream> {
-    self.inner.subscribe(room, cancellation_token).await
+    self
+      .inner
+      .subscribe(room, user_id, cancellation_token)
+      .await
   }
 }

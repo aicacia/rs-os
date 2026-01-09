@@ -110,13 +110,6 @@ pub async fn run() -> io::Result<()> {
     },
   );
 
-  let service_discovery_openapi_router = os_service_discovery::router::create_openapi_router(
-    os_service_discovery::router::entity::RouterState {
-      config: Arc::new(app_config.service_discovery_api.clone()),
-    },
-    None,
-  );
-
   let signaling_openapi_router = os_signaling::router::create_openapi_router(
     os_signaling::router::entity::RouterState {
       pubsub,
@@ -125,6 +118,14 @@ pub async fn run() -> io::Result<()> {
     },
     Some(SIGNALING_API_URL_PREFIX),
   );
+
+  // for the service discovery endpoint we do not other endpoints like health checks, or version, etc.
+  let service_discovery_openapi_router =
+    os_service_discovery::router::discovery::router::create_router(
+      os_service_discovery::router::entity::RouterState {
+        config: Arc::new(app_config.service_discovery_api.clone()),
+      },
+    );
 
   let router = Router::new()
     .merge(oidc_openapi_router)
