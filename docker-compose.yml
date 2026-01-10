@@ -1,0 +1,144 @@
+services:
+  os-oidc:
+    container_name: os-oidc
+    image: ghcr.io/aicacia/os-oidc
+    build:
+      args:
+        PROJECT: os-oidc
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./config.docker.json:/app/config.json:ro
+    networks:
+      - os-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  os-oidc-admin:
+    container_name: os-oidc-admin
+    image: ghcr.io/aicacia/os-oidc-admin
+    build:
+      args:
+        PROJECT: os-oidc-admin
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./config.docker.json:/app/config.json:ro
+    networks:
+      - os-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  os-signaling:
+    container_name: os-signaling
+    image: ghcr.io/aicacia/os-signaling
+    build:
+      args:
+        PROJECT: os-signaling
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./config.docker.json:/app/config.json:ro
+    networks:
+      - os-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  os-ui-base:
+    container_name: os-ui-base
+    image: os-ui-base
+    build:
+      args:
+        PROJECT: os-ui
+      context: .
+      dockerfile: Dockerfile
+
+  os-oidc-ui:
+    container_name: os-oidc-ui
+    image: ghcr.io/aicacia/os-oidc-ui
+    build:
+      args:
+        PROJECT: oidc
+        BASE: os-ui-base
+      additional_contexts:
+        os-ui-base: "service:os-ui-base"
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "5173:3000"
+    networks:
+      - os-network
+    restart: unless-stopped
+
+  os-oidc-admin-ui:
+    container_name: os-oidc-admin-ui
+    image: ghcr.io/aicacia/os-oidc-admin-ui
+    build:
+      args:
+        PROJECT: oidc-admin
+        BASE: os-ui-base
+      additional_contexts:
+        os-ui-base: "service:os-ui-base"
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "5174:3000"
+    networks:
+      - os-network
+    restart: unless-stopped
+
+  # Supporting services
+  postgres:
+    container_name: postgres
+    image: postgres:18-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=os-oidc
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - os-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    container_name: redis
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - os-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  os-network:
+    driver: bridge

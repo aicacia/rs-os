@@ -26,7 +26,6 @@ pub struct AppConfig {
   pub signaling_api: os_signaling::config::AppConfig,
   pub log_level: String,
   pub url: String,
-  pub ui_url: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -43,7 +42,6 @@ impl Default for AppConfig {
       signaling_api: Default::default(),
       log_level: "DEBUG".to_owned(),
       url: "http://localhost:3000".to_owned(),
-      ui_url: None,
     }
   }
 }
@@ -54,13 +52,6 @@ impl AppConfig {
     self.oidc_ui.server = self.server.clone();
     self.oidc_ui.log_level = self.log_level.clone();
 
-    // if oidc_ui url is not set and ui_url is set, use ui_url + prefix
-    if self.oidc_ui.url.is_none()
-      && let Some(ui_url) = &self.ui_url
-    {
-      self.oidc_ui.url = Some(format!("{}{}", ui_url, OIDC_UI_URL_PREFIX));
-    }
-    // if oidc_ui url is still not set, use url + prefix
     if self.oidc_ui.url.is_none() {
       self.oidc_ui.url = Some(format!("{}{}", self.url, OIDC_UI_URL_PREFIX));
     }
@@ -84,12 +75,6 @@ impl AppConfig {
     self.oidc_admin_ui.server = self.server.clone();
     self.oidc_admin_ui.log_level = self.log_level.clone();
 
-    // if oidc_admin_ui url is not set and ui_url is set, use ui_url + prefix
-    if self.oidc_admin_ui.url.is_none()
-      && let Some(ui_url) = &self.ui_url
-    {
-      self.oidc_admin_ui.url = Some(format!("{}{}", ui_url, OIDC_ADMIN_UI_URL_PREFIX));
-    }
     // if oidc_admin_ui url is still not set, use url + prefix
     if self.oidc_admin_ui.url.is_none() {
       self.oidc_admin_ui.url = Some(format!("{}{}", self.url, OIDC_ADMIN_UI_URL_PREFIX));

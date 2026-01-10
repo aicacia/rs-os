@@ -6,7 +6,7 @@
 </script>
 
 <script lang="ts">
-	import { getAverageLuminance } from '$lib/common/util/canvas';
+	import { getAverageLuminance } from '$lib/common/util/canvas.js';
 
 	let { src, alt }: AvatarProps = $props();
 

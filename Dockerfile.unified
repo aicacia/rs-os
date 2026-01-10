@@ -1,6 +1,6 @@
 ARG BASE=os:local
 
-FROM --platform=linux/amd64 node:24-trixie-slim AS builder
+FROM node:24-trixie-slim AS builder
 
 RUN npm install -g pnpm@10
 

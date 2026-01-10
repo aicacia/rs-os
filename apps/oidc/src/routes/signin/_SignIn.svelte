@@ -15,7 +15,7 @@
 
 <script lang="ts">
 	import { signInUsernamePassword } from '$lib/common/state/auth.svelte';
-	import { createForm } from '$lib/common/util/form.svelte';
+	import { createForm } from '@aicacia/svelte-forms';
 	import Issues from '$lib/common/components/Issues.svelte';
 
 	const form = createForm(SignInSchema(), {

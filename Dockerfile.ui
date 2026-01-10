@@ -1,6 +1,6 @@
-ARG BASE=os-ui:local
+ARG BASE=os-ui-base
 
-FROM --platform=linux/amd64 node:24-trixie-slim AS builder
+FROM node:24-trixie-slim AS builder
 
 RUN npm install -g pnpm@10
 
