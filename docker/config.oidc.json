@@ -1,0 +1,13 @@
+{
+  "url": "http://localhost:3000",
+  "ui_url": "http://localhost:5173",
+  "database": {
+    "url": "postgres://postgres:postgres@postgres:5432/os-oidc"
+  },
+  "oauth2": {
+    "register_enabled": true
+  },
+  "user": {
+    "register_enabled": true
+  }
+}

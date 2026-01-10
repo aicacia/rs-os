@@ -12,9 +12,7 @@ services:
     environment:
       - RUST_LOG=info
     volumes:
-      - ./config.docker.json:/app/config.json:ro
-    networks:
-      - os-network
+      - ./docker/config.oidc.json:/app/config.json:ro
     restart: unless-stopped
     depends_on:
       - postgres
@@ -32,9 +30,7 @@ services:
     environment:
       - RUST_LOG=info
     volumes:
-      - ./config.docker.json:/app/config.json:ro
-    networks:
-      - os-network
+      - ./docker/config.oidc-admin.json:/app/config.json:ro
     restart: unless-stopped
     depends_on:
       - postgres
@@ -52,9 +48,7 @@ services:
     environment:
       - RUST_LOG=info
     volumes:
-      - ./config.docker.json:/app/config.json:ro
-    networks:
-      - os-network
+      - ./docker/config.signaling.json:/app/config.json:ro
     restart: unless-stopped
     depends_on:
       - redis
@@ -79,8 +73,9 @@ services:
       dockerfile: Dockerfile.ui
     ports:
       - "5173:3000"
-    networks:
-      - os-network
+    volumes:
+      - ./docker/config.oidc-ui.json:/app/config.json:ro
+      - ./apps/oidc-ui/build:/app/build:rw
     restart: unless-stopped
 
   os-oidc-admin-ui:
@@ -94,8 +89,9 @@ services:
       dockerfile: Dockerfile.ui
     ports:
       - "5174:3000"
-    networks:
-      - os-network
+    volumes:
+      - ./docker/config.oidc-admin-ui.json:/app/config.json:ro
+      - ./apps/oidc-admin/build:/app/build:rw
     restart: unless-stopped
 
   # Supporting services
@@ -110,8 +106,6 @@ services:
       - POSTGRES_DB=os-oidc
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    networks:
-      - os-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -126,15 +120,9 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
-    networks:
-      - os-network
     restart: unless-stopped
     command: redis-server --appendonly yes
 
 volumes:
   postgres-data:
   redis-data:
-
-networks:
-  os-network:
-    driver: bridge

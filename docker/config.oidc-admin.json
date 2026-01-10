@@ -1,0 +1,7 @@
+{
+  "url": "http://localhost:3001",
+  "ui_url": "http://localhost:5174",
+  "database": {
+    "url": "postgres://postgres:postgres@postgres:5432/os-oidc"
+  }
+}
