@@ -1869,6 +1869,7 @@ dependencies = [
  "config",
  "dotenvy",
  "log",
+ "os-api",
  "os-cli",
  "os-fs",
  "os-oidc",

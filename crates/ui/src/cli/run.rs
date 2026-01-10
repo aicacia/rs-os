@@ -37,7 +37,7 @@ pub async fn run() -> io::Result<()> {
     }
   };
 
-  write_public_env_file(&app_config).await?;
+  write_public_env_file(&app_config, Default::default()).await?;
 
   LogTracer::init().map_err(|e| io::Error::other(format!("failed to init log tracer: {}", e)))?;
 

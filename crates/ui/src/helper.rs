@@ -2,10 +2,17 @@ use std::{collections::HashMap, io, path::Path};
 
 use crate::config::AppConfig;
 
-pub async fn write_public_env_file(app_config: &AppConfig) -> io::Result<()> {
+pub async fn write_public_env_file(
+  app_config: &AppConfig,
+  overrides: HashMap<String, String>,
+) -> io::Result<()> {
   let mut env_vars: HashMap<String, String> = std::env::vars()
     .filter(|(key, _)| key.starts_with("PUBLIC_"))
     .collect();
+
+  for (key, value) in overrides {
+    env_vars.insert(key, value);
+  }
 
   if !env_vars.contains_key("PUBLIC_URL")
     && let Some(url) = &app_config.url

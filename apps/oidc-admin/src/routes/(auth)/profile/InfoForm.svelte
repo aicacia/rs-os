@@ -115,7 +115,7 @@
 				aria-label={m.profile_given_name_label()}
 			/>
 			<Issues issues={form.fields.givenName.issues} />
-		</label> 
+		</label>
 		<label class="block">
 			<span>{m.profile_middle_name_label()}</span>
 			<input

@@ -15,10 +15,7 @@
 	let clients = $state(data.clients);
 
 	const filteredClients = $derived(
-		clients.filter(
-			(client) =>
-				client.name.toLowerCase().includes(searchQuery.toLowerCase())
-		)
+		clients.filter((client) => client.name.toLowerCase().includes(searchQuery.toLowerCase()))
 	);
 
 	async function deleteClient(client: Client) {
@@ -45,8 +42,8 @@
 </svelte:head>
 
 <section class="card">
-	<div class="flex gap-4 items-center justify-between">
-		<div class="flex gap-4 items-center">
+	<div class="flex items-center justify-between gap-4">
+		<div class="flex items-center gap-4">
 			<a href={resolve('/')}>
 				<ArrowLeft />
 			</a>
@@ -62,7 +59,7 @@
 	</div>
 
 	<div class="relative">
-		<Search class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
+		<Search class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2" />
 		<input
 			type="text"
 			placeholder={m.clients_search_placeholder()}

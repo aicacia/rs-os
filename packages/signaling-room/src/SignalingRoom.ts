@@ -1,6 +1,6 @@
 import { KeepAliveWebSocket } from '@aicacia/keepalivewebsocket';
 import { Peer, type SignalMessage } from '@aicacia/peer';
-import EventEmitter from 'eventemitter3';
+import { EventEmitter } from 'eventemitter3';
 
 function isSignalMessage(message: unknown): message is SignalMessage {
 	return typeof message === 'object' && message !== null && 'type' in message;
@@ -42,6 +42,7 @@ type ServerMessage =
 
 export interface SignalingRoomEvents {
 	join(this: SignalingRoom, peer: Peer): void;
+	connect(this: SignalingRoom, peer: Peer): void;
 	leave(this: SignalingRoom, signalingId: SignalingId): void;
 	error(this: SignalingRoom, error: Error): void;
 }
@@ -52,11 +53,15 @@ export class SignalingRoom extends EventEmitter<SignalingRoomEvents> {
 
 	constructor(keepAliveWebSocket: KeepAliveWebSocket) {
 		super();
+		keepAliveWebSocket.on('message', this.#onWebSocketMessage);
 		this.#keepAliveWebSocket = keepAliveWebSocket;
-		this.#keepAliveWebSocket.on('message', this.#onWebSocketMessage);
 	}
 
-	peers() {
+	getPeer(signalingId: SignalingId) {
+		return this.#remotePeers.get(signalingId);
+	}
+
+	getPeers() {
 		return Array.from(this.#remotePeers.values());
 	}
 
@@ -77,6 +82,7 @@ export class SignalingRoom extends EventEmitter<SignalingRoomEvents> {
 				throw new AggregateError(errors, 'Multiple errors occurred while closing peers');
 			}
 		}
+		this.#remotePeers.clear();
 		return this;
 	}
 
@@ -90,7 +96,7 @@ export class SignalingRoom extends EventEmitter<SignalingRoomEvents> {
 		peer = new Peer({ id: signalingId });
 		this.#remotePeers.set(signalingId, peer);
 
-		peer.on('signal', async (signalPayload) => {
+		peer.on('signal', (signalPayload: unknown) => {
 			this.#keepAliveWebSocket.send(
 				JSON.stringify({
 					type: 'send',
@@ -104,8 +110,10 @@ export class SignalingRoom extends EventEmitter<SignalingRoomEvents> {
 			this.#remotePeers.delete(signalingId);
 		});
 		peer.on('connect', () => {
-			this.emit('join', peer);
+			this.emit('connect', peer);
 		});
+
+		this.emit('join', peer);
 
 		if (isInitiator) {
 			await peer.init();

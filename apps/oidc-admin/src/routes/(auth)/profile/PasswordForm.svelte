@@ -58,7 +58,7 @@
 		<input
 			id="profile-new-password"
 			type="password"
-				class="block w-full"
+			class="block w-full"
 			bind:value={form.fields.password.value}
 			placeholder={m.profile_new_password_placeholder()}
 			aria-label={m.profile_new_password_label()}
@@ -70,7 +70,7 @@
 		<input
 			id="profile-confirm-password"
 			type="password"
-				class="block w-full"
+			class="block w-full"
 			bind:value={form.fields.passwordConfirmation.value}
 			placeholder={m.profile_confirm_password_placeholder()}
 			aria-label={m.profile_confirm_password_label()}

@@ -20,7 +20,7 @@
 
 <div class="space-y-4">
 	<section class="card">
-		<div class="flex gap-4 items-center">
+		<div class="flex items-center gap-4">
 			<a href={resolve('/')}>
 				<ArrowLeft />
 			</a>

@@ -1,8 +1,17 @@
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
+const fn _default_true() -> bool {
+  true
+}
+
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct WSAuthorizationRequest {
+  #[serde(default = "_default_true")]
+  pub client: bool,
+  #[serde(default = "_default_true")]
+  pub user: bool,
+  pub room: String,
   pub token: String,
 }
 

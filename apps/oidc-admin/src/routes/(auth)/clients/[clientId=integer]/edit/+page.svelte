@@ -43,16 +43,9 @@
 	</div>
 </section>
 
-<ClientForm
-	initialValues={client}
-	onsubmit={handleSubmit}
->
+<ClientForm initialValues={client} onsubmit={handleSubmit}>
 	{#snippet actions()}
-		<button
-			type="button"
-			class="btn secondary"
-			onclick={() => goto(resolve('/(auth)/clients'))}
-		>
+		<button type="button" class="btn secondary" onclick={() => goto(resolve('/(auth)/clients'))}>
 			{m.clients_cancel()}
 		</button>
 	{/snippet}

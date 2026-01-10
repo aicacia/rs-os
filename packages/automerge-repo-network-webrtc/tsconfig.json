@@ -1,0 +1,18 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"allowImportingTsExtensions": false,
+		"importHelpers": true,
+		"outDir": "esm",
+		"declarationDir": "types"
+	},
+	"include": ["src"],
+	"exclude": ["src/**/*.test.*", "src/**/*.benchmark.*"],
+	"typedocOptions": {
+		"entryPoints": ["src/index.ts"],
+		"out": "docs",
+		"excludeExternals": true,
+		"excludePrivate": true,
+		"excludeInternal": true
+	}
+}

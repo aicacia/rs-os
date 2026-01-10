@@ -1,7 +1,7 @@
 # Aicacia OS Signaling Room
 
 ```ts
-const websocket = new WebSocket('http://localhost:3000/signaling/user');
+const websocket = new WebSocket('http://localhost:3000/signaling/private?room=test-room');
 
 const signalingRoom = new SignalingRoom(websocket);
 

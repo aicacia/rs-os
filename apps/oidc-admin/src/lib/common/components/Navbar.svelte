@@ -48,7 +48,7 @@
 			<div class="flex grow">
 				<div
 					class={{
-						'flex flex-col w-full justify-start items-start': true,
+						'flex w-full flex-col items-start justify-start': true,
 						hidden: open
 					}}
 				>

@@ -28,7 +28,7 @@ const CLEANUP_TIMEOUT_SECS: u64 = 5;
 
 #[utoipa::path(
   get,
-  path = "/user",
+  path = "/private",
   tags = [TAG],
   params(WSAuthorizationRequest),
   responses(
@@ -38,7 +38,7 @@ const CLEANUP_TIMEOUT_SECS: u64 = 5;
     (status = 500, description = "Internal Server Error", body = HttpError),
   )
 )]
-async fn user(
+async fn private(
   State(state): State<RouterState>,
   Query(authorization_request): Query<WSAuthorizationRequest>,
   ws: WebSocketUpgrade,
@@ -54,69 +54,20 @@ async fn user(
   };
 
   let user_id = uuid::Uuid::now_v7().to_string();
-  let room = format!("user:{}", claims.user);
-
-  if state.cancellation_token.is_cancelled() {
-    log::info!("WebSocket connection attempt during server shutdown");
-    return HttpError::internal_error()
-      .with_application_error("Server is shutting down")
-      .into_response();
-  }
-
-  ws.on_upgrade(move |socket| async move {
-    match handle_ws(
-      socket,
-      user_id.clone(),
-      room.clone(),
-      state.pubsub,
-      state.cancellation_token,
-    )
-    .await
-    {
-      Ok(()) => {
-        log::debug!(
-          "Client WebSocket connection for user {} in room {} closed",
-          user_id,
-          room
-        );
-      }
-      Err(err) => {
-        log::error!("WebSocket error: {}", err);
-      }
+  let room = format!(
+    "{}:client:{}:user:{}",
+    authorization_request.room,
+    if authorization_request.client {
+      claims.client
+    } else {
+      "anonymous".to_owned()
+    },
+    if authorization_request.user {
+      claims.user
+    } else {
+      0
     }
-  })
-  .into_response()
-}
-
-#[utoipa::path(
-  get,
-  path = "/client",
-  tags = [TAG],
-  params(WSAuthorizationRequest),
-  responses(
-    (status = 101, description = "WebSocket connection established"),
-    (status = 401, description = "Unauthorized", body = HttpError),
-    (status = 403, description = "Forbidden", body = HttpError),
-    (status = 500, description = "Internal Server Error", body = HttpError),
-  )
-)]
-async fn client(
-  State(state): State<RouterState>,
-  Query(authorization_request): Query<WSAuthorizationRequest>,
-  ws: WebSocketUpgrade,
-) -> impl IntoResponse {
-  let claims = match parse_token_data::<BasicClaims>(&authorization_request.token).await {
-    Ok(token_data) => token_data.claims,
-    Err(err) => {
-      log::warn!("unauthorized WebSocket connection attempt: {}", err);
-      return HttpError::unauthorized()
-        .with_application_error("Unauthorized")
-        .into_response();
-    }
-  };
-
-  let user_id = uuid::Uuid::now_v7().to_string();
-  let room = format!("client:{}", claims.client);
+  );
 
   if state.cancellation_token.is_cancelled() {
     log::info!("WebSocket connection attempt during server shutdown");
@@ -162,7 +113,7 @@ async fn client(
     (status = 500, description = "Internal Server Error", body = HttpError),
   )
 )]
-async fn anonymous(
+async fn public(
   State(state): State<RouterState>,
   Query(room_request): Query<WSRoomRequest>,
   ws: WebSocketUpgrade,
@@ -507,8 +458,7 @@ async fn handle_ws_inner(
 
 pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
-    .routes(routes!(user))
-    .routes(routes!(client))
-    .routes(routes!(anonymous))
+    .routes(routes!(private))
+    .routes(routes!(public))
     .with_state(state)
 }

@@ -263,13 +263,13 @@
 						<button
 							type="button"
 							onclick={() => (showClientSecret = !showClientSecret)}
-							class="absolute right-2 top-1/2 -translate-y-1/2 btn icon sm"
+							class="btn icon sm absolute top-1/2 right-2 -translate-y-1/2"
 							aria-label={showClientSecret ? 'Hide client secret' : 'Show client secret'}
 						>
 							{#if showClientSecret}
-								<EyeOff class="w-4 h-4" />
+								<EyeOff class="h-4 w-4" />
 							{:else}
-								<Eye class="w-4 h-4" />
+								<Eye class="h-4 w-4" />
 							{/if}
 						</button>
 					{/if}
@@ -285,11 +285,7 @@
 		<div class="flex flex-col gap-4">
 			<label class="flex flex-col">
 				<span>{m.client_form_app_type()} *</span>
-				<select
-					class="w-full"
-					bind:value={form.fields.applicationType.value}
-					disabled={readonly}
-				>
+				<select class="w-full" bind:value={form.fields.applicationType.value} disabled={readonly}>
 					<option value="web">{m.client_form_app_type_web()}</option>
 					<option value="native">{m.client_form_app_type_native()}</option>
 					<option value="service">{m.client_form_app_type_service()}</option>
@@ -299,11 +295,7 @@
 
 			<label class="flex flex-col">
 				<span>{m.client_form_auth_method()} *</span>
-				<select
-					class="w-full"
-					bind:value={form.fields.authMethod.value}
-					disabled={readonly}
-				>
+				<select class="w-full" bind:value={form.fields.authMethod.value} disabled={readonly}>
 					<option value="client_secret_basic">{m.client_form_auth_method_basic()}</option>
 					<option value="client_secret_post">{m.client_form_auth_method_post()}</option>
 					<option value="none">{m.client_form_auth_method_none()}</option>
@@ -387,10 +379,10 @@
 					<button
 						type="button"
 						onclick={addRedirectUri}
-						class="absolute right-2 top-1/2 -translate-y-1/2 btn success icon sm"
+						class="btn success icon sm absolute top-1/2 right-2 -translate-y-1/2"
 						aria-label="Add redirect URI"
 					>
-						<Plus class="w-4 h-4" />
+						<Plus class="h-4 w-4" />
 					</button>
 				</div>
 			{/if}
@@ -422,83 +414,82 @@
 						class="w-full pr-10"
 						bind:value={postLogoutRedirectUriInput}
 						placeholder={m.client_form_post_logout_redirect_uri_placeholder()}
-						onkeydown={(e) =>
-							e.key === 'Enter' && (e.preventDefault(), addPostLogoutRedirectUri())}
+						onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addPostLogoutRedirectUri())}
 					/>
 					<button
 						type="button"
 						onclick={addPostLogoutRedirectUri}
-						class="absolute right-2 top-1/2 -translate-y-1/2 btn success icon sm"
+						class="btn success icon sm absolute top-1/2 right-2 -translate-y-1/2"
 						aria-label="Add post logout redirect URI"
 					>
-						<Plus class="w-4 h-4" />
+						<Plus class="h-4 w-4" />
 					</button>
 				</div>
 			{/if}
 			<div class="flex flex-wrap gap-2">
 				{#each postLogoutRedirectUris as uri, index}
-						<span class="badge primary">
-							{uri}
-							{#if !readonly}
-								<button
-									type="button"
-									onclick={() => removePostLogoutRedirectUri(index)}
-									class="btn icon danger ms-2"
-								>
-									<X />
-								</button>
-							{/if}
-						</span>
-					{/each}
-				</div>
+					<span class="badge primary">
+						{uri}
+						{#if !readonly}
+							<button
+								type="button"
+								onclick={() => removePostLogoutRedirectUri(index)}
+								class="btn icon danger ms-2"
+							>
+								<X />
+							</button>
+						{/if}
+					</span>
+				{/each}
 			</div>
+		</div>
 
-			<!-- Additional URIs -->
-			<div class="flex flex-col gap-4">
-				<label class="flex flex-col">
-					<span>{m.client_form_logo_uri()}</span>
-					<input
-						type="url"
-						class="w-full"
-						bind:value={form.fields.logoUri.value}
-						placeholder={m.client_form_logo_uri_placeholder()}
-						{readonly}
-					/>
-				</label>
+		<!-- Additional URIs -->
+		<div class="flex flex-col gap-4">
+			<label class="flex flex-col">
+				<span>{m.client_form_logo_uri()}</span>
+				<input
+					type="url"
+					class="w-full"
+					bind:value={form.fields.logoUri.value}
+					placeholder={m.client_form_logo_uri_placeholder()}
+					{readonly}
+				/>
+			</label>
 
-				<label class="flex flex-col">
-					<span>{m.client_form_client_uri()}</span>
-					<input
-						type="url"
-						class="w-full"
-						bind:value={form.fields.clientUri.value}
-						placeholder={m.client_form_client_uri_placeholder()}
-						{readonly}
-					/>
-				</label>
+			<label class="flex flex-col">
+				<span>{m.client_form_client_uri()}</span>
+				<input
+					type="url"
+					class="w-full"
+					bind:value={form.fields.clientUri.value}
+					placeholder={m.client_form_client_uri_placeholder()}
+					{readonly}
+				/>
+			</label>
 
-				<label class="flex flex-col">
-					<span>{m.client_form_policy_uri()}</span>
-					<input
-						type="url"
-						class="w-full"
-						bind:value={form.fields.policyUri.value}
-						placeholder={m.client_form_policy_uri_placeholder()}
-						{readonly}
-					/>
-				</label>
+			<label class="flex flex-col">
+				<span>{m.client_form_policy_uri()}</span>
+				<input
+					type="url"
+					class="w-full"
+					bind:value={form.fields.policyUri.value}
+					placeholder={m.client_form_policy_uri_placeholder()}
+					{readonly}
+				/>
+			</label>
 
-				<label class="flex flex-col">
-					<span>{m.client_form_terms_uri()}</span>
-					<input
-						type="url"
-						class="w-full"
-						bind:value={form.fields.termsOfServiceUri.value}
-						placeholder={m.client_form_terms_uri_placeholder()}
-						{readonly}
-					/>
-				</label>
-			</div>
+			<label class="flex flex-col">
+				<span>{m.client_form_terms_uri()}</span>
+				<input
+					type="url"
+					class="w-full"
+					bind:value={form.fields.termsOfServiceUri.value}
+					placeholder={m.client_form_terms_uri_placeholder()}
+					{readonly}
+				/>
+			</label>
+		</div>
 	</section>
 
 	<!-- Audience -->
@@ -517,10 +508,10 @@
 					<button
 						type="button"
 						onclick={addAudience}
-						class="absolute right-2 top-1/2 -translate-y-1/2 btn success icon sm"
+						class="btn success icon sm absolute top-1/2 right-2 -translate-y-1/2"
 						aria-label="Add audience"
 					>
-						<Plus class="w-4 h-4" />
+						<Plus class="h-4 w-4" />
 					</button>
 				</div>
 			{/if}

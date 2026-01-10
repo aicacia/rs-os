@@ -1,45 +1,38 @@
 # CurrentUserApi
 
-All URIs are relative to *http://localhost:3000*
+All URIs are relative to _http://localhost:3000_
 
-| Method | HTTP request | Description |
-|------------- | ------------- | -------------|
-| [**currentUser**](CurrentUserApi.md#currentuser) | **GET** /oidc-admin/api/current-user |  |
-| [**updatePassword**](CurrentUserApi.md#updatepassword) | **PATCH** /oidc-admin/api/current-user/password |  |
-| [**updateUserInfo**](CurrentUserApi.md#updateuserinfooperation) | **PATCH** /oidc-admin/api/current-user/info |  |
-| [**updateUsername**](CurrentUserApi.md#updateusernameoperation) | **PATCH** /oidc-admin/api/current-user |  |
-
-
+| Method                                                          | HTTP request                                    | Description |
+| --------------------------------------------------------------- | ----------------------------------------------- | ----------- |
+| [**currentUser**](CurrentUserApi.md#currentuser)                | **GET** /oidc-admin/api/current-user            |             |
+| [**updatePassword**](CurrentUserApi.md#updatepassword)          | **PATCH** /oidc-admin/api/current-user/password |             |
+| [**updateUserInfo**](CurrentUserApi.md#updateuserinfooperation) | **PATCH** /oidc-admin/api/current-user/info     |             |
+| [**updateUsername**](CurrentUserApi.md#updateusernameoperation) | **PATCH** /oidc-admin/api/current-user          |             |
 
 ## currentUser
 
 > CurrentUser currentUser()
 
-
-
 ### Example
 
 ```ts
-import {
-  Configuration,
-  CurrentUserApi,
-} from '';
+import { Configuration, CurrentUserApi } from '';
 import type { CurrentUserRequest } from '';
 
 async function example() {
-  console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
-    // Configure HTTP bearer authorization: Authorization
-    accessToken: "YOUR BEARER TOKEN",
-  });
-  const api = new CurrentUserApi(config);
+	console.log('🚀 Testing  SDK...');
+	const config = new Configuration({
+		// Configure HTTP bearer authorization: Authorization
+		accessToken: 'YOUR BEARER TOKEN'
+	});
+	const api = new CurrentUserApi(config);
 
-  try {
-    const data = await api.currentUser();
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
+	try {
+		const data = await api.currentUser();
+		console.log(data);
+	} catch (error) {
+		console.error(error);
+	}
 }
 
 // Run the test
@@ -63,23 +56,20 @@ This endpoint does not need any parameter.
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-
 ### HTTP response details
+
 | Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** |  |  -  |
-| **400** |  |  -  |
-| **401** |  |  -  |
-| **500** |  |  -  |
+| ----------- | ----------- | ---------------- |
+| **200**     |             | -                |
+| **400**     |             | -                |
+| **401**     |             | -                |
+| **500**     |             | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
 
 ## updatePassword
 
 > updatePassword(updateUserPassword)
-
-
 
 ### Example
 
@@ -92,7 +82,7 @@ import type { UpdatePasswordRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
+  const config = new Configuration({
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -117,10 +107,9 @@ example().catch(console.error);
 
 ### Parameters
 
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **updateUserPassword** | [UpdateUserPassword](UpdateUserPassword.md) |  | |
+| Name                   | Type                                        | Description | Notes |
+| ---------------------- | ------------------------------------------- | ----------- | ----- |
+| **updateUserPassword** | [UpdateUserPassword](UpdateUserPassword.md) |             |       |
 
 ### Return type
 
@@ -135,23 +124,20 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-
 ### HTTP response details
+
 | Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **204** |  |  -  |
-| **400** |  |  -  |
-| **401** |  |  -  |
-| **500** |  |  -  |
+| ----------- | ----------- | ---------------- |
+| **204**     |             | -                |
+| **400**     |             | -                |
+| **401**     |             | -                |
+| **500**     |             | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
 
 ## updateUserInfo
 
 > UserInfo updateUserInfo(updateUserInfoRequest)
-
-
 
 ### Example
 
@@ -164,7 +150,7 @@ import type { UpdateUserInfoOperationRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
+  const config = new Configuration({
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -189,10 +175,9 @@ example().catch(console.error);
 
 ### Parameters
 
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **updateUserInfoRequest** | [UpdateUserInfoRequest](UpdateUserInfoRequest.md) |  | |
+| Name                      | Type                                              | Description | Notes |
+| ------------------------- | ------------------------------------------------- | ----------- | ----- |
+| **updateUserInfoRequest** | [UpdateUserInfoRequest](UpdateUserInfoRequest.md) |             |       |
 
 ### Return type
 
@@ -207,23 +192,20 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-
 ### HTTP response details
+
 | Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **200** |  |  -  |
-| **400** |  |  -  |
-| **401** |  |  -  |
-| **500** |  |  -  |
+| ----------- | ----------- | ---------------- |
+| **200**     |             | -                |
+| **400**     |             | -                |
+| **401**     |             | -                |
+| **500**     |             | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
 
 ## updateUsername
 
 > updateUsername(updateUsernameRequest)
-
-
 
 ### Example
 
@@ -236,7 +218,7 @@ import type { UpdateUsernameOperationRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({ 
+  const config = new Configuration({
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -261,10 +243,9 @@ example().catch(console.error);
 
 ### Parameters
 
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **updateUsernameRequest** | [UpdateUsernameRequest](UpdateUsernameRequest.md) |  | |
+| Name                      | Type                                              | Description | Notes |
+| ------------------------- | ------------------------------------------------- | ----------- | ----- |
+| **updateUsernameRequest** | [UpdateUsernameRequest](UpdateUsernameRequest.md) |             |       |
 
 ### Return type
 
@@ -279,14 +260,13 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-
 ### HTTP response details
+
 | Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **204** |  |  -  |
-| **400** |  |  -  |
-| **401** |  |  -  |
-| **500** |  |  -  |
+| ----------- | ----------- | ---------------- |
+| **204**     |             | -                |
+| **400**     |             | -                |
+| **401**     |             | -                |
+| **500**     |             | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-

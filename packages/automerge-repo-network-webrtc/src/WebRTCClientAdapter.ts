@@ -3,43 +3,11 @@ import {
 	type Message,
 	type PeerId,
 	type PeerMetadata
-} from '@automerge/automerge-repo';
-import type { KeepAliveWebSocket } from '@aicacia/keepalivewebsocket';
-import EventEmitter from 'eventemitter3';
-import { Peer, type SignalMessage } from '@aicacia/peer';
+} from '@automerge/automerge-repo/slim';
+import { EventEmitter } from 'eventemitter3';
+import { SignalingRoom } from '@aicacia/signaling-room';
 import { Encoder, decode as cborXdecode } from 'cbor-x';
-
-type ClientMessage =
-	| {
-			type: 'send';
-			to: string;
-			payload: unknown;
-	  }
-	| {
-			type: 'broadcast';
-			payload: unknown;
-	  };
-
-type ServerMessage =
-	| {
-			type: 'welcome';
-			id: string;
-			peers: string[];
-	  }
-	| {
-			type: 'join';
-			from: string;
-			payload: unknown;
-	  }
-	| {
-			type: 'leave';
-			from: string;
-	  }
-	| {
-			type: 'message';
-			from: string;
-			payload: unknown;
-	  };
+import { Peer } from '@aicacia/peer';
 
 type ArriveSyncMessage = Omit<Message, 'targetId'> & {
 	type: 'arrive';
@@ -63,17 +31,17 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 	#connected = false;
 	#emitter = new EventEmitter<WebRTCClientAdapterInternalEvents>();
 
-	#remotePeers: Map<string, Peer> = new Map();
+	#signalingRoom: SignalingRoom;
 	#signalingIdToPeerId: Map<string, string> = new Map();
 
-	#websocket: KeepAliveWebSocket;
-
-	constructor(websocket: KeepAliveWebSocket) {
+	constructor(signalingRoom: SignalingRoom) {
 		super();
 
-		websocket.off('message', this.#onWebSocketMessage);
-		websocket.on('message', this.#onWebSocketMessage);
-		this.#websocket = websocket;
+		signalingRoom.on('join', this.#onPeerJoin);
+		signalingRoom.on('connect', this.#onPeerConnect);
+		signalingRoom.on('leave', this.#onPeerLeave);
+		signalingRoom.getPeers().forEach(this.#onPeerJoin);
+		this.#signalingRoom = signalingRoom;
 	}
 
 	isReady() {
@@ -106,10 +74,10 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 	}
 
 	disconnect() {
-		for (const peer of this.#remotePeers.values()) {
-			peer.close();
-		}
-		this.#remotePeers.clear();
+		this.#signalingRoom.off('join', this.#onPeerJoin);
+		this.#signalingRoom.off('connect', this.#onPeerConnect);
+		this.#signalingRoom.off('leave', this.#onPeerLeave);
+		this.#signalingRoom.close();
 		this.#signalingIdToPeerId.clear();
 		this.#ready = false;
 		this.#connected = false;
@@ -117,10 +85,8 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 	}
 
 	async send(message: Message) {
-		console.log('WebRTCClientAdapter sending message', message);
-
 		await Promise.all(
-			[...this.#remotePeers.values()].map(async (peer) => {
+			this.#signalingRoom.getPeers().map(async (peer) => {
 				try {
 					if (!peer.isReady()) {
 						return;
@@ -146,12 +112,10 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 		}
 		const syncMessage: SyncMessage = decode(messageBytes);
 
-		console.log('WebRTCClientAdapter received message', syncMessage);
-
 		switch (syncMessage.type) {
 			case 'arrive': {
 				const message = syncMessage as ArriveSyncMessage;
-				const peer = this.#remotePeers.get(fromSignalingId);
+				const peer = this.#signalingRoom.getPeer(fromSignalingId);
 
 				console.assert(peer != null, 'remote peer is not set');
 
@@ -207,95 +171,29 @@ export class WebRTCClientAdapter extends NetworkAdapter {
 		}
 	};
 
-	#createPeer = async (signalingId: string, isInitiator: boolean) => {
-		let peer = this.#remotePeers.get(signalingId);
-
-		if (peer) {
-			return peer;
-		}
-
-		peer = new Peer({ id: signalingId });
-		this.#remotePeers.set(signalingId, peer);
-
-		peer.on('signal', async (signalPayload) => {
-			this.#websocket.send(
-				JSON.stringify({
-					type: 'send',
-					to: signalingId,
-					payload: signalPayload
-				} as ClientMessage)
-			);
-		});
+	#onPeerJoin = async (peer: Peer) => {
 		peer.on('data', (data) => {
 			this.#receive(peer.getId(), new Uint8Array(data as ArrayBufferLike));
 		});
-		peer.on('close', () => {
-			const peerId = this.#signalingIdToPeerId.get(signalingId) as PeerId;
-			if (peerId) {
-				this.emit('peer-disconnected', { peerId });
-			}
-			this.#remotePeers.delete(signalingId);
-			this.#signalingIdToPeerId.delete(signalingId);
-		});
-		peer.once('connect', async () => {
-			await this.whenConnected();
-			console.assert(this.peerId != null, 'peerId is not set');
-			peer.send(
-				toArrayBuffer(
-					encode({
-						type: 'arrive',
-						senderId: this.peerId!,
-						peerId: this.peerId!,
-						peerMetadata: this.peerMetadata!
-					} as ArriveSyncMessage)
-				)
-			);
-		});
-
-		if (isInitiator) {
-			await peer.init();
-		}
-
-		return peer;
 	};
 
-	#onWebSocketMessage = async (
-		data: string | ArrayBufferLike | Blob | ArrayBufferView<ArrayBufferLike>
-	) => {
-		const signalingMessage = JSON.parse(data as string) as ServerMessage;
+	#onPeerConnect = async (peer: Peer) => {
+		await this.whenConnected();
+		console.assert(this.peerId != null, 'peerId is not set');
+		peer.send(
+			toArrayBuffer(
+				encode({
+					type: 'arrive',
+					senderId: this.peerId!,
+					peerId: this.peerId!,
+					peerMetadata: this.peerMetadata!
+				} as ArriveSyncMessage)
+			)
+		);
+	};
 
-		switch (signalingMessage.type) {
-			case 'welcome': {
-				try {
-					await Promise.all(
-						signalingMessage.peers.map((signalingId) => this.#createPeer(signalingId, true))
-					);
-				} catch (e) {
-					console.error('Error creating peers from peers message', e);
-				}
-				break;
-			}
-			case 'join': {
-				break;
-			}
-			case 'leave': {
-				const peer = this.#remotePeers.get(signalingMessage.from);
-				if (peer) {
-					peer.close();
-				}
-				break;
-			}
-			case 'message': {
-				const peer =
-					this.#remotePeers.get(signalingMessage.from) ??
-					(await this.#createPeer(signalingMessage.from, false));
-
-				if (peer) {
-					peer.signal(signalingMessage.payload as SignalMessage);
-				}
-				break;
-			}
-		}
+	#onPeerLeave = (signalingId: string) => {
+		this.#signalingIdToPeerId.delete(signalingId);
 	};
 }
 

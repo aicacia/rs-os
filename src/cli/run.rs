@@ -1,4 +1,5 @@
 use std::{
+  collections::HashMap,
   io,
   net::{IpAddr, SocketAddr},
   path::Path,
@@ -81,7 +82,14 @@ pub async fn run() -> io::Result<()> {
     Some(OIDC_API_URL_PREFIX),
   );
 
-  write_public_env_file(&app_config.oidc_ui).await?;
+  let mut oidc_ui_env_overrides = HashMap::default();
+
+  oidc_ui_env_overrides.insert(
+    "PUBLIC_OS_OIDC_API_URL".to_owned(),
+    app_config.oidc_api.url(),
+  );
+
+  write_public_env_file(&app_config.oidc_ui, oidc_ui_env_overrides).await?;
   let oidc_ui_router = os_ui::router::create_router(&app_config.oidc_ui, Some(OIDC_UI_URL_PREFIX));
 
   let oidc_admin_openapi_router = os_oidc_admin::router::create_openapi_router(
@@ -92,7 +100,18 @@ pub async fn run() -> io::Result<()> {
     Some(OIDC_ADMIN_API_URL_PREFIX),
   );
 
-  write_public_env_file(&app_config.oidc_admin_ui).await?;
+  let mut oidc_admin_ui_env_overrides = HashMap::default();
+
+  oidc_admin_ui_env_overrides.insert(
+    "PUBLIC_OS_OIDC_API_URL".to_owned(),
+    app_config.oidc_api.url(),
+  );
+  oidc_admin_ui_env_overrides.insert(
+    "PUBLIC_OS_OIDC_ADMIN_API_URL".to_owned(),
+    app_config.oidc_admin_api.url(),
+  );
+
+  write_public_env_file(&app_config.oidc_admin_ui, oidc_admin_ui_env_overrides).await?;
   let oidc_admin_ui_router =
     os_ui::router::create_router(&app_config.oidc_admin_ui, Some(OIDC_ADMIN_UI_URL_PREFIX));
 

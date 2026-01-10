@@ -45,6 +45,7 @@ clap_complete = { version = "4.5", optional = true, default-features = false }
 config = { version = "0.15", features = ["json"], default-features = false }
 dotenvy = { version = "0.15", default-features = false }
 log = { version = "0.4", default-features = false }
+os-api = { version = "0.1", path = "./crates/api", default-features = false }
 os-cli = { version = "0.1", path = "./crates/cli", default-features = false }
 os-fs = { version = "0.1", path = "./crates/fs", default-features = false }
 os-oidc = { version = "0.1", path = "./crates/oidc", default-features = false }

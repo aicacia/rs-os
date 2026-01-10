@@ -1,1 +1,1 @@
-export { SignalingRoom, type SignalingRoomEvents } from './SignalingRoom';
+export { SignalingRoom, type SignalingRoomEvents } from './SignalingRoom.js';

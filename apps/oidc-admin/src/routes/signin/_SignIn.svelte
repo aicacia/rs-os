@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getUserManager } from "$lib/common/state/user.svelte";
+	import { getUserManager } from '$lib/common/state/user.svelte';
 
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault();

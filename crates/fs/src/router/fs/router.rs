@@ -29,9 +29,9 @@ use crate::router::{
   )
 )]
 pub async fn list(
-  State(state): State<RouterState>,
-  user_authorization: Authorization<BasicClaims>,
-  Query(ListQuery { prefix }): Query<ListQuery>,
+  State(_state): State<RouterState>,
+  _user_authorization: Authorization<BasicClaims>,
+  Query(ListQuery { prefix: _prefix }): Query<ListQuery>,
 ) -> impl IntoResponse {
   axum::Json(()).into_response()
 }

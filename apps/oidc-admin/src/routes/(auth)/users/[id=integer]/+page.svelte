@@ -50,7 +50,10 @@
 		</div>
 	</div>
 	<div class="flex flex-row items-center gap-2">
-		<button class="btn light flex flex-row items-center" onclick={() => goto(`/users/${user.id}/edit`)}>
+		<button
+			class="btn light flex flex-row items-center"
+			onclick={() => goto(`/users/${user.id}/edit`)}
+		>
 			<Edit class="mr-1 h-4 w-4" />
 			{m.actions_edit()}
 		</button>
