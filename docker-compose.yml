@@ -75,8 +75,6 @@ services:
       args:
         PROJECT: oidc
         BASE: os-ui-base
-      additional_contexts:
-        os-ui-base: "service:os-ui-base"
       context: .
       dockerfile: Dockerfile.ui
     ports:
@@ -92,8 +90,6 @@ services:
       args:
         PROJECT: oidc-admin
         BASE: os-ui-base
-      additional_contexts:
-        os-ui-base: "service:os-ui-base"
       context: .
       dockerfile: Dockerfile.ui
     ports:
