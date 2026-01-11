@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import { Search, Plus, ArrowLeft, Eye, Pencil } from '@lucide/svelte';
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import { hasPermissions } from '$lib/common/state/user.svelte';
@@ -9,8 +8,8 @@
 
 	let { data }: PageProps = $props();
 	let query = $state('');
-	let users = $state<OUser[]>(data.users ?? []);
-	let canCreate = $state(hasPermissions(data.user, [Permission.UserWrite]));
+	let users = $derived<OUser[]>(data.users ?? []);
+	let canCreate = $derived(hasPermissions(data.user, [Permission.UserWrite]));
 
 	$effect(() => {
 		users = data.users ?? [];
@@ -25,16 +24,6 @@
 		const q = query.toLowerCase();
 		return users.filter((u) => String(u.id).includes(q) || u.username.toLowerCase().includes(q));
 	});
-
-	function onCreate() {
-		goto(resolve('/(auth)/users/create'));
-	}
-	function onEdit(u: OUser) {
-		goto(resolve('/(auth)/users/[id]/edit', { id: u.id.toString() }));
-	}
-	function onView(u: OUser) {
-		goto(resolve('/(auth)/users/[id]', { id: u.id.toString() }));
-	}
 </script>
 
 <svelte:head>
@@ -51,10 +40,10 @@
 				<h2>{m.users_title()}</h2>
 			</div>
 			{#if canCreate}
-				<button class="btn primary flex items-center gap-2" onclick={onCreate}>
+				<a class="btn primary flex items-center gap-2" href={resolve('/(auth)/users/create')}>
 					<Plus class="h-5 w-5" />
 					{m.users_create_label()}
-				</button>
+				</a>
 			{/if}
 		</div>
 
@@ -95,21 +84,21 @@
 								<td class="px-4 py-3">{new Date(u.updatedAt).toLocaleString()}</td>
 								<td class="px-4 py-3 text-right">
 									<div class="flex items-center justify-end gap-2">
-										<button
+										<a
 											class="btn icon light sm"
-											onclick={() => onView(u)}
+											href={resolve('/(auth)/users/[id=integer]', { id: u.id.toString() })}
 											aria-label="view user"
 										>
 											<Eye class="h-4 w-4" />
-										</button>
+									</a>
 										{#if canCreate}
-											<button
+											<a
 												class="btn icon primary sm"
-												onclick={() => onEdit(u)}
+												href={resolve('/(auth)/users/[id=integer]/edit', { id: u.id.toString() })}
 												aria-label={m.users_edit_title()}
 											>
 												<Pencil class="h-4 w-4" />
-											</button>
+								</a>
 										{/if}
 									</div>
 								</td>

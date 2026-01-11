@@ -12,11 +12,11 @@
     }
   },
   "oidc_ui": {
-    "ui_url": "http://localhost:5173",
+    "ui_url": "http://localhost:5173/oidc",
     "static_dir": "./apps/oidc/build"
   },
   "oidc_admin_ui": {
-    "ui_url": "http://localhost:5174",
+    "ui_url": "http://localhost:5174/oidc-admin",
     "static_dir": "./apps/oidc-admin/build"
   }
 }

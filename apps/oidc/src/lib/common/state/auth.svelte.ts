@@ -10,7 +10,7 @@ import {
 } from '../openapi/oidc';
 import { localStorageState } from '../util/localStorageState.svelte';
 import { afterSigninRedirect } from './afterSignInRedirectPath';
-import { isOnline } from './online.svelte';
+import { isOnline } from '@aicacia/svelte-headless';
 import { handleError } from '../errors';
 import { env } from '$env/dynamic/public';
 

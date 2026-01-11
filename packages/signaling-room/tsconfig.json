@@ -8,7 +8,7 @@
 		"outDir": "esm",
 		"declarationDir": "types"
 	},
-	"include": ["src", "./rollup.config.mjs"],
+	"include": ["src"],
 	"exclude": ["src/**/*.test.*", "src/**/*.benchmark.*"],
 	"typedocOptions": {
 		"entryPoints": ["src/index.ts"],

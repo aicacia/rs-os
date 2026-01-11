@@ -5,7 +5,7 @@
 	import { goto } from '$app/navigation';
 	import { clientApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
-	import { createNotification } from '$lib/common/state/notifications.svelte';
+	import { notifications } from '$lib/common/state/notifications.svelte';
 	import ClientForm, { type ClientFormData } from '../../_ClientForm.svelte';
 	import { m } from '$lib/paraglide/messages';
 
@@ -19,7 +19,7 @@
 				clientId: client.id,
 				clientUpsertRequest: formData
 			});
-			createNotification(m.clients_updated_success(), 'success');
+			notifications.add(m.clients_updated_success(), 'success');
 			await goto(resolve(`/clients/${updatedClient.id}`));
 		} catch (e) {
 			handleError(e);
@@ -45,8 +45,8 @@
 
 <ClientForm initialValues={client} onsubmit={handleSubmit}>
 	{#snippet actions()}
-		<button type="button" class="btn secondary" onclick={() => goto(resolve('/(auth)/clients'))}>
+		<a type="button" class="btn secondary" href={resolve('/(auth)/clients')}>
 			{m.clients_cancel()}
-		</button>
+		</a>
 	{/snippet}
 </ClientForm>

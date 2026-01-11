@@ -4,17 +4,17 @@
 	import { goto } from '$app/navigation';
 	import { clientApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
-	import { createNotification } from '$lib/common/state/notifications.svelte';
+	import { notifications } from '$lib/common/state/notifications.svelte';
 	import ClientForm, { type ClientFormData } from '../_ClientForm.svelte';
 	import { m } from '$lib/paraglide/messages';
 
-	async function handleSubmit(data: ClientFormData) {
+	async function handleSubmit(clientUpsertRequest: ClientFormData) {
 		try {
 			const client = await clientApi.clientCreate({
-				clientRegisterRequest: data
+				clientUpsertRequest
 			});
-			createNotification(m.clients_created_success(), 'success');
-			await goto(resolve('/(auth)/clients'));
+			notifications.add(m.clients_created_success(), 'success');
+			await goto(resolve('/(auth)/clients/[clientId=integer]', { clientId: client.id.toString() }));
 		} catch (e) {
 			handleError(e);
 		}
@@ -34,7 +34,7 @@
 	</div>
 </section>
 
-<ClientForm initialValues={{}} onsubmit={handleSubmit}>
+<ClientForm isCreate={true} initialValues={{}} onsubmit={handleSubmit}>
 	{#snippet actions()}
 		<a type="button" class="btn secondary" href={resolve('/(auth)/clients')}>
 			{m.clients_cancel()}

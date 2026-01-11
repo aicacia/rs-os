@@ -30,7 +30,7 @@ export function createTsConfig({ gitignorePath, tsconfigRootDir, rules = {} }) {
       }
     },
     {
-      files: ['eslint.config.js'],
+      files: ['eslint.config.js', 'rollup.config.mjs', 'vite.config.js', 'vite.config.mjs', 'svelte.config.js'],
       languageOptions: {
         parserOptions: {
           projectService: false,
@@ -38,7 +38,7 @@ export function createTsConfig({ gitignorePath, tsconfigRootDir, rules = {} }) {
           tsconfigRootDir
         }
       }
-    }
+    },
   );
 }
 
@@ -82,7 +82,7 @@ export function createSvelteConfig({ gitignorePath, tsconfigRootDir, svelteConfi
       }
     },
     {
-      files: ['eslint.config.js'],
+      files: ['eslint.config.js', 'rollup.config.mjs', 'vite.config.js', 'vite.config.mjs', 'svelte.config.js'],
       languageOptions: {
         parserOptions: {
           projectService: false,

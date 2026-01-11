@@ -1,4 +1,4 @@
-import { createNotification } from './state/notifications.svelte';
+import { notifications } from '$lib/common/state/notifications.svelte';
 import * as m from '$lib/paraglide/messages';
 import { ResponseError, type HttpError } from './openapi/oidc';
 
@@ -21,14 +21,14 @@ export async function handleError(error: unknown) {
 		notifyErrors(await getErrors(error));
 	} catch (e) {
 		console.error(e);
-		createNotification(`${m.errors_message_application()}: ${m.errors_message_application()}`);
+		notifications.add(`${m.errors_message_application()}: ${m.errors_message_application()}`);
 		throw e;
 	}
 }
 
 export function notifyErrors(errors: Errors) {
 	for (const [name, message] of translateErrors(errors)) {
-		createNotification(`${name}: ${message}`);
+		notifications.add(`${name}: ${message}`);
 	}
 }
 

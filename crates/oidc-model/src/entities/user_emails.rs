@@ -63,7 +63,7 @@ pub async fn get_user_primary_email_by_user_id(
 ) -> Result<Option<Model>, DbErr> {
   Entity::find()
     .filter(Column::UserId.eq(user_id))
-    .filter(Column::Primary.eq(true))
+    .filter(Column::Primary.eq(1))
     .one(db)
     .await
 }

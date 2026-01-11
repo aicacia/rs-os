@@ -1,18 +1,22 @@
 # UserApi
 
-All URIs are relative to _http://localhost:3000_
+All URIs are relative to *http://localhost:3000*
 
-| Method                                                | HTTP request                          | Description |
-| ----------------------------------------------------- | ------------------------------------- | ----------- |
-| [**createUserHandler**](UserApi.md#createuserhandler) | **POST** /oidc-admin/api/users        |             |
-| [**deleteUserHandler**](UserApi.md#deleteuserhandler) | **DELETE** /oidc-admin/api/users/{id} |             |
-| [**getUser**](UserApi.md#getuser)                     | **GET** /oidc-admin/api/users/{id}    |             |
-| [**updateUserHandler**](UserApi.md#updateuserhandler) | **PUT** /oidc-admin/api/users/{id}    |             |
-| [**userList**](UserApi.md#userlist)                   | **GET** /oidc-admin/api/users         |             |
+| Method | HTTP request | Description |
+|------------- | ------------- | -------------|
+| [**createUserHandler**](UserApi.md#createuserhandler) | **POST** /oidc-admin/api/users |  |
+| [**deleteUserHandler**](UserApi.md#deleteuserhandler) | **DELETE** /oidc-admin/api/users/{id} |  |
+| [**getUser**](UserApi.md#getuser) | **GET** /oidc-admin/api/users/{id} |  |
+| [**updateUserHandler**](UserApi.md#updateuserhandler) | **PUT** /oidc-admin/api/users/{id} |  |
+| [**userList**](UserApi.md#userlist) | **GET** /oidc-admin/api/users |  |
+
+
 
 ## createUserHandler
 
 > User createUserHandler(createUserRequest)
+
+
 
 ### Example
 
@@ -25,7 +29,7 @@ import type { CreateUserHandlerRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -50,9 +54,10 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name                  | Type                                      | Description | Notes |
-| --------------------- | ----------------------------------------- | ----------- | ----- |
-| **createUserRequest** | [CreateUserRequest](CreateUserRequest.md) |             |       |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **createUserRequest** | [CreateUserRequest](CreateUserRequest.md) |  | |
 
 ### Return type
 
@@ -67,47 +72,53 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **201**     |             | -                |
-| **400**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **201** |  |  -  |
+| **400** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## deleteUserHandler
 
 > deleteUserHandler(id)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserApi } from '';
+import {
+  Configuration,
+  UserApi,
+} from '';
 import type { DeleteUserHandlerRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserApi(config);
 
-	const body = {
-		// number
-		id: 789
-	} satisfies DeleteUserHandlerRequest;
+  const body = {
+    // number
+    id: 789,
+  } satisfies DeleteUserHandlerRequest;
 
-	try {
-		const data = await api.deleteUserHandler(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.deleteUserHandler(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -116,9 +127,10 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name   | Type     | Description | Notes                     |
-| ------ | -------- | ----------- | ------------------------- |
-| **id** | `number` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **id** | `number` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -133,47 +145,53 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
-| Status code | Description               | Response headers |
-| ----------- | ------------------------- | ---------------- |
-| **204**     | User deleted successfully | -                |
-| **401**     |                           | -                |
-| **403**     |                           | -                |
-| **404**     |                           | -                |
-| **500**     |                           | -                |
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **204** | User deleted successfully |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## getUser
 
 > User getUser(id)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserApi } from '';
+import {
+  Configuration,
+  UserApi,
+} from '';
 import type { GetUserRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserApi(config);
 
-	const body = {
-		// number
-		id: 789
-	} satisfies GetUserRequest;
+  const body = {
+    // number
+    id: 789,
+  } satisfies GetUserRequest;
 
-	try {
-		const data = await api.getUser(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.getUser(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -182,9 +200,10 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name   | Type     | Description | Notes                     |
-| ------ | -------- | ----------- | ------------------------- |
-| **id** | `number` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **id** | `number` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -199,21 +218,24 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **404**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## updateUserHandler
 
 > User updateUserHandler(id, updateUserRequest)
+
+
 
 ### Example
 
@@ -226,7 +248,7 @@ import type { UpdateUserHandlerRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -253,10 +275,11 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name                  | Type                                      | Description | Notes                     |
-| --------------------- | ----------------------------------------- | ----------- | ------------------------- |
-| **id**                | `number`                                  |             | [Defaults to `undefined`] |
-| **updateUserRequest** | [UpdateUserRequest](UpdateUserRequest.md) |             |                           |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **id** | `number` |  | [Defaults to `undefined`] |
+| **updateUserRequest** | [UpdateUserRequest](UpdateUserRequest.md) |  | |
 
 ### Return type
 
@@ -271,43 +294,49 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **400**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **404**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **400** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## userList
 
 > Array&lt;User&gt; userList()
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserApi } from '';
+import {
+  Configuration,
+  UserApi,
+} from '';
 import type { UserListRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserApi(config);
 
-	try {
-		const data = await api.userList();
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.userList();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -331,13 +360,14 @@ This endpoint does not need any parameter.
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+

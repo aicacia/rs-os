@@ -1,19 +1,23 @@
 # UserEmailApi
 
-All URIs are relative to _http://localhost:3000_
+All URIs are relative to *http://localhost:3000*
 
-| Method                                                               | HTTP request                                                      | Description |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------- |
-| [**createUserEmailHandler**](UserEmailApi.md#createuseremailhandler) | **POST** /oidc-admin/api/users/{user_id}/emails                   |             |
-| [**deleteUserEmailHandler**](UserEmailApi.md#deleteuseremailhandler) | **DELETE** /oidc-admin/api/users/{user_id}/emails/{email_id}      |             |
-| [**getUserEmail**](UserEmailApi.md#getuseremail)                     | **GET** /oidc-admin/api/users/{user_id}/emails/{email_id}         |             |
-| [**listUserEmails**](UserEmailApi.md#listuseremails)                 | **GET** /oidc-admin/api/users/{user_id}/emails                    |             |
-| [**updateUserEmailHandler**](UserEmailApi.md#updateuseremailhandler) | **PATCH** /oidc-admin/api/users/{user_id}/emails/{email_id}       |             |
-| [**verifyUserEmailHandler**](UserEmailApi.md#verifyuseremailhandler) | **POST** /oidc-admin/api/users/{user_id}/emails/{email_id}/verify |             |
+| Method | HTTP request | Description |
+|------------- | ------------- | -------------|
+| [**createUserEmailHandler**](UserEmailApi.md#createuseremailhandler) | **POST** /oidc-admin/api/users/{user_id}/emails |  |
+| [**deleteUserEmailHandler**](UserEmailApi.md#deleteuseremailhandler) | **DELETE** /oidc-admin/api/users/{user_id}/emails/{email_id} |  |
+| [**getUserEmail**](UserEmailApi.md#getuseremail) | **GET** /oidc-admin/api/users/{user_id}/emails/{email_id} |  |
+| [**listUserEmails**](UserEmailApi.md#listuseremails) | **GET** /oidc-admin/api/users/{user_id}/emails |  |
+| [**updateUserEmailHandler**](UserEmailApi.md#updateuseremailhandler) | **PATCH** /oidc-admin/api/users/{user_id}/emails/{email_id} |  |
+| [**verifyUserEmailHandler**](UserEmailApi.md#verifyuseremailhandler) | **POST** /oidc-admin/api/users/{user_id}/emails/{email_id}/verify |  |
+
+
 
 ## createUserEmailHandler
 
 > UserEmail createUserEmailHandler(userId, createUserEmailRequest)
+
+
 
 ### Example
 
@@ -26,7 +30,7 @@ import type { CreateUserEmailHandlerRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -53,10 +57,11 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name                       | Type                                                | Description | Notes                     |
-| -------------------------- | --------------------------------------------------- | ----------- | ------------------------- |
-| **userId**                 | `string`                                            |             | [Defaults to `undefined`] |
-| **createUserEmailRequest** | [CreateUserEmailRequest](CreateUserEmailRequest.md) |             |                           |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
+| **createUserEmailRequest** | [CreateUserEmailRequest](CreateUserEmailRequest.md) |  | |
 
 ### Return type
 
@@ -71,49 +76,55 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **201**     |             | -                |
-| **400**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **201** |  |  -  |
+| **400** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## deleteUserEmailHandler
 
 > deleteUserEmailHandler(userId, emailId)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserEmailApi } from '';
+import {
+  Configuration,
+  UserEmailApi,
+} from '';
 import type { DeleteUserEmailHandlerRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserEmailApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserEmailApi(config);
 
-	const body = {
-		// string
-		userId: userId_example,
-		// string
-		emailId: emailId_example
-	} satisfies DeleteUserEmailHandlerRequest;
+  const body = {
+    // string
+    userId: userId_example,
+    // string
+    emailId: emailId_example,
+  } satisfies DeleteUserEmailHandlerRequest;
 
-	try {
-		const data = await api.deleteUserEmailHandler(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.deleteUserEmailHandler(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -122,10 +133,11 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name        | Type     | Description | Notes                     |
-| ----------- | -------- | ----------- | ------------------------- |
-| **userId**  | `string` |             | [Defaults to `undefined`] |
-| **emailId** | `string` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
+| **emailId** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -140,49 +152,55 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
-| Status code | Description                | Response headers |
-| ----------- | -------------------------- | ---------------- |
-| **204**     | Email deleted successfully | -                |
-| **401**     |                            | -                |
-| **403**     |                            | -                |
-| **404**     |                            | -                |
-| **500**     |                            | -                |
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **204** | Email deleted successfully |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## getUserEmail
 
 > UserEmail getUserEmail(userId, emailId)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserEmailApi } from '';
+import {
+  Configuration,
+  UserEmailApi,
+} from '';
 import type { GetUserEmailRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserEmailApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserEmailApi(config);
 
-	const body = {
-		// string
-		userId: userId_example,
-		// string
-		emailId: emailId_example
-	} satisfies GetUserEmailRequest;
+  const body = {
+    // string
+    userId: userId_example,
+    // string
+    emailId: emailId_example,
+  } satisfies GetUserEmailRequest;
 
-	try {
-		const data = await api.getUserEmail(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.getUserEmail(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -191,10 +209,11 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name        | Type     | Description | Notes                     |
-| ----------- | -------- | ----------- | ------------------------- |
-| **userId**  | `string` |             | [Defaults to `undefined`] |
-| **emailId** | `string` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
+| **emailId** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -209,47 +228,53 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **404**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## listUserEmails
 
 > Array&lt;UserEmail&gt; listUserEmails(userId)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserEmailApi } from '';
+import {
+  Configuration,
+  UserEmailApi,
+} from '';
 import type { ListUserEmailsRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserEmailApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserEmailApi(config);
 
-	const body = {
-		// string
-		userId: userId_example
-	} satisfies ListUserEmailsRequest;
+  const body = {
+    // string
+    userId: userId_example,
+  } satisfies ListUserEmailsRequest;
 
-	try {
-		const data = await api.listUserEmails(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.listUserEmails(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -258,9 +283,10 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name       | Type     | Description | Notes                     |
-| ---------- | -------- | ----------- | ------------------------- |
-| **userId** | `string` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -275,20 +301,23 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## updateUserEmailHandler
 
 > UserEmail updateUserEmailHandler(userId, emailId, updateUserEmailRequest)
+
+
 
 ### Example
 
@@ -301,7 +330,7 @@ import type { UpdateUserEmailHandlerRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -330,11 +359,12 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name                       | Type                                                | Description | Notes                     |
-| -------------------------- | --------------------------------------------------- | ----------- | ------------------------- |
-| **userId**                 | `string`                                            |             | [Defaults to `undefined`] |
-| **emailId**                | `string`                                            |             | [Defaults to `undefined`] |
-| **updateUserEmailRequest** | [UpdateUserEmailRequest](UpdateUserEmailRequest.md) |             |                           |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
+| **emailId** | `string` |  | [Defaults to `undefined`] |
+| **updateUserEmailRequest** | [UpdateUserEmailRequest](UpdateUserEmailRequest.md) |  | |
 
 ### Return type
 
@@ -349,50 +379,56 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **400**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **404**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **400** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## verifyUserEmailHandler
 
 > UserEmail verifyUserEmailHandler(userId, emailId)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserEmailApi } from '';
+import {
+  Configuration,
+  UserEmailApi,
+} from '';
 import type { VerifyUserEmailHandlerRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserEmailApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserEmailApi(config);
 
-	const body = {
-		// string
-		userId: userId_example,
-		// string
-		emailId: emailId_example
-	} satisfies VerifyUserEmailHandlerRequest;
+  const body = {
+    // string
+    userId: userId_example,
+    // string
+    emailId: emailId_example,
+  } satisfies VerifyUserEmailHandlerRequest;
 
-	try {
-		const data = await api.verifyUserEmailHandler(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.verifyUserEmailHandler(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -401,10 +437,11 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name        | Type     | Description | Notes                     |
-| ----------- | -------- | ----------- | ------------------------- |
-| **userId**  | `string` |             | [Defaults to `undefined`] |
-| **emailId** | `string` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
+| **emailId** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -419,14 +456,15 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **404**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+

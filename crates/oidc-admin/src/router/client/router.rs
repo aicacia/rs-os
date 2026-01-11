@@ -242,14 +242,14 @@ pub async fn client_update(
 pub async fn client_delete(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Path(client_id): Path<String>,
+  Path(client_id): Path<i64>,
 ) -> impl IntoResponse {
   match user_authorization.has_permission(Permission::ClientDelete) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
 
-  match deactivate_client(&state.database_connection, &client_id).await {
+  match deactivate_client(&state.database_connection, client_id).await {
     Ok(Some(_client_model)) => axum::http::StatusCode::NO_CONTENT.into_response(),
     Ok(None) => HttpError::not_found()
       .with_error("client", NOT_FOUND_ERROR)

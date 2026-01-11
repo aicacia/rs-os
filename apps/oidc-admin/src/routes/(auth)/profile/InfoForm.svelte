@@ -22,7 +22,7 @@
 	import type { CurrentUser } from '$lib/common/openapi/oidc-admin/models/index';
 	import { currentUserApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
-	import { createForm } from '$lib/common/util/form.svelte';
+	import { createForm } from '@aicacia/svelte-forms';
 	import Issues from '$lib/common/components/Issues.svelte';
 	import { invalidateAll } from '$app/navigation';
 

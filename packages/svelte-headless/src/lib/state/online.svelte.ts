@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { BROWSER } from 'esm-env';
 
 let online = $state(typeof navigator === 'object' ? navigator.onLine : false);
 
@@ -14,7 +14,7 @@ function onOffline() {
 	online = false;
 }
 
-if (browser) {
+if (BROWSER) {
 	window.addEventListener('online', onOnline);
 	window.addEventListener('offline', onOffline);
 }

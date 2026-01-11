@@ -118,13 +118,17 @@ pub async fn run() -> io::Result<()> {
   let pubsub = Arc::new(
     if let Some(redis_url) = &app_config.signaling_api.redis_url {
       match os_signaling::router::ws::pubsub::PubSub::new_redis(redis_url) {
-        Ok(pubsub) => pubsub,
+        Ok(pubsub) => {
+          log::info!("connected to redis pubsub at {}", redis_url);
+          pubsub
+        }
         Err(e) => {
           log::error!("failed to create redis pubsub client: {}", e);
           return Err(io::Error::other(e));
         }
       }
     } else {
+      log::info!("using in-memory pubsub for signaling");
       os_signaling::router::ws::pubsub::PubSub::new_in_memory()
     },
   );

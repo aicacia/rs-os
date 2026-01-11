@@ -3,16 +3,17 @@
 	import UserForm from './UserForm.svelte';
 	import { userApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
-	import { createNotification } from '$lib/common/state/notifications.svelte';
+	import { notifications } from '$lib/common/state/notifications.svelte';
 	import { m } from '$lib/paraglide/messages';
+	import { resolve } from '$app/paths';
 
 	async function onSubmit(values: { username: string }) {
 		try {
 			const user = await userApi.createUserHandler({
 				createUserRequest: { username: values.username }
 			});
-			createNotification(m.users_created_success(), 'success');
-			goto(`/users/${user.id}`);
+			notifications.add(m.users_created_success(), 'success');
+			await goto(resolve(`/(auth)/users/[id=integer]`, { id: user.id }));
 		} catch (e) {
 			await handleError(e);
 		}

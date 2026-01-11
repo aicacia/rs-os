@@ -27,9 +27,9 @@
 				v.array(v.string()),
 				v.minLength(1, m.client_form_validation_scopes_required())
 			),
-			redirectUris: v.optional(v.nullable(v.array(v.string()))),
-			postLogoutRedirectUris: v.optional(v.nullable(v.array(v.string()))),
-			audience: v.optional(v.nullable(v.array(v.string()))),
+			redirectUris: v.array(v.string()),
+			postLogoutRedirectUris: v.array(v.string()),
+			audience: v.array(v.string()),
 			logoUri: v.optional(v.nullable(v.string())),
 			clientUri: v.optional(v.nullable(v.string())),
 			policyUri: v.optional(v.nullable(v.string())),
@@ -53,7 +53,7 @@
 
 <script lang="ts">
 	import type { ClientUpsertRequest, Client } from '$lib/common/openapi/oidc-admin/models/index';
-	import { createForm } from '$lib/common/util/form.svelte';
+	import { createForm } from '@aicacia/svelte-forms';
 	import Issues from '$lib/common/components/Issues.svelte';
 	import { X, Plus, Eye, EyeOff } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
@@ -62,15 +62,17 @@
 		initialValues,
 		onsubmit,
 		readonly = false,
+		isCreate = false,
 		actions
 	}: {
 		initialValues: Partial<ClientUpsertRequest> | Partial<Client>;
 		onsubmit: (data: ClientFormData) => void | Promise<void>;
 		readonly?: boolean;
+		isCreate?: boolean;
 		actions?: Snippet;
 	} = $props();
 
-	const form = createForm(ClientFormSchema(), {
+	const form = $derived(createForm(ClientFormSchema(), {
 		clientId: initialValues.clientId ?? '',
 		name: initialValues.name ?? '',
 		clientSecret: ('clientSecret' in initialValues ? initialValues.clientSecret : null) ?? null,
@@ -79,9 +81,9 @@
 		grantTypes: initialValues.grantTypes ?? ['authorization_code'],
 		responseTypes: initialValues.responseTypes ?? ['code'],
 		scopes: initialValues.scopes ?? ['openid'],
-		redirectUris: initialValues.redirectUris ?? null,
-		postLogoutRedirectUris: initialValues.postLogoutRedirectUris ?? null,
-		audience: initialValues.audience ?? null,
+		redirectUris: initialValues.redirectUris ?? [],
+		postLogoutRedirectUris: initialValues.postLogoutRedirectUris ?? [],
+		audience: initialValues.audience ?? [],
 		logoUri: initialValues.logoUri ?? null,
 		clientUri: initialValues.clientUri ?? null,
 		policyUri: initialValues.policyUri ?? null,
@@ -89,27 +91,24 @@
 		accessTokenExpiresInSeconds: initialValues.accessTokenExpiresInSeconds ?? 3600,
 		idTokenExpiresInSeconds: initialValues.idTokenExpiresInSeconds ?? 3600,
 		refreshExpiresInSeconds: initialValues.refreshExpiresInSeconds ?? 86400
-	});
+	}));
 
-	// Client secret visibility - hidden by default if has value
-	const clientSecretIsEmpty = !form.fields.clientSecret.value;
-	let showClientSecret = $state(clientSecretIsEmpty);
+	const clientSecretIsEmpty = $derived(!form.fields.clientSecret.value);
+	let showClientSecret = $derived(clientSecretIsEmpty);
 
-	// State for managing arrays - we'll use simple state tracking instead of the complex form array fields
-	let grantTypes = $state<string[]>(initialValues.grantTypes ?? ['authorization_code']);
-	let responseTypes = $state<string[]>(initialValues.responseTypes ?? ['code']);
-	let scopesState = $state<string[]>(initialValues.scopes ?? ['openid']);
-	let redirectUris = $state<string[]>(
+	let grantTypes = $derived<string[]>(initialValues.grantTypes ?? ['authorization_code']);
+	let responseTypes = $derived<string[]>(initialValues.responseTypes ?? ['code']);
+	let scopesState = $derived<string[]>(initialValues.scopes ?? ['openid']);
+	let redirectUris = $derived<string[]>(
 		(initialValues.redirectUris as string[] | null | undefined) ?? []
 	);
-	let postLogoutRedirectUris = $state<string[]>(
+	let postLogoutRedirectUris = $derived<string[]>(
 		(initialValues.postLogoutRedirectUris as string[] | null | undefined) ?? []
 	);
-	let audienceState = $state<string[]>(
+	let audienceState = $derived<string[]>(
 		(initialValues.audience as string[] | null | undefined) ?? []
 	);
 
-	// String array management
 	let redirectUriInput = $state('');
 	let postLogoutRedirectUriInput = $state('');
 	let audienceInput = $state('');
@@ -147,7 +146,6 @@
 		audienceState = audienceState.filter((_, i) => i !== index);
 	}
 
-	// Multi-select management for grant types, response types, and scopes
 	const availableGrantTypes = [
 		'authorization_code',
 		'implicit',
@@ -197,9 +195,9 @@
 			grantTypes,
 			responseTypes,
 			scopes: scopesState,
-			redirectUris: redirectUris.length > 0 ? redirectUris : null,
-			postLogoutRedirectUris: postLogoutRedirectUris.length > 0 ? postLogoutRedirectUris : null,
-			audience: audienceState.length > 0 ? audienceState : null,
+			redirectUris: redirectUris.length > 0 ? redirectUris : [],
+			postLogoutRedirectUris: postLogoutRedirectUris.length > 0 ? postLogoutRedirectUris : [],
+			audience: audienceState.length > 0 ? audienceState : [],
 			logoUri: form.fields.logoUri.value,
 			clientUri: form.fields.clientUri.value,
 			policyUri: form.fields.policyUri.value,
@@ -582,10 +580,10 @@
 				{@render actions()}
 			{/if}
 			<button type="submit" class="btn primary">
-				{#if initialValues.id}
-					{m.clients_update_button()}
-				{:else}
+				{#if isCreate}
 					{m.clients_create_button()}
+				{:else}
+					{m.clients_update_button()}
 				{/if}
 			</button>
 		</div>

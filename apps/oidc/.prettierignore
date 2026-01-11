@@ -7,3 +7,9 @@ bun.lockb
 
 # Miscellaneous
 /static/
+node_modules
+dist
+build
+.svelte-kit
+.vite
+coverage

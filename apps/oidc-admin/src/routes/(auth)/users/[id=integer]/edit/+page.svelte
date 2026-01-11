@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import UserForm from '../../create/UserForm.svelte';
 	import { userApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
 	import DeleteUserDialog from '../DeleteUserDialog.svelte';
-	import { createNotification } from '$lib/common/state/notifications.svelte';
+	import { notifications } from '$lib/common/state/notifications.svelte';
 	import { m } from '$lib/paraglide/messages';
 
 	let { data }: PageProps = $props();
@@ -18,8 +19,8 @@
 				id: user.id,
 				updateUserRequest: { username: values.username }
 			});
-			createNotification(m.users_updated_success(), 'success');
-			goto(`/users/${updated.id}`);
+			notifications.add(m.users_updated_success(), 'success');
+			await goto(resolve(`/(auth)/users/[id=integer]`, { id: updated.id }));
 		} catch (e) {
 			await handleError(e);
 		}
@@ -28,8 +29,8 @@
 	async function onDeleteConfirm() {
 		try {
 			await userApi.deleteUserHandler({ id: user.id });
-			createNotification(m.users_deleted_success(), 'success');
-			await goto('/users');
+			notifications.add(m.users_deleted_success(), 'success');
+			await goto(resolve('/(auth)/users'));
 		} catch (e) {
 			await handleError(e);
 		}

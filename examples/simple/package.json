@@ -21,7 +21,7 @@
 		"@sveltejs/kit": "^2.49.4",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/vite": "^4.1.18",
-		"@types/node": "^25.0.5",
+		"@types/node": "^25.0.6",
 		"eslint": "^9.39.2",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.14.0",
@@ -39,10 +39,11 @@
 		"vite-plugin-wasm": "^3.5.0"
 	},
 	"dependencies": {
+		"@aicacia/automerge-repo-network-webrtc": "workspace:*",
 		"@aicacia/keepalivewebsocket": "^0.1.9",
 		"@aicacia/peer": "^0.1.5",
-		"@aicacia/automerge-repo-network-webrtc": "workspace:*",
 		"@aicacia/signaling-room": "workspace:*",
+		"@aicacia/svelte-headless": "workspace:*",
 		"@automerge/automerge-repo": "^2.5.1",
 		"@automerge/automerge-repo-storage-indexeddb": "^2.5.1",
 		"@lucide/svelte": "0.562.0",

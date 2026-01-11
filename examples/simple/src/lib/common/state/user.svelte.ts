@@ -21,7 +21,7 @@ const userSettings = browser
 					client_id: `${env.PUBLIC_URL}`,
 					redirect_uris: [`${env.PUBLIC_URL}/callback`],
 					post_logout_redirect_uris: [`${env.PUBLIC_URL}/logout`],
-					logo_uri: `${env.PUBLIC_URL}${icon256x256Png}`,
+					logo_uri: `${window.location.origin}${icon256x256Png}`,
 					client_uri: `${env.PUBLIC_URL}`,
 					policy_uri: `${env.PUBLIC_URL}/policy`,
 					terms_of_service_uri: `${env.PUBLIC_URL}${'/terms'}`,

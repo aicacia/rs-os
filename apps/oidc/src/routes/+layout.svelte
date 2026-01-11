@@ -5,7 +5,7 @@
 	import { onMount } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import { resolve } from '$app/paths';
-	import { getTheme } from '$lib/common/state/theme.svelte';
+	import { getTheme } from '@aicacia/svelte-headless';
 	import Notifications from '$lib/common/components/Notifications.svelte';
 
 	let { children }: LayoutProps = $props();

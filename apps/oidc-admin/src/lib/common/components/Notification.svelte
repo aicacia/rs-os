@@ -5,13 +5,14 @@
 </script>
 
 <script lang="ts">
-	import { removeNotification, type Notification } from '$lib/common/state/notifications.svelte';
+	import type { Notification } from '@aicacia/svelte-headless';
 	import { CircleX, CircleCheck, Info, TriangleAlert } from '@lucide/svelte';
+	import { notifications } from '$lib/common/state/notifications.svelte';
 
 	let { notification }: Props = $props();
 
 	function onDelete() {
-		removeNotification(notification.id);
+		notifications.remove(notification.id);
 	}
 </script>
 

@@ -1,23 +1,25 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { Edit, Trash2 } from '@lucide/svelte';
+	import { Pencil, Trash2 } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import DeleteUserDialog from './DeleteUserDialog.svelte';
 	import { userApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
-	import { createNotification } from '$lib/common/state/notifications.svelte';
+	import { notifications } from '$lib/common/state/notifications.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { User } from '$lib/common/openapi/oidc-admin/models';
+	import { resolve } from '$app/paths';
 
 	let { data }: PageProps = $props();
-	let user: User = data.user;
+
+	let user: User = $derived(data.user);
 	let showDelete = $state(false);
 
 	async function onDeleteConfirm() {
 		try {
 			await userApi.deleteUserHandler({ id: user.id });
-			createNotification(m.users_deleted_success(), 'success');
-			goto('/users');
+			notifications.add(m.users_deleted_success(), 'success');
+			await goto(resolve('/(auth)/users'));
 		} catch (e) {
 			await handleError(e);
 		}
@@ -50,13 +52,13 @@
 		</div>
 	</div>
 	<div class="flex flex-row items-center gap-2">
-		<button
+		<a
 			class="btn light flex flex-row items-center"
-			onclick={() => goto(`/users/${user.id}/edit`)}
+			href={resolve('/(auth)/users/[id=integer]/edit', { id: user.id })}
 		>
-			<Edit class="mr-1 h-4 w-4" />
+			<Pencil class="mr-1 h-4 w-4" />
 			{m.actions_edit()}
-		</button>
+		</a>
 		<button class="btn danger flex flex-row items-center" onclick={() => (showDelete = true)}>
 			<Trash2 class="mr-1 h-4 w-4" />
 			{m.actions_delete()}

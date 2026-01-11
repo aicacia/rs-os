@@ -126,10 +126,10 @@ pub async fn get_distinct_auth_methods(db: &DatabaseConnection) -> Result<Vec<St
 
 pub async fn deactivate_client(
   db: &DatabaseConnection,
-  client_id: &str,
+  client_id: i64,
 ) -> Result<Option<Model>, DbErr> {
   let mut active_model: ActiveModel = Entity::find()
-    .filter(Column::ClientId.eq(client_id))
+    .filter(Column::Id.eq(client_id))
     .one(db)
     .await?
     .ok_or(DbErr::RecordNotFound("Client not found".to_string()))?

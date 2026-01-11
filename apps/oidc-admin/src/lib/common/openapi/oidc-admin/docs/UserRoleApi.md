@@ -1,17 +1,21 @@
 # UserRoleApi
 
-All URIs are relative to _http://localhost:3000_
+All URIs are relative to *http://localhost:3000*
 
-| Method                                                            | HTTP request                                               | Description |
-| ----------------------------------------------------------------- | ---------------------------------------------------------- | ----------- |
-| [**assignUserRoleHandler**](UserRoleApi.md#assignuserrolehandler) | **POST** /oidc-admin/api/users/{user_id}/roles             |             |
-| [**listUserPermissions**](UserRoleApi.md#listuserpermissions)     | **GET** /oidc-admin/api/users/{user_id}/permissions        |             |
-| [**listUserRoles**](UserRoleApi.md#listuserroles)                 | **GET** /oidc-admin/api/users/{user_id}/roles              |             |
-| [**removeUserRoleHandler**](UserRoleApi.md#removeuserrolehandler) | **DELETE** /oidc-admin/api/users/{user_id}/roles/{role_id} |             |
+| Method | HTTP request | Description |
+|------------- | ------------- | -------------|
+| [**assignUserRoleHandler**](UserRoleApi.md#assignuserrolehandler) | **POST** /oidc-admin/api/users/{user_id}/roles |  |
+| [**listUserPermissions**](UserRoleApi.md#listuserpermissions) | **GET** /oidc-admin/api/users/{user_id}/permissions |  |
+| [**listUserRoles**](UserRoleApi.md#listuserroles) | **GET** /oidc-admin/api/users/{user_id}/roles |  |
+| [**removeUserRoleHandler**](UserRoleApi.md#removeuserrolehandler) | **DELETE** /oidc-admin/api/users/{user_id}/roles/{role_id} |  |
+
+
 
 ## assignUserRoleHandler
 
 > UserRole assignUserRoleHandler(userId, assignUserRoleRequest)
+
+
 
 ### Example
 
@@ -24,7 +28,7 @@ import type { AssignUserRoleHandlerRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // Configure HTTP bearer authorization: Authorization
     accessToken: "YOUR BEARER TOKEN",
   });
@@ -51,10 +55,11 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name                      | Type                                              | Description | Notes                     |
-| ------------------------- | ------------------------------------------------- | ----------- | ------------------------- |
-| **userId**                | `string`                                          |             | [Defaults to `undefined`] |
-| **assignUserRoleRequest** | [AssignUserRoleRequest](AssignUserRoleRequest.md) |             |                           |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
+| **assignUserRoleRequest** | [AssignUserRoleRequest](AssignUserRoleRequest.md) |  | |
 
 ### Return type
 
@@ -69,47 +74,53 @@ example().catch(console.error);
 - **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **201**     |             | -                |
-| **400**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **201** |  |  -  |
+| **400** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## listUserPermissions
 
 > UserPermissions listUserPermissions(userId)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserRoleApi } from '';
+import {
+  Configuration,
+  UserRoleApi,
+} from '';
 import type { ListUserPermissionsRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserRoleApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserRoleApi(config);
 
-	const body = {
-		// string
-		userId: userId_example
-	} satisfies ListUserPermissionsRequest;
+  const body = {
+    // string
+    userId: userId_example,
+  } satisfies ListUserPermissionsRequest;
 
-	try {
-		const data = await api.listUserPermissions(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.listUserPermissions(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -118,9 +129,10 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name       | Type     | Description | Notes                     |
-| ---------- | -------- | ----------- | ------------------------- |
-| **userId** | `string` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -135,46 +147,52 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## listUserRoles
 
 > Array&lt;UserRole&gt; listUserRoles(userId)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserRoleApi } from '';
+import {
+  Configuration,
+  UserRoleApi,
+} from '';
 import type { ListUserRolesRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserRoleApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserRoleApi(config);
 
-	const body = {
-		// string
-		userId: userId_example
-	} satisfies ListUserRolesRequest;
+  const body = {
+    // string
+    userId: userId_example,
+  } satisfies ListUserRolesRequest;
 
-	try {
-		const data = await api.listUserRoles(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.listUserRoles(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -183,9 +201,10 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name       | Type     | Description | Notes                     |
-| ---------- | -------- | ----------- | ------------------------- |
-| **userId** | `string` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -200,48 +219,54 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
+### HTTP response details
 | Status code | Description | Response headers |
-| ----------- | ----------- | ---------------- |
-| **200**     |             | -                |
-| **401**     |             | -                |
-| **403**     |             | -                |
-| **500**     |             | -                |
+|-------------|-------------|------------------|
+| **200** |  |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
 
 ## removeUserRoleHandler
 
 > removeUserRoleHandler(userId, roleId)
 
+
+
 ### Example
 
 ```ts
-import { Configuration, UserRoleApi } from '';
+import {
+  Configuration,
+  UserRoleApi,
+} from '';
 import type { RemoveUserRoleHandlerRequest } from '';
 
 async function example() {
-	console.log('🚀 Testing  SDK...');
-	const config = new Configuration({
-		// Configure HTTP bearer authorization: Authorization
-		accessToken: 'YOUR BEARER TOKEN'
-	});
-	const api = new UserRoleApi(config);
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: Authorization
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UserRoleApi(config);
 
-	const body = {
-		// string
-		userId: userId_example,
-		// string
-		roleId: roleId_example
-	} satisfies RemoveUserRoleHandlerRequest;
+  const body = {
+    // string
+    userId: userId_example,
+    // string
+    roleId: roleId_example,
+  } satisfies RemoveUserRoleHandlerRequest;
 
-	try {
-		const data = await api.removeUserRoleHandler(body);
-		console.log(data);
-	} catch (error) {
-		console.error(error);
-	}
+  try {
+    const data = await api.removeUserRoleHandler(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Run the test
@@ -250,10 +275,11 @@ example().catch(console.error);
 
 ### Parameters
 
-| Name       | Type     | Description | Notes                     |
-| ---------- | -------- | ----------- | ------------------------- |
-| **userId** | `string` |             | [Defaults to `undefined`] |
-| **roleId** | `string` |             | [Defaults to `undefined`] |
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` |  | [Defaults to `undefined`] |
+| **roleId** | `string` |  | [Defaults to `undefined`] |
 
 ### Return type
 
@@ -268,14 +294,15 @@ example().catch(console.error);
 - **Content-Type**: Not defined
 - **Accept**: `application/json`
 
-### HTTP response details
 
-| Status code | Description               | Response headers |
-| ----------- | ------------------------- | ---------------- |
-| **204**     | Role removed successfully | -                |
-| **401**     |                           | -                |
-| **403**     |                           | -                |
-| **404**     |                           | -                |
-| **500**     |                           | -                |
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **204** | Role removed successfully |  -  |
+| **401** |  |  -  |
+| **403** |  |  -  |
+| **404** |  |  -  |
+| **500** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+

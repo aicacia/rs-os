@@ -1,6 +1,9 @@
 services:
   os-oidc:
     container_name: os-oidc
+    profiles:
+      - service
+      - api
     image: ghcr.io/aicacia/os-oidc
     build:
       args:
@@ -19,6 +22,9 @@ services:
 
   os-oidc-admin:
     container_name: os-oidc-admin
+    profiles:
+      - service
+      - api
     image: ghcr.io/aicacia/os-oidc-admin
     build:
       args:
@@ -37,6 +43,9 @@ services:
 
   os-signaling:
     container_name: os-signaling
+    profiles:
+      - service
+      - api
     image: ghcr.io/aicacia/os-signaling
     build:
       args:
@@ -55,6 +64,9 @@ services:
 
   os-ui-base:
     container_name: os-ui-base
+    profiles:
+      - service
+      - ui
     image: os-ui-base
     build:
       args:
@@ -64,6 +76,9 @@ services:
 
   os-oidc-ui:
     container_name: os-oidc-ui
+    profiles:
+      - service
+      - ui
     image: ghcr.io/aicacia/os-oidc-ui
     build:
       args:
@@ -75,11 +90,14 @@ services:
       - "5173:3000"
     volumes:
       - ./docker/config.oidc-ui.json:/app/config.json:ro
-      - ./apps/oidc-ui/build:/app/build:rw
+      - ./apps/oidc/build:/app/build:rw
     restart: unless-stopped
 
   os-oidc-admin-ui:
     container_name: os-oidc-admin-ui
+    profiles:
+      - service
+      - ui
     image: ghcr.io/aicacia/os-oidc-admin-ui
     build:
       args:
@@ -97,6 +115,8 @@ services:
   # Supporting services
   postgres:
     container_name: postgres
+    profiles:
+      - database
     image: postgres:18-alpine
     ports:
       - "5432:5432"
@@ -115,6 +135,8 @@ services:
 
   redis:
     container_name: redis
+    profiles:
+      - database
     image: redis:8-alpine
     ports:
       - "6379:6379"

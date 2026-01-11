@@ -1,18 +1,17 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import type { Client } from '$lib/common/openapi/oidc-admin/models/index';
-	import { Plus, Pencil, Trash, Eye, Search, ArrowLeft } from '@lucide/svelte';
+	import { Plus, Pencil, Trash,  Search, ArrowLeft } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { goto } from '$app/navigation';
 	import { clientApi } from '$lib/common/openapi';
 	import { handleError } from '$lib/common/errors';
-	import { createNotification } from '$lib/common/state/notifications.svelte';
+	import { notifications } from '$lib/common/state/notifications.svelte';
 	import { m } from '$lib/paraglide/messages';
 
 	let { data }: PageProps = $props();
 
 	let searchQuery = $state('');
-	let clients = $state(data.clients);
+	let clients = $derived(data.clients);
 
 	const filteredClients = $derived(
 		clients.filter((client) => client.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -26,7 +25,7 @@
 		try {
 			await clientApi.clientDelete({ clientId: client.id });
 			clients = clients.filter((c) => c.id !== client.id);
-			createNotification(m.clients_deleted_success(), 'success');
+			notifications.add(m.clients_deleted_success(), 'success');
 		} catch (e) {
 			handleError(e);
 		}
@@ -49,13 +48,13 @@
 			</a>
 			<h2>{m.clients_oauth2_clients()}</h2>
 		</div>
-		<button
+		<a
 			class="btn primary flex items-center gap-2"
-			onclick={() => goto(resolve('/clients/create'))}
+			href={resolve('/(auth)/clients/create')}
 		>
 			<Plus class="h-5 w-5" />
 			{m.clients_create_new()}
-		</button>
+	</a>
 	</div>
 
 	<div class="relative">

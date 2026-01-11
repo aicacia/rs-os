@@ -54,13 +54,14 @@ async fn private(
   };
 
   let user_id = uuid::Uuid::now_v7().to_string();
+
   let room = format!(
     "{}:client:{}:user:{}",
-    authorization_request.room,
+    urlencoding::encode(&authorization_request.room),
     if authorization_request.client {
-      claims.client
+      urlencoding::encode(&claims.client).to_string()
     } else {
-      "anonymous".to_owned()
+      "anonymous".to_string()
     },
     if authorization_request.user {
       claims.user
@@ -119,7 +120,7 @@ async fn public(
   ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
   let user_id = uuid::Uuid::now_v7().to_string();
-  let room = format!("anonymous:{}", room_request.room);
+  let room = format!("anonymous:{}", urlencoding::encode(&room_request.room));
 
   if state.cancellation_token.is_cancelled() {
     log::info!("WebSocket connection attempt during server shutdown");
