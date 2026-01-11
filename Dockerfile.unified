@@ -9,6 +9,7 @@ WORKDIR /app
 COPY . .
 
 RUN pnpm install --frozen-lockfile
+RUN pnpm packages:build
 RUN VITE_BASE_PATH=/oidc pnpm --filter os-oidc build
 RUN VITE_BASE_PATH=/oidc-admin pnpm --filter os-oidc-admin build
 
