@@ -104,7 +104,7 @@ async fn private(
 
 #[utoipa::path(
   get,
-  path = "/anonymous",
+  path = "/public",
   tags = [TAG],
   params(WSRoomRequest),
   responses(
@@ -120,7 +120,7 @@ async fn public(
   ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
   let user_id = uuid::Uuid::now_v7().to_string();
-  let room = format!("anonymous:{}", urlencoding::encode(&room_request.room));
+  let room = format!("{}:public", urlencoding::encode(&room_request.room));
 
   if state.cancellation_token.is_cancelled() {
     log::info!("WebSocket connection attempt during server shutdown");
