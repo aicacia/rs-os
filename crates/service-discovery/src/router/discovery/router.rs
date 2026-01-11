@@ -9,7 +9,7 @@ use crate::router::{
 
 #[utoipa::path(
   get,
-  path = "/.well-known/service-discovery",
+  path = "/.well-known/services",
   tags = [TAG],
   responses(
     (status = 200, description = "Services Discovered", body = ServicesDiscovered),

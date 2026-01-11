@@ -22,7 +22,8 @@
 		open = !open;
 	}
 	async function onLogout() {
-		await getUserManager().signoutRedirect();
+		const userManager = await getUserManager();
+		await userManager.signoutRedirect();
 	}
 </script>
 

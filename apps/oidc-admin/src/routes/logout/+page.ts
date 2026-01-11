@@ -7,7 +7,8 @@ export const load: PageLoad = async (event) => {
 	await event.parent();
 
 	try {
-		await getUserManager().signoutCallback(event.url.toString());
+		const userManager = await getUserManager();
+		await userManager.signoutCallback(event.url.toString());
 		redirect(302, '/');
 	} catch (e) {
 		if (e instanceof Error) {

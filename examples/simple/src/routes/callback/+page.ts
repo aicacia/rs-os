@@ -7,7 +7,8 @@ export const load: PageLoad = async (event) => {
 	await event.parent();
 
 	try {
-		await getUserManager().signinCallback(event.url.toString());
+		const userManager = await getUserManager();
+		await userManager.signinCallback(event.url.toString());
 	} catch (e) {
 		if (e instanceof Error) {
 			notifications.add(e.message);

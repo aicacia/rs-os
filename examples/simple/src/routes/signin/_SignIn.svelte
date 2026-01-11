@@ -14,7 +14,9 @@
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault();
 
-		await getUserManager().signinRedirect();
+		
+		const userManager = await getUserManager();
+		await userManager.signinRedirect();
 	}
 </script>
 

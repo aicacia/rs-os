@@ -46,6 +46,7 @@
 		"@aicacia/debounce": "^0.1.25",
 		"@aicacia/svelte-forms": "^0.1.0",
 		"@aicacia/svelte-headless": "workspace:*",
+		"@aicacia/service-discovery": "workspace:*",
 		"@aicacia/trycatch": "^0.1.1",
 		"@lucide/svelte": "^0.562.0",
 		"@openapitools/openapi-generator-cli": "^2.27.0",

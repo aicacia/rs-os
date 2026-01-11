@@ -8,17 +8,20 @@ export interface Notification<T = DefaultNotificationType> {
 	type: T;
 }
 
-export interface CreateNotificationsOptions {
+export interface CreateNotificationsOptions<T = DefaultNotificationType> {
 	generateId?: () => string;
+	defaultType?: T;
 }
 
 export function createNotifications<T = DefaultNotificationType>(
-	options: CreateNotificationsOptions = {}
+	{
+		generateId = unsafeId,
+		defaultType = 'info' as T
+	}: CreateNotificationsOptions<T> = {}
 ) {
-	const { generateId = unsafeId } = options;
 	const notifications = $state<Notification<T>[]>([]);
 
-	function add(message: string, type: T, deleteAfterMS = 5000): string {
+	function add(message: string, type: T = defaultType, deleteAfterMS = 5000): string {
 		const id = generateId();
 
 		notifications.push({
