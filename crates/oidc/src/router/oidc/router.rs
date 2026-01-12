@@ -20,6 +20,7 @@ use os_oidc_model::entities::{
   revoked_tokens,
   users::{self, get_user_client_by_client_id},
 };
+use sea_orm::EntityTrait;
 use sha2::{Digest, Sha256};
 use url::Url;
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -792,9 +793,33 @@ pub async fn register_client(
     }
   };
 
+  // Get the default application
+  let app = match os_oidc_model::entities::applications::Entity::find()
+    .one(&state.database_connection)
+    .await
+  {
+    Ok(Some(a)) => a,
+    Ok(None) => {
+      log::error!("no default application found");
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+    Err(e) => {
+      log::error!("error fetching application: {}", e);
+      return HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response();
+    }
+  };
+
+  let mut client_active_model: os_oidc_model::entities::clients::ActiveModel =
+    client_register_request.into();
+  client_active_model.application_id = sea_orm::Set(app.id);
+
   let (client_model, is_new) = match clients::upsert_client(
     &state.database_connection,
-    client_register_request.into(),
+    client_active_model,
     crate::core::encryption::random_bytes,
   )
   .await

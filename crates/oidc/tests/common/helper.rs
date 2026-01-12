@@ -3,14 +3,32 @@ use std::error::Error;
 use chrono::Utc;
 use os_oidc::router::common::entity::{Permission, Token};
 use os_oidc_model::entities::{
-  applications, clients, jwks::get_jwk_for_sign_and_verify, permissions, roles, roles_permissions, user_roles,
-  users,
+  applications, clients, jwks::get_jwk_for_sign_and_verify, permissions, roles, roles_permissions,
+  user_roles, users,
 };
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
 use os_oidc::config::AppConfig;
 use os_oidc::router::common::helper::create_user_token;
 use os_oidc_model::entities::users::upsert_user_client;
+
+pub async fn create_test_application(
+  db: &DatabaseConnection,
+) -> Result<applications::Model, Box<dyn Error>> {
+  let now = Utc::now().timestamp();
+
+  let app = applications::ActiveModel {
+    name: Set("Test Application".to_string()),
+    description: Set(Some("Test application for unit tests".to_string())),
+    active: Set(1),
+    created_at: Set(now),
+    updated_at: Set(now),
+    ..Default::default()
+  };
+
+  let app = app.insert(db).await?;
+  Ok(app)
+}
 
 pub async fn create_test_user(
   db: &DatabaseConnection,
@@ -152,6 +170,7 @@ pub async fn create_jwt_for_user(
 
 pub async fn create_test_client(
   db: &DatabaseConnection,
+  application_id: i64,
   client_id_override: Option<&str>,
 ) -> Result<clients::Model, Box<dyn Error>> {
   let client_id = match client_id_override {
@@ -161,6 +180,7 @@ pub async fn create_test_client(
   let now = Utc::now().timestamp();
 
   let client = clients::ActiveModel {
+    application_id: Set(application_id),
     client_id: Set(client_id),
     name: Set("Test Client".to_string()),
     client_secret: Set("test_secret".to_string()),

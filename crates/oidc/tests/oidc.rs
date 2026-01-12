@@ -8,8 +8,8 @@ use scopeguard::defer;
 use tower::ServiceExt;
 
 use common::helper::{
-  approve_client_for_user, create_admin_user, create_jwt_for_user, create_test_client,
-  create_test_user,
+  approve_client_for_user, create_admin_user, create_jwt_for_user, create_test_application,
+  create_test_client, create_test_user,
 };
 
 #[tokio::test(flavor = "multi_thread")]
@@ -72,7 +72,8 @@ async fn test_authorize_get_endpoint() -> Result<(), Box<dyn Error>> {
   let (teardown, router, _config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
 
   let response = router
     .oneshot(
@@ -331,8 +332,9 @@ async fn test_introspect_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -373,8 +375,9 @@ async fn test_register_client_endpoint_with_auth() -> Result<(), Box<dyn Error>>
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -431,8 +434,9 @@ async fn test_user_info_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -470,8 +474,9 @@ async fn test_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -504,8 +509,9 @@ async fn test_client_allowed_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -545,8 +551,9 @@ async fn test_approve_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -580,8 +587,9 @@ async fn test_authorize_client_endpoint_with_auth() -> Result<(), Box<dyn Error>
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -632,8 +640,9 @@ async fn test_user_info_response_contains_required_claims() -> Result<(), Box<dy
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -679,8 +688,9 @@ async fn test_client_endpoint_returns_valid_client_object() -> Result<(), Box<dy
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -775,7 +785,8 @@ async fn test_register_client_requires_admin_permissions() -> Result<(), Box<dyn
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
   let regular_user = create_test_user(&database_connection, None).await?;
   approve_client_for_user(
     &database_connection,
@@ -837,7 +848,8 @@ async fn test_authorize_get_with_invalid_redirect_uri() -> Result<(), Box<dyn Er
   let (teardown, router, _config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
 
   let response = router
     .oneshot(
@@ -867,7 +879,8 @@ async fn test_authorize_get_with_unsupported_response_type() -> Result<(), Box<d
   let (teardown, router, _config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
 
   let response = router
     .oneshot(
@@ -897,8 +910,9 @@ async fn test_authorize_client_validates_scopes() -> Result<(), Box<dyn Error>> 
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let user = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let user = create_admin_user(&database_connection, app.id).await?;
 
   approve_client_for_user(
     &database_connection,
@@ -1004,7 +1018,8 @@ async fn test_client_endpoint_rejects_invalid_token() -> Result<(), Box<dyn Erro
   let (teardown, router, _config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
 
   let response = router
     .oneshot(
@@ -1093,7 +1108,8 @@ async fn test_token_endpoint_with_invalid_code() -> Result<(), Box<dyn Error>> {
   let (teardown, router, _config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
 
   let response = router
     .oneshot(
@@ -1125,8 +1141,9 @@ async fn test_introspect_returns_token_metadata() -> Result<(), Box<dyn Error>> 
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -1174,8 +1191,9 @@ async fn test_introspect_endpoint_with_invalid_token() -> Result<(), Box<dyn Err
   let (teardown, router, config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
 
-  let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection, client.id).await?;
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, app.id, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
