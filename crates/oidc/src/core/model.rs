@@ -1,10 +1,17 @@
 use std::io;
 
+use chrono::Utc;
 use jsonwebtoken::Algorithm;
 use os_oidc_model::entities::clients::{self, ActiveModel};
 use os_oidc_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
-use sea_orm::DatabaseConnection;
-use sea_orm::Set;
+use os_oidc_model::entities::permissions;
+use os_oidc_model::entities::roles;
+use os_oidc_model::entities::roles_permissions;
+use os_oidc_model::entities::user_infos;
+use os_oidc_model::entities::user_passwords;
+use os_oidc_model::entities::user_roles;
+use os_oidc_model::entities::users;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 
 use crate::config::AppConfig;
 use crate::core::encryption::random_bytes;
@@ -20,7 +27,10 @@ async fn ensure_jwk_exists(db: &DatabaseConnection, default_alg: Algorithm) -> i
   Ok(())
 }
 
-async fn ensure_oidc_client_exists(db: &DatabaseConnection, config: &AppConfig) -> io::Result<()> {
+async fn ensure_oidc_client_exists(
+  db: &DatabaseConnection,
+  config: &AppConfig,
+) -> io::Result<os_oidc_model::entities::clients::Model> {
   let ui_url = config.ui_url();
   let client_id = ui_url.clone();
 
@@ -64,15 +74,155 @@ async fn ensure_oidc_client_exists(db: &DatabaseConnection, config: &AppConfig) 
   model.redirect_uris = Set(Some(string_vec_to_json(&vec![ui_url.clone()])));
   model.post_logout_redirect_uris = Set(Some(string_vec_to_json(&vec![ui_url.clone()])));
 
-  let _ = clients::upsert_client(db, model, random_bytes)
+  let (client, _) = clients::upsert_client(db, model, random_bytes)
     .await
     .map_err(io::Error::other)?;
+
+  Ok(client)
+}
+
+async fn ensure_admin_user_exists(
+  db: &DatabaseConnection,
+  client: &os_oidc_model::entities::clients::Model,
+) -> io::Result<()> {
+  let now = Utc::now().timestamp();
+
+  let permission = permissions::Entity::find()
+    .filter(permissions::Column::Uri.eq("admin:*"))
+    .filter(permissions::Column::ClientId.eq(client.id))
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+  let permission = match permission {
+    Some(p) => p,
+    None => {
+      let p = permissions::ActiveModel {
+        client_id: Set(client.id),
+        uri: Set("admin:*".to_owned()),
+        description: Set("Administer all resources".to_owned()),
+        created_at: Set(now),
+        updated_at: Set(now),
+        ..Default::default()
+      };
+      p.insert(db).await.map_err(io::Error::other)?
+    }
+  };
+
+  let role = roles::Entity::find()
+    .filter(roles::Column::Uri.eq("admin"))
+    .filter(roles::Column::ClientId.eq(client.id))
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+  let role = match role {
+    Some(r) => r,
+    None => {
+      let r = roles::ActiveModel {
+        client_id: Set(client.id),
+        uri: Set("admin".to_owned()),
+        description: Set("Administrator role".to_owned()),
+        created_at: Set(now),
+        updated_at: Set(now),
+        ..Default::default()
+      };
+      r.insert(db).await.map_err(io::Error::other)?
+    }
+  };
+
+  let rp_exists = roles_permissions::Entity::find()
+    .filter(roles_permissions::Column::RoleId.eq(role.id))
+    .filter(roles_permissions::Column::PermissionId.eq(permission.id))
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+  if rp_exists.is_none() {
+    let rp = roles_permissions::ActiveModel {
+      role_id: Set(role.id),
+      permission_id: Set(permission.id),
+      created_at: Set(now),
+      updated_at: Set(now),
+    };
+    rp.insert(db).await.map_err(io::Error::other)?;
+  }
+
+  let user = users::Entity::find()
+    .filter(users::Column::Username.eq("admin"))
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+  let user = match user {
+    Some(u) => u,
+    None => {
+      let u = users::ActiveModel {
+        username: Set("admin".to_owned()),
+        active: Set(1),
+        created_at: Set(now),
+        updated_at: Set(now),
+        ..Default::default()
+      };
+      u.insert(db).await.map_err(io::Error::other)?
+    }
+  };
+
+  let ui = user_infos::Entity::find_by_id(user.id)
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+  if ui.is_none() {
+    let info = user_infos::ActiveModel {
+      user_id: Set(user.id),
+      nickname: Set(Some("admin".to_owned())),
+      created_at: Set(now),
+      updated_at: Set(now),
+      ..Default::default()
+    };
+    info.insert(db).await.map_err(io::Error::other)?;
+  }
+
+  let ur_exists = user_roles::Entity::find()
+    .filter(user_roles::Column::UserId.eq(user.id))
+    .filter(user_roles::Column::RoleId.eq(role.id))
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+  if ur_exists.is_none() {
+    let ur = user_roles::ActiveModel {
+      user_id: Set(user.id),
+      role_id: Set(role.id),
+      created_at: Set(now),
+      updated_at: Set(now),
+    };
+    ur.insert(db).await.map_err(io::Error::other)?;
+  }
+
+  let pw_exists = user_passwords::Entity::find()
+    .filter(user_passwords::Column::UserId.eq(user.id))
+    .filter(user_passwords::Column::Active.ne(0))
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+  if pw_exists.is_none() {
+    let pw = user_passwords::ActiveModel {
+      user_id: Set(user.id),
+      // The password is "admin" hashed with Argon2id
+      encrypted_password: Set(
+        "$argon2id$v=19$m=19,t=2,p=1$cmc5ZXVXT1N0RmxjZFR1NQ$/0nLLEJDUFjP/lO6UhUHlzvL6Zlz1NO8BW+XdMNTG3c"
+          .to_owned(),
+      ),
+      active: Set(1),
+      created_at: Set(now),
+      updated_at: Set(now),
+      ..Default::default()
+    };
+    pw.insert(db).await.map_err(io::Error::other)?;
+  }
 
   Ok(())
 }
 
 pub async fn init(db: &DatabaseConnection, config: &AppConfig) -> io::Result<()> {
   ensure_jwk_exists(db, config.token.default_jwt_algorithm).await?;
-  ensure_oidc_client_exists(db, config).await?;
+  let client = ensure_oidc_client_exists(db, config).await?;
+  ensure_admin_user_exists(db, &client).await?;
   Ok(())
 }

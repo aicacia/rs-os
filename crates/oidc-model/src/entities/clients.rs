@@ -41,11 +41,27 @@ impl Model {
 pub enum Relation {
   #[sea_orm(has_many = "super::user_clients::Entity")]
   UserClients,
+  #[sea_orm(has_many = "super::roles::Entity")]
+  Roles,
+  #[sea_orm(has_many = "super::permissions::Entity")]
+  Permissions,
 }
 
 impl Related<super::user_clients::Entity> for Entity {
   fn to() -> RelationDef {
     Relation::UserClients.def()
+  }
+}
+
+impl Related<super::roles::Entity> for Entity {
+  fn to() -> RelationDef {
+    Relation::Roles.def()
+  }
+}
+
+impl Related<super::permissions::Entity> for Entity {
+  fn to() -> RelationDef {
+    Relation::Permissions.def()
   }
 }
 

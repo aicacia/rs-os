@@ -332,7 +332,7 @@ async fn test_introspect_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -374,7 +374,7 @@ async fn test_register_client_endpoint_with_auth() -> Result<(), Box<dyn Error>>
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -432,7 +432,7 @@ async fn test_user_info_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -471,7 +471,7 @@ async fn test_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -505,7 +505,7 @@ async fn test_client_allowed_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -546,7 +546,7 @@ async fn test_approve_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -581,7 +581,7 @@ async fn test_authorize_client_endpoint_with_auth() -> Result<(), Box<dyn Error>
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -633,7 +633,7 @@ async fn test_user_info_response_contains_required_claims() -> Result<(), Box<dy
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -680,7 +680,7 @@ async fn test_client_endpoint_returns_valid_client_object() -> Result<(), Box<dy
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   let token = create_jwt_for_user(
     &database_connection,
     &config,
@@ -898,7 +898,7 @@ async fn test_authorize_client_validates_scopes() -> Result<(), Box<dyn Error>> 
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let user = create_admin_user(&database_connection).await?;
+  let user = create_admin_user(&database_connection, client.id).await?;
 
   approve_client_for_user(
     &database_connection,
@@ -1126,7 +1126,7 @@ async fn test_introspect_returns_token_metadata() -> Result<(), Box<dyn Error>> 
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,
@@ -1175,7 +1175,7 @@ async fn test_introspect_endpoint_with_invalid_token() -> Result<(), Box<dyn Err
   defer! { teardown() }
 
   let client = create_test_client(&database_connection, Some("test_client")).await?;
-  let admin = create_admin_user(&database_connection).await?;
+  let admin = create_admin_user(&database_connection, client.id).await?;
   approve_client_for_user(
     &database_connection,
     admin.id,

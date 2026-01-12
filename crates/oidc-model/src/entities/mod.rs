@@ -1,6 +1,5 @@
 pub mod prelude;
 
-pub mod applications;
 pub mod clients;
 pub mod jwks;
 pub mod key_values;

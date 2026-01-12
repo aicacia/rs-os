@@ -1,4 +1,3 @@
-pub use super::applications::Entity as Applications;
 pub use super::clients::Entity as Clients;
 pub use super::jwks::Entity as Jwks;
 pub use super::key_values::Entity as KeyValues;
