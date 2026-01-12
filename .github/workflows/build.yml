@@ -171,7 +171,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: ${{ matrix.platform }}
           push: false
           load: true
           tags: os-ui-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
@@ -240,7 +239,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.ui
-          platforms: ${{ matrix.platform }}
           push: false
           load: true
           tags: ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
@@ -361,7 +359,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: ${{ matrix.platform }}
           push: false
           load: true
           tags: os-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
@@ -378,7 +375,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.unified
-          platforms: ${{ matrix.platform }}
           push: false
           load: true
           tags: ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}

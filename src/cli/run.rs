@@ -21,8 +21,8 @@ use crate::cli::completions;
 use crate::{
   cli::args::{CliArgs, CliCommand},
   config::{
-    AppConfig, OIDC_ADMIN_API_URL_PREFIX, OIDC_ADMIN_UI_URL_PREFIX, OIDC_API_URL_PREFIX,
-    OIDC_UI_URL_PREFIX, SIGNALING_API_URL_PREFIX,
+    AppConfig, FS_API_URL_PREFIX, OIDC_ADMIN_API_URL_PREFIX, OIDC_ADMIN_UI_URL_PREFIX,
+    OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX, SIGNALING_API_URL_PREFIX,
   },
 };
 
@@ -150,10 +150,18 @@ pub async fn run() -> io::Result<()> {
       },
     );
 
+  let fs_openapi_router = os_fs::router::create_openapi_router(
+    os_fs::router::entity::RouterState {
+      config: Arc::new(app_config.fs_api.clone()),
+    },
+    Some(FS_API_URL_PREFIX),
+  );
+
   let router = Router::new()
     .merge(oidc_openapi_router)
     .merge(oidc_admin_openapi_router)
     .merge(signaling_openapi_router)
+    .merge(fs_openapi_router)
     .merge(service_discovery_openapi_router)
     .layer(CorsLayer::very_permissive())
     .layer(TraceLayer::new_for_http())

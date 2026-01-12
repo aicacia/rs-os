@@ -9,6 +9,7 @@ pub struct AppConfig {
   pub server: ServerConfig,
   pub log_level: String,
   pub env: Environment,
+  pub data_dir: String,
   pub url: Option<String>,
 }
 
@@ -18,6 +19,7 @@ impl Default for AppConfig {
       server: ServerConfig::default(),
       log_level: "DEBUG".to_owned(),
       env: Environment::default(),
+      data_dir: "./data".to_owned(),
       url: None,
     }
   }
