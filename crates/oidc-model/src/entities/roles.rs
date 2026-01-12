@@ -7,7 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
   #[sea_orm(primary_key)]
   pub id: i64,
-  pub client_id: i64,
+  pub application_id: i64,
   pub uri: String,
   pub description: String,
   pub updated_at: i64,
@@ -27,13 +27,13 @@ pub enum Relation {
   #[sea_orm(has_many = "super::user_roles::Entity")]
   UserRoles,
   #[sea_orm(
-    belongs_to = "super::clients::Entity",
-    from = "Column::ClientId",
-    to = "super::clients::Column::Id",
+    belongs_to = "super::applications::Entity",
+    from = "Column::ApplicationId",
+    to = "super::applications::Column::Id",
     on_update = "NoAction",
     on_delete = "Cascade"
   )]
-  Clients,
+  Applications,
 }
 
 impl Related<super::roles_permissions::Entity> for Entity {
@@ -48,9 +48,9 @@ impl Related<super::user_roles::Entity> for Entity {
   }
 }
 
-impl Related<super::clients::Entity> for Entity {
+impl Related<super::applications::Entity> for Entity {
   fn to() -> RelationDef {
-    Relation::Clients.def()
+    Relation::Applications.def()
   }
 }
 

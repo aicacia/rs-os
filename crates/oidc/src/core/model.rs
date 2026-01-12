@@ -2,6 +2,7 @@ use std::io;
 
 use chrono::Utc;
 use jsonwebtoken::Algorithm;
+use os_oidc_model::entities::applications;
 use os_oidc_model::entities::clients::{self, ActiveModel};
 use os_oidc_model::entities::jwks::{create_jwk, generate_jwk, list_jwks};
 use os_oidc_model::entities::permissions;
@@ -27,9 +28,35 @@ async fn ensure_jwk_exists(db: &DatabaseConnection, default_alg: Algorithm) -> i
   Ok(())
 }
 
+async fn ensure_application_exists(
+  db: &DatabaseConnection,
+) -> io::Result<os_oidc_model::entities::applications::Model> {
+  let now = Utc::now().timestamp();
+  let app = applications::Entity::find()
+    .one(db)
+    .await
+    .map_err(io::Error::other)?;
+
+  match app {
+    Some(a) => Ok(a),
+    None => {
+      let new_app = applications::ActiveModel {
+        name: Set("Default Application".to_owned()),
+        description: Set(Some("The default application".to_owned())),
+        active: Set(1),
+        created_at: Set(now),
+        updated_at: Set(now),
+        ..Default::default()
+      };
+      new_app.insert(db).await.map_err(io::Error::other)
+    }
+  }
+}
+
 async fn ensure_oidc_client_exists(
   db: &DatabaseConnection,
   config: &AppConfig,
+  app: &os_oidc_model::entities::applications::Model,
 ) -> io::Result<os_oidc_model::entities::clients::Model> {
   let ui_url = config.ui_url();
   let client_id = ui_url.clone();
@@ -49,6 +76,7 @@ async fn ensure_oidc_client_exists(
   ]);
 
   let mut model: ActiveModel = ActiveModel {
+    application_id: Set(app.id),
     name: Set("OIDC UI".to_string()),
     client_id: Set(client_id),
     auth_method: Set("none".to_string()),
@@ -83,13 +111,13 @@ async fn ensure_oidc_client_exists(
 
 async fn ensure_admin_user_exists(
   db: &DatabaseConnection,
-  client: &os_oidc_model::entities::clients::Model,
+  app: &os_oidc_model::entities::applications::Model,
 ) -> io::Result<()> {
   let now = Utc::now().timestamp();
 
   let permission = permissions::Entity::find()
     .filter(permissions::Column::Uri.eq("admin:*"))
-    .filter(permissions::Column::ClientId.eq(client.id))
+    .filter(permissions::Column::ApplicationId.eq(app.id))
     .one(db)
     .await
     .map_err(io::Error::other)?;
@@ -97,7 +125,7 @@ async fn ensure_admin_user_exists(
     Some(p) => p,
     None => {
       let p = permissions::ActiveModel {
-        client_id: Set(client.id),
+        application_id: Set(app.id),
         uri: Set("admin:*".to_owned()),
         description: Set("Administer all resources".to_owned()),
         created_at: Set(now),
@@ -110,7 +138,7 @@ async fn ensure_admin_user_exists(
 
   let role = roles::Entity::find()
     .filter(roles::Column::Uri.eq("admin"))
-    .filter(roles::Column::ClientId.eq(client.id))
+    .filter(roles::Column::ApplicationId.eq(app.id))
     .one(db)
     .await
     .map_err(io::Error::other)?;
@@ -118,7 +146,7 @@ async fn ensure_admin_user_exists(
     Some(r) => r,
     None => {
       let r = roles::ActiveModel {
-        client_id: Set(client.id),
+        application_id: Set(app.id),
         uri: Set("admin".to_owned()),
         description: Set("Administrator role".to_owned()),
         created_at: Set(now),
@@ -222,7 +250,8 @@ async fn ensure_admin_user_exists(
 
 pub async fn init(db: &DatabaseConnection, config: &AppConfig) -> io::Result<()> {
   ensure_jwk_exists(db, config.token.default_jwt_algorithm).await?;
-  let client = ensure_oidc_client_exists(db, config).await?;
-  ensure_admin_user_exists(db, &client).await?;
+  let app = ensure_application_exists(db).await?;
+  let _client = ensure_oidc_client_exists(db, config, &app).await?;
+  ensure_admin_user_exists(db, &app).await?;
   Ok(())
 }

@@ -3,7 +3,7 @@ use std::error::Error;
 use chrono::Utc;
 use os_oidc::router::common::entity::{Permission, Token};
 use os_oidc_model::entities::{
-  clients, jwks::get_jwk_for_sign_and_verify, permissions, roles, roles_permissions, user_roles,
+  applications, clients, jwks::get_jwk_for_sign_and_verify, permissions, roles, roles_permissions, user_roles,
   users,
 };
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
@@ -26,14 +26,14 @@ pub async fn create_test_user(
 
 pub async fn create_test_role_with_permissions(
   db: &DatabaseConnection,
-  client_id: i64,
+  application_id: i64,
   role_uri: &str,
   permission_uris: Vec<&str>,
 ) -> Result<(roles::Model, Vec<permissions::Model>), Box<dyn Error>> {
   let now = Utc::now().timestamp();
 
   let role = roles::ActiveModel {
-    client_id: Set(client_id),
+    application_id: Set(application_id),
     uri: Set(role_uri.to_owned()),
     description: Set(role_uri.to_owned()),
     created_at: Set(now),
@@ -45,7 +45,7 @@ pub async fn create_test_role_with_permissions(
   let mut permissions = Vec::new();
   for perm_uri in permission_uris {
     let existing_permission = permissions::Entity::find()
-      .filter(permissions::Column::ClientId.eq(client_id))
+      .filter(permissions::Column::ApplicationId.eq(application_id))
       .filter(permissions::Column::Uri.eq(perm_uri))
       .one(db)
       .await?;
@@ -54,7 +54,7 @@ pub async fn create_test_role_with_permissions(
       perm
     } else {
       let perm = permissions::ActiveModel {
-        client_id: Set(client_id),
+        application_id: Set(application_id),
         uri: Set(perm_uri.to_owned()),
         description: Set(perm_uri.to_owned()),
         created_at: Set(now),
@@ -99,13 +99,13 @@ pub async fn assign_role_to_user(
 
 pub async fn create_admin_user(
   db: &DatabaseConnection,
-  client_id: i64,
+  application_id: i64,
 ) -> Result<users::Model, Box<dyn Error>> {
   let user = create_test_user(db, None).await?;
 
   let (admin_role, _) = create_test_role_with_permissions(
     db,
-    client_id,
+    application_id,
     "test_admin",
     vec![Permission::AdminAll.as_str()],
   )

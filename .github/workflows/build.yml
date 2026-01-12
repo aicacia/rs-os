@@ -235,17 +235,14 @@ jobs:
           docker load -i os-ui-base-${{ steps.prep.outputs.platform_tag }}.tar
 
       - name: Build os-${{ matrix.project }}-ui for ${{ matrix.platform }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile.ui
-          push: false
-          load: true
-          tags: ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
-          build-args: |
-            PROJECT=${{ matrix.project }}
-            BASE=os-ui-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
-            RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }}
+        run: |
+          docker build \
+            --file ./Dockerfile.ui \
+            --tag ghcr.io/${{ github.repository_owner }}/os-${{ matrix.project }}-ui:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} \
+            --build-arg PROJECT=${{ matrix.project }} \
+            --build-arg BASE=os-ui-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} \
+            --build-arg RUST_IMAGE=${{ env.RUST_IMAGE_DEFAULT }} \
+            .
 
       - name: Save project UI image to tar
         run: |
@@ -371,15 +368,13 @@ jobs:
           docker save os-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} -o os-base-${{ steps.prep.outputs.platform_tag }}.tar
 
       - name: Build unified image for ${{ matrix.platform }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile.unified
-          push: false
-          load: true
-          tags: ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
-          build-args: |
-            BASE=os-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }}
+        run: |
+          docker load -i os-base-${{ steps.prep.outputs.platform_tag }}.tar
+          docker build \
+            --file ./Dockerfile.unified \
+            --tag ghcr.io/${{ github.repository_owner }}/os:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} \
+            --build-arg BASE=os-base:${{ steps.prep.outputs.short_sha }}-${{ steps.prep.outputs.platform_tag }} \
+            .
 
       - name: Save image to tar
         run: |
