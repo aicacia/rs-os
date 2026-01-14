@@ -6,9 +6,8 @@ import { getUserManager } from '$lib/common/state/user.svelte';
 export const load: LayoutLoad = async (event) => {
 	await event.parent();
 
-	const user = 
-		const userManager = await getUserManager();
-		await userManager.getUser();
+	const userManager = await getUserManager();
+	const user = await userManager.getUser();
 
 	if (user) {
 		return {

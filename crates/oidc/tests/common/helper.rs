@@ -180,7 +180,7 @@ pub async fn create_test_client(
   let now = Utc::now().timestamp();
 
   let client = clients::ActiveModel {
-    application_id: Set(application_id),
+    application_id: Set(Some(application_id)),
     client_id: Set(client_id),
     name: Set("Test Client".to_string()),
     client_secret: Set("test_secret".to_string()),

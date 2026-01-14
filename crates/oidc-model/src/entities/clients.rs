@@ -6,7 +6,7 @@ use sea_orm::{ConnectionTrait, Order, QueryOrder, QuerySelect, Set, TransactionT
 pub struct Model {
   #[sea_orm(primary_key, unique)]
   pub id: i64,
-  pub application_id: i64,
+  pub application_id: Option<i64>,
   #[sea_orm(default_value = "1")]
   pub active: i64,
   pub name: String,

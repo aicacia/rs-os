@@ -41,6 +41,7 @@
 	"dependencies": {
 		"@aicacia/automerge-repo-network-webrtc": "workspace:*",
 		"@aicacia/keepalivewebsocket": "^0.1.9",
+		"@aicacia/service-discovery": "workspace:*",
 		"@aicacia/peer": "^0.1.5",
 		"@aicacia/signaling-room": "workspace:*",
 		"@aicacia/svelte-headless": "workspace:*",

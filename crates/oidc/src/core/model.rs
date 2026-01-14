@@ -41,8 +41,8 @@ async fn ensure_application_exists(
     Some(a) => Ok(a),
     None => {
       let new_app = applications::ActiveModel {
-        name: Set("Default Application".to_owned()),
-        description: Set(Some("The default application".to_owned())),
+        name: Set("OIDC Application".to_owned()),
+        description: Set(Some("OIDC Application".to_owned())),
         active: Set(1),
         created_at: Set(now),
         updated_at: Set(now),
@@ -53,7 +53,7 @@ async fn ensure_application_exists(
   }
 }
 
-async fn ensure_oidc_client_exists(
+async fn ensure_oidc_web_client_exists(
   db: &DatabaseConnection,
   config: &AppConfig,
   app: &os_oidc_model::entities::applications::Model,
@@ -76,7 +76,7 @@ async fn ensure_oidc_client_exists(
   ]);
 
   let mut model: ActiveModel = ActiveModel {
-    application_id: Set(app.id),
+    application_id: Set(Some(app.id)),
     name: Set("OIDC UI".to_string()),
     client_id: Set(client_id),
     auth_method: Set("none".to_string()),
@@ -115,26 +115,27 @@ async fn ensure_admin_user_exists(
 ) -> io::Result<()> {
   let now = Utc::now().timestamp();
 
-  let permission = permissions::Entity::find()
-    .filter(permissions::Column::Uri.eq("admin:*"))
-    .filter(permissions::Column::ApplicationId.eq(app.id))
-    .one(db)
-    .await
-    .map_err(io::Error::other)?;
-  let permission = match permission {
-    Some(p) => p,
-    None => {
+  // Ensure all permissions exist
+  for permission_enum in Permission::all() {
+    let permission_uri = permission_enum.to_string();
+    let permission = permissions::Entity::find()
+      .filter(permissions::Column::Uri.eq(&permission_uri))
+      .filter(permissions::Column::ApplicationId.eq(app.id))
+      .one(db)
+      .await
+      .map_err(io::Error::other)?;
+    if permission.is_none() {
       let p = permissions::ActiveModel {
         application_id: Set(app.id),
-        uri: Set("admin:*".to_owned()),
-        description: Set("Administer all resources".to_owned()),
+        uri: Set(permission_uri),
+        description: Set(format!("{} permission", permission_enum)),
         created_at: Set(now),
         updated_at: Set(now),
         ..Default::default()
       };
-      p.insert(db).await.map_err(io::Error::other)?
+      p.insert(db).await.map_err(io::Error::other)?;
     }
-  };
+  }
 
   let role = roles::Entity::find()
     .filter(roles::Column::Uri.eq("admin"))
@@ -157,20 +158,29 @@ async fn ensure_admin_user_exists(
     }
   };
 
-  let rp_exists = roles_permissions::Entity::find()
-    .filter(roles_permissions::Column::RoleId.eq(role.id))
-    .filter(roles_permissions::Column::PermissionId.eq(permission.id))
+  // Link admin:* permission to the admin role
+  let permission = permissions::Entity::find()
+    .filter(permissions::Column::Uri.eq("admin:*"))
+    .filter(permissions::Column::ApplicationId.eq(app.id))
     .one(db)
     .await
     .map_err(io::Error::other)?;
-  if rp_exists.is_none() {
-    let rp = roles_permissions::ActiveModel {
-      role_id: Set(role.id),
-      permission_id: Set(permission.id),
-      created_at: Set(now),
-      updated_at: Set(now),
-    };
-    rp.insert(db).await.map_err(io::Error::other)?;
+  if let Some(permission) = permission {
+    let rp_exists = roles_permissions::Entity::find()
+      .filter(roles_permissions::Column::RoleId.eq(role.id))
+      .filter(roles_permissions::Column::PermissionId.eq(permission.id))
+      .one(db)
+      .await
+      .map_err(io::Error::other)?;
+    if rp_exists.is_none() {
+      let rp = roles_permissions::ActiveModel {
+        role_id: Set(role.id),
+        permission_id: Set(permission.id),
+        created_at: Set(now),
+        updated_at: Set(now),
+      };
+      rp.insert(db).await.map_err(io::Error::other)?;
+    }
   }
 
   let user = users::Entity::find()
@@ -251,7 +261,7 @@ async fn ensure_admin_user_exists(
 pub async fn init(db: &DatabaseConnection, config: &AppConfig) -> io::Result<()> {
   ensure_jwk_exists(db, config.token.default_jwt_algorithm).await?;
   let app = ensure_application_exists(db).await?;
-  let _client = ensure_oidc_client_exists(db, config, &app).await?;
+  let _client = ensure_oidc_web_client_exists(db, config, &app).await?;
   ensure_admin_user_exists(db, &app).await?;
   Ok(())
 }

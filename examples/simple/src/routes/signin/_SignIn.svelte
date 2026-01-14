@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { getUserManager, getAuthority, setAuthority } from "$lib/common/state/user.svelte";
+	import { getOSBaseUrl, setOSBaseUrl } from "$lib/common/state/services.svelte";
+	import { getUserManager } from "$lib/common/state/user.svelte";
 
-	let authority = $state('');
+	let osBaseUrl = $state(getOSBaseUrl());
 
 	$effect(() => {
-		authority = getAuthority();
+		osBaseUrl = getOSBaseUrl();
 	})
 
-	function onChangeAuthority() {
-		setAuthority(authority);
+	function onChangeOSBaseUrl() {
+		setOSBaseUrl(osBaseUrl);
 	}
 
 	async function onSubmit(e: SubmitEvent) {
@@ -23,11 +24,11 @@
 <form onsubmit={onSubmit} class="flex flex-col">
 	<input
 		type="text"
-		aria-label="OIDC Authority URL"
+		aria-label="OS Base URL"
 		autocomplete="url"
-		placeholder="OIDC Authority URL"
-		bind:value={authority}
-		oninput={onChangeAuthority}
+		placeholder="OS Base URL"
+		bind:value={osBaseUrl}
+		oninput={onChangeOSBaseUrl}
 	/>
 	<input class="btn primary mt-4" type="submit" value="Sign in" />
 </form>

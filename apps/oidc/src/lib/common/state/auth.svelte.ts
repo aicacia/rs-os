@@ -8,19 +8,19 @@ import {
 	UserInfoFromJSON,
 	UserInfoToJSON
 } from '../openapi/oidc';
-import { localStorageState } from '../util/localStorageState.svelte';
+import { createStorage } from '@aicacia/svelte-headless';
 import { afterSigninRedirect } from './afterSignInRedirectPath';
 import { isOnline } from '@aicacia/svelte-headless';
 import { handleError } from '../errors';
 import { env } from '$env/dynamic/public';
 
-const userInfo = localStorageState<UserInfo | null>('user_info', null, {
+const userInfo = createStorage<UserInfo | null>('user_info', null, {
 	serializer: {
 		parse: (text) => UserInfoFromJSON(JSON.parse(text)),
 		stringify: (value) => JSON.stringify(UserInfoToJSON(value))
 	}
 });
-const token = localStorageState<Token | null>('token', null, {
+const token = createStorage<Token | null>('token', null, {
 	serializer: {
 		parse: (text) => TokenFromJSON(JSON.parse(text)),
 		stringify: (value) => JSON.stringify(TokenToJSON(value))

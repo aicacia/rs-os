@@ -1,12 +1,12 @@
 import type { DocHandle, DocumentId } from '@automerge/automerge-repo';
-import { localStorageState } from '../util/localStorageState.svelte';
+import { createStorage } from '@aicacia/svelte-headless';
 import { repo } from '../repo';
 
 export interface TestDocument {
 	count: number;
 }
 
-const testDocumentId = localStorageState<DocumentId | null>('test-document-id', null);
+const testDocumentId = createStorage<DocumentId | null>('test-document-id', null);
 const testDocumentHandle = $derived.by(initTestDocumentHandle);
 
 async function initTestDocumentHandle() {

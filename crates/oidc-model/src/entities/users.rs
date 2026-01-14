@@ -1,4 +1,3 @@
-use hashbrown::HashSet;
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
@@ -437,17 +436,6 @@ pub async fn update_user_password(
   Ok(())
 }
 
-pub async fn get_user_roles_by_user_id(
-  db: &DatabaseConnection,
-  user_id: i64,
-) -> Result<Vec<(user_roles::Model, Option<roles::Model>)>, DbErr> {
-  user_roles::Entity::find()
-    .filter(user_roles::Column::UserId.eq(user_id))
-    .find_also_related(roles::Entity)
-    .all(db)
-    .await
-}
-
 pub async fn get_user_role_permissions_by_user_id(
   db: &DatabaseConnection,
   user_id: i64,
@@ -484,6 +472,52 @@ pub async fn get_user_role_permissions_by_user_id(
         .collect();
       result.insert(role, perms);
     }
+  }
+
+  Ok(result)
+}
+
+pub async fn get_user_role_permissions_by_user_id_and_application_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+  application_id: i64,
+) -> Result<HashMap<roles::Model, Vec<permissions::Model>>, DbErr> {
+  let user_roles = user_roles::Entity::find()
+    .filter(user_roles::Column::UserId.eq(user_id))
+    .find_also_related(roles::Entity)
+    .all(db)
+    .await?;
+
+  // Filter roles by application_id
+  let filtered_roles: Vec<roles::Model> = user_roles
+    .into_iter()
+    .filter_map(|(_, role)| role)
+    .filter(|role| role.application_id == application_id)
+    .collect();
+
+  let role_ids: Vec<i64> = filtered_roles.iter().map(|r| r.id).collect();
+
+  if role_ids.is_empty() {
+    return Ok(HashMap::new());
+  }
+
+  let role_permissions = roles_permissions::Entity::find()
+    .filter(roles_permissions::Column::RoleId.is_in(role_ids))
+    .find_also_related(permissions::Entity)
+    .all(db)
+    .await?;
+
+  let mut result = HashMap::new();
+
+  for role in filtered_roles {
+    let perms: Vec<permissions::Model> = role_permissions
+      .iter()
+      .filter(|(rp, _)| rp.role_id == role.id)
+      .filter_map(|(_, perm)| perm.clone())
+      // Double-check permissions are for the same application
+      .filter(|perm| perm.application_id == application_id)
+      .collect();
+    result.insert(role, perms);
   }
 
   Ok(result)
@@ -528,22 +562,31 @@ pub async fn remove_user_role(
   }
 }
 
+pub async fn get_user_roles_by_user_id(
+  db: &DatabaseConnection,
+  user_id: i64,
+) -> Result<Vec<(user_roles::Model, Option<roles::Model>)>, DbErr> {
+  user_roles::Entity::find()
+    .filter(user_roles::Column::UserId.eq(user_id))
+    .find_also_related(roles::Entity)
+    .all(db)
+    .await
+}
+
 pub async fn get_user_permissions(
   db: &DatabaseConnection,
   user_id: i64,
-) -> Result<Vec<permissions::Model>, sea_orm::DbErr> {
+) -> Result<Vec<permissions::Model>, DbErr> {
   let role_permissions = get_user_role_permissions_by_user_id(db, user_id).await?;
 
   let mut permissions = Vec::new();
-  let mut seen = HashSet::new();
+  let mut seen_uris = std::collections::HashSet::new();
 
-  for (_role_id, permission_list) in role_permissions {
+  for (_role, permission_list) in role_permissions {
     for permission in permission_list {
-      if seen.contains(&permission.uri) {
-        continue;
+      if seen_uris.insert(permission.uri.clone()) {
+        permissions.push(permission);
       }
-      seen.insert(permission.uri.clone());
-      permissions.push(permission);
     }
   }
 

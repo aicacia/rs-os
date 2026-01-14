@@ -247,6 +247,9 @@ importers:
       '@aicacia/peer':
         specifier: ^0.1.5
         version: 0.1.5(tslib@2.8.1)
+      '@aicacia/service-discovery':
+        specifier: workspace:*
+        version: link:../../packages/service-discovery
       '@aicacia/signaling-room':
         specifier: workspace:*
         version: link:../../packages/signaling-room

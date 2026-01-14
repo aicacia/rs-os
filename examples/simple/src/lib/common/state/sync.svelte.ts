@@ -17,17 +17,17 @@ export const webRTCClientAdapter = new WebRTCClientAdapter(signalingRoom);
 if (browser) {
 	$effect.root(() => {
 		$effect(() => {
-			getUserManager()
-				.getUser()
-				.then(async (user) => {
-					if (!user) {
-						console.warn('No user found, cannot connect to document store WebSocket');
-						return;
-					}
-					await signalingRoomWebsocket.setUrl(
-						`${env.PUBLIC_OS_SIGNALING_WS_URL}/private?token=${user.access_token}&room=signaling`
-					);
-				});
+			getUserManager().then(async (userManager) => {
+				const user = await userManager.getUser();
+
+				if (!user) {
+					console.warn('No user found, cannot connect to document store WebSocket');
+					return;
+				}
+				await signalingRoomWebsocket.setUrl(
+					`${env.PUBLIC_OS_SIGNALING_WS_URL}/private?token=${user.access_token}&room=signaling`
+				);
+			});
 		});
 	});
 }

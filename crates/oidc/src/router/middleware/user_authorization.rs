@@ -22,12 +22,13 @@ use crate::router::{
   middleware::authorization::Authorization,
 };
 use os_oidc_model::entities::{
+  clients::get_client_by_client_id,
   permissions,
-  roles::{self, list_roles_by_user_id},
+  roles::{self},
   user_emails::get_user_primary_email_by_user_id,
   user_infos::get_user_info_by_user_id,
   user_phone_numbers::get_user_primary_phone_number_by_user_id,
-  users::{self, get_user_by_id, get_user_role_permissions_by_user_id},
+  users::{self, get_user_by_id, get_user_role_permissions_by_user_id_and_application_id},
 };
 
 pub struct UserAuthorization {
@@ -55,13 +56,12 @@ impl UserAuthorization {
 
     if has_profile {
       user_info.permissions = self.permissions.iter().cloned().collect();
-      user_info.roles = match list_roles_by_user_id(db, user_id).await {
-        Ok(roles) => roles.into_iter().map(|r| r.uri).collect(),
-        Err(e) => {
-          log::error!("error fetching user roles: {}", e);
-          return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
-        }
-      };
+      // The roles are already filtered by application_id in the role_permissions
+      user_info.roles = self
+        .role_permissions
+        .keys()
+        .map(|r| r.uri.clone())
+        .collect();
     }
 
     if has_profile || has_address {
@@ -175,9 +175,42 @@ where
           log::error!("invalid authorization user is not active");
           return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
         }
-        let role_permissions = match get_user_role_permissions_by_user_id(
+
+        // Get the client to find the application_id
+        let client = match get_client_by_client_id(
+          &router_state.database_connection,
+          &authorization.claims.client,
+        )
+        .await
+        {
+          Ok(Some(client)) => client,
+          Ok(None) => {
+            log::error!(
+              "invalid authorization client not found: {}",
+              authorization.claims.client
+            );
+            return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+          }
+          Err(e) => {
+            log::error!("failed to fetch client: {}", e);
+            return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+          }
+        };
+
+        // Get the application_id from the client, or use a default if not set
+        let application_id = match client.application_id {
+          Some(app_id) => app_id,
+          None => {
+            log::error!("client has no application_id: {}", client.client_id);
+            return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+          }
+        };
+
+        // Fetch role permissions filtered by application_id
+        let role_permissions = match get_user_role_permissions_by_user_id_and_application_id(
           &router_state.database_connection,
           user_model.id,
+          application_id,
         )
         .await
         {
