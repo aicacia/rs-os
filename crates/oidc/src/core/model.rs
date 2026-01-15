@@ -19,6 +19,10 @@ use crate::core::encryption::random_bytes;
 use crate::core::helper::string_vec_to_json;
 use crate::router::common::entity::Permission;
 
+pub const OIDC_APPLICATION_URN: &str =
+  "urn:os:oidc:application:019bc13f-742f-7c9c-9a14-f3b0bdf8352e";
+pub const OIDC_CLIENT_ID: &str = "urn:os:oidc:client:019bc13e-abbc-7f7a-985e-190810f90365";
+
 async fn ensure_jwk_exists(db: &DatabaseConnection, default_alg: Algorithm) -> io::Result<()> {
   let has_any = !list_jwks(db).await.map_err(io::Error::other)?.is_empty();
   if !has_any {
@@ -42,6 +46,7 @@ async fn ensure_application_exists(
     None => {
       let new_app = applications::ActiveModel {
         name: Set("OIDC Application".to_owned()),
+        urn: Set(OIDC_APPLICATION_URN.to_owned()),
         description: Set(Some("OIDC Application".to_owned())),
         active: Set(1),
         created_at: Set(now),
@@ -59,7 +64,6 @@ async fn ensure_oidc_web_client_exists(
   app: &os_oidc_model::entities::applications::Model,
 ) -> io::Result<os_oidc_model::entities::clients::Model> {
   let ui_url = config.ui_url();
-  let client_id = ui_url.clone();
 
   let mut scopes = Permission::all()
     .into_iter()
@@ -78,7 +82,7 @@ async fn ensure_oidc_web_client_exists(
   let mut model: ActiveModel = ActiveModel {
     application_id: Set(Some(app.id)),
     name: Set("OIDC UI".to_string()),
-    client_id: Set(client_id),
+    client_id: Set(OIDC_CLIENT_ID.to_string()),
     auth_method: Set("none".to_string()),
     application_type: Set("web".to_string()),
     grant_types: Set(string_vec_to_json(&vec![

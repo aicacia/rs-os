@@ -30,32 +30,32 @@ const token = createStorage<Token | null>('token', null, {
 const currentUserInfo = $derived.by(async () => {
 	try {
 		if (isOnline()) {
-			if (token.value) {
-				if (token.value.issuedAt.getTime() + token.value.expiresIn * 1000 < Date.now()) {
-					if (token.value.refreshToken && token.value.refreshTokenExpiresIn) {
+			if (token.item) {
+				if (token.item.issuedAt.getTime() + token.item.expiresIn * 1000 < Date.now()) {
+					if (token.item.refreshToken && token.item.refreshTokenExpiresIn) {
 						if (
-							token.value.issuedAt.getTime() + token.value.refreshTokenExpiresIn * 1000 <
+							token.item.issuedAt.getTime() + token.item.refreshTokenExpiresIn * 1000 <
 							Date.now()
 						) {
 							throw new Error('refresh token expired');
 						}
-						token.value = await oidcApi.token({
+						token.item = await oidcApi.token({
 							grantType: 'refresh_token',
-							clientId: env.PUBLIC_URL,
-							refreshToken: token.value.refreshToken,
+							clientId: env.PUBLIC_OS_OIDC_CLIENT_ID,
+							refreshToken: token.item.refreshToken,
 							scope: 'openid profile offline'
 						});
 					} else {
 						throw new Error('no refresh token');
 					}
 				}
-				setAuthToken(token.value.accessToken);
-				userInfo.value = await oidcApi.userInfo();
+				setAuthToken(token.item.accessToken);
+				userInfo.item = await oidcApi.userInfo();
 			} else {
 				throw new Error('not authorized');
 			}
 		}
-		return userInfo.value;
+		return userInfo.item;
 	} catch (e) {
 		if (!(e instanceof Error && e.message === 'not authorized')) {
 			handleError(e);
@@ -92,9 +92,9 @@ function hasPermissionInternal(user: UserInfo, permission: Permission): boolean 
 }
 
 export async function signInUsernamePassword(username: string, password: string) {
-	token.value = await oidcApi.token({
+	token.item = await oidcApi.token({
 		grantType: 'password',
-		clientId: env.PUBLIC_URL,
+		clientId: env.PUBLIC_OS_OIDC_CLIENT_ID,
 		username,
 		password,
 		scope: 'openid profile address email phone offline'
@@ -105,8 +105,8 @@ export async function signInUsernamePassword(username: string, password: string)
 }
 
 function resetAuth() {
-	userInfo.value = null;
-	token.value = null;
+	userInfo.item = null;
+	token.item = null;
 	setAuthToken(undefined);
 }
 

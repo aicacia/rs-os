@@ -8,6 +8,7 @@ pub struct Model {
   #[sea_orm(default_value = "1")]
   pub active: i64,
   pub name: String,
+  pub urn: String,
   pub description: Option<String>,
   pub updated_at: i64,
   pub created_at: i64,

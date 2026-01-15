@@ -10,7 +10,7 @@ const userSettings = async () =>
 	browser
 		? ({
 				authority: await getOIDCAPIURL(),
-				client_id: `${env.PUBLIC_URL}`,
+				client_id: `${env.PUBLIC_OS_OIDC_ADMIN_CLIENT_ID}`,
 				redirect_uri: `${env.PUBLIC_URL}/callback`,
 				post_logout_redirect_uri: `${env.PUBLIC_URL}/logout`,
 				response_type: 'code',
@@ -25,7 +25,7 @@ const userSettings = async () =>
 				extraQueryParams: {
 					registration: JSON.stringify({
 						name: 'OIDC Admin UI',
-						client_id: `${env.PUBLIC_URL}`,
+						client_id: env.PUBLIC_OS_OIDC_ADMIN_CLIENT_ID,
 						redirect_uris: [
 							`${env.PUBLIC_URL}/callback`,
 							`${env.PUBLIC_URL}/popup-callback`,
@@ -41,7 +41,7 @@ const userSettings = async () =>
 						grant_types: ['authorization_code', 'refresh_token'],
 						response_types: ['code'],
 						scopes: ['openid', 'profile', 'address', 'offline', 'email', 'phone'],
-						audience: [`${env.PUBLIC_URL}`],
+						audience: [env.PUBLIC_OS_OIDC_APPLICATION_ID],
 						access_token_expires_in_seconds: 3600,
 						id_token_expires_in_seconds: 3600,
 						refresh_expires_in_seconds: 604800
