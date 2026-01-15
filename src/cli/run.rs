@@ -54,7 +54,7 @@ pub async fn run() -> io::Result<()> {
     .with(
       tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         format!(
-          "{level},axum::rejection=trace",
+          "{level},axum::rejection=trace,sqlx=warn",
           level = level.as_str().to_lowercase()
         )
         .into()
@@ -72,7 +72,8 @@ pub async fn run() -> io::Result<()> {
       Err(e) => return Err(io::Error::other(e)),
     };
 
-  os_oidc::core::model::init(&database_connection, &app_config.oidc_api).await?;
+  let (oidc_app, oidc_client) =
+    os_oidc::core::model::init(&database_connection, &app_config.oidc_api).await?;
 
   let oidc_openapi_router = os_oidc::router::create_openapi_router(
     os_oidc::router::entity::RouterState {
@@ -87,6 +88,10 @@ pub async fn run() -> io::Result<()> {
   oidc_ui_env_overrides.insert(
     "PUBLIC_OS_OIDC_API_URL".to_owned(),
     app_config.oidc_api.url(),
+  );
+  oidc_ui_env_overrides.insert(
+    "PUBLIC_OS_OIDC_CLIENT_ID".to_owned(),
+    oidc_client.client_id.clone(),
   );
 
   write_public_env_file(&app_config.oidc_ui, oidc_ui_env_overrides).await?;
@@ -109,6 +114,14 @@ pub async fn run() -> io::Result<()> {
   oidc_admin_ui_env_overrides.insert(
     "PUBLIC_OS_OIDC_ADMIN_API_URL".to_owned(),
     app_config.oidc_admin_api.url(),
+  );
+  oidc_admin_ui_env_overrides.insert(
+    "PUBLIC_OS_OIDC_ADMIN_CLIENT_ID".to_owned(),
+    oidc_client.client_id.clone(),
+  );
+  oidc_admin_ui_env_overrides.insert(
+    "PUBLIC_OS_OIDC_APPLICATION_URN".to_owned(),
+    oidc_app.urn.clone(),
   );
 
   write_public_env_file(&app_config.oidc_admin_ui, oidc_admin_ui_env_overrides).await?;

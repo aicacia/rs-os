@@ -22,18 +22,10 @@ impl Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-  #[sea_orm(has_many = "super::clients::Entity")]
-  Clients,
   #[sea_orm(has_many = "super::roles::Entity")]
   Roles,
   #[sea_orm(has_many = "super::permissions::Entity")]
   Permissions,
-}
-
-impl Related<super::clients::Entity> for Entity {
-  fn to() -> RelationDef {
-    Relation::Clients.def()
-  }
 }
 
 impl Related<super::roles::Entity> for Entity {
@@ -58,6 +50,13 @@ pub async fn get_application_by_id(
     .filter(Column::Id.eq(application_id))
     .one(db)
     .await
+}
+
+pub async fn get_application_by_urn(
+  db: &DatabaseConnection,
+  urn: &str,
+) -> Result<Option<Model>, DbErr> {
+  Entity::find().filter(Column::Urn.eq(urn)).one(db).await
 }
 
 pub async fn list_applications(db: &DatabaseConnection) -> Result<Vec<Model>, DbErr> {

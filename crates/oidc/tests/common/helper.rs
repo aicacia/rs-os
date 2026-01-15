@@ -170,7 +170,7 @@ pub async fn create_jwt_for_user(
 
 pub async fn create_test_client(
   db: &DatabaseConnection,
-  application_id: i64,
+  application_urn: &str,
   client_id_override: Option<&str>,
 ) -> Result<clients::Model, Box<dyn Error>> {
   let client_id = match client_id_override {
@@ -180,7 +180,6 @@ pub async fn create_test_client(
   let now = Utc::now().timestamp();
 
   let client = clients::ActiveModel {
-    application_id: Set(Some(application_id)),
     client_id: Set(client_id),
     name: Set("Test Client".to_string()),
     client_secret: Set("test_secret".to_string()),
@@ -195,7 +194,7 @@ pub async fn create_test_client(
     grant_types: Set(r#"["authorization_code", "refresh_token"]"#.to_string()),
     response_types: Set(r#"["code"]"#.to_string()),
     scopes: Set(r#"["openid", "profile", "email"]"#.to_string()),
-    audience: Set("".to_string()),
+    audience: Set(format!("[\"{}\"]", application_urn)),
     access_token_expires_in_seconds: Set(3600),
     id_token_expires_in_seconds: Set(3600),
     refresh_expires_in_seconds: Set(86400),

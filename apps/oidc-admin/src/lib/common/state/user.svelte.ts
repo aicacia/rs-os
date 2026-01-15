@@ -41,7 +41,7 @@ const userSettings = async () =>
 						grant_types: ['authorization_code', 'refresh_token'],
 						response_types: ['code'],
 						scopes: ['openid', 'profile', 'address', 'offline', 'email', 'phone'],
-						audience: [env.PUBLIC_OS_OIDC_APPLICATION_ID],
+						audience: [env.PUBLIC_OS_OIDC_APPLICATION_URN],
 						access_token_expires_in_seconds: 3600,
 						id_token_expires_in_seconds: 3600,
 						refresh_expires_in_seconds: 604800
@@ -96,6 +96,7 @@ function hasPermissionInternal(user: UserInfo, permission: string): boolean {
 if (browser) {
 	$effect.root(() => {
 		$effect(() => {
+			// TODO: on first sign in this never gets called
 			getUserManager().then(async (userManager) => {
 				const user = await userManager.getUser();
 				if (!user) {

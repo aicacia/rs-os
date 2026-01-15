@@ -80,7 +80,6 @@ async fn ensure_oidc_web_client_exists(
   ]);
 
   let mut model: ActiveModel = ActiveModel {
-    application_id: Set(Some(app.id)),
     name: Set("OIDC UI".to_string()),
     client_id: Set(OIDC_CLIENT_ID.to_string()),
     auth_method: Set("none".to_string()),
@@ -95,7 +94,7 @@ async fn ensure_oidc_web_client_exists(
       "none".to_string(),
     ])),
     scopes: Set(string_vec_to_json(&scopes)),
-    audience: Set(string_vec_to_json(&vec![ui_url.clone()])),
+    audience: Set(string_vec_to_json(&vec![app.urn.clone()])),
     access_token_expires_in_seconds: Set(config.token.expires_in_seconds as i64),
     id_token_expires_in_seconds: Set(config.token.expires_in_seconds as i64),
     refresh_expires_in_seconds: Set(config.token.refresh_expires_in_seconds as i64),
@@ -262,10 +261,13 @@ async fn ensure_admin_user_exists(
   Ok(())
 }
 
-pub async fn init(db: &DatabaseConnection, config: &AppConfig) -> io::Result<()> {
+pub async fn init(
+  db: &DatabaseConnection,
+  config: &AppConfig,
+) -> io::Result<(applications::Model, clients::Model)> {
   ensure_jwk_exists(db, config.token.default_jwt_algorithm).await?;
   let app = ensure_application_exists(db).await?;
-  let _client = ensure_oidc_web_client_exists(db, config, &app).await?;
+  let client = ensure_oidc_web_client_exists(db, config, &app).await?;
   ensure_admin_user_exists(db, &app).await?;
-  Ok(())
+  Ok((app, client))
 }

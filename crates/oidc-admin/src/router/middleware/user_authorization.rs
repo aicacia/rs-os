@@ -1,5 +1,6 @@
+// TODO: use the os_api version
+
 use std::collections::{HashMap, HashSet};
-use std::str::FromStr;
 
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
@@ -17,13 +18,12 @@ use crate::router::{
   entity::RouterState,
 };
 use os_oidc_model::entities::{
-  clients::get_client_by_client_id,
   permissions, roles,
   user_emails::list_user_emails_by_user_id,
   user_infos::get_user_info_by_user_id,
   user_o_auth2_providers::get_user_oauth2_providers,
   user_phone_numbers::list_user_phone_numbers_by_user_id,
-  users::{self, get_user_by_id, get_user_role_permissions_by_user_id_and_application_id},
+  users::{self, get_user_by_id},
 };
 
 pub struct UserAuthorization {
@@ -199,65 +199,11 @@ where
           return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
         }
 
-        // Get the client to find the application_id
-        let client = match get_client_by_client_id(
-          &router_state.database_connection,
-          &authorization.claims.client,
-        )
-        .await
-        {
-          Ok(Some(client)) => client,
-          Ok(None) => {
-            log::error!(
-              "invalid authorization client not found: {}",
-              authorization.claims.client
-            );
-            return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-          }
-          Err(e) => {
-            log::error!("failed to fetch client: {}", e);
-            return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
-          }
-        };
-
-        // Get the application_id from the client, or use a default if not set
-        let application_id = match client.application_id {
-          Some(app_id) => app_id,
-          None => {
-            log::error!("client has no application_id: {}", client.client_id);
-            return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-          }
-        };
-
-        // Fetch role permissions filtered by application_id
-        let role_permissions = match get_user_role_permissions_by_user_id_and_application_id(
-          &router_state.database_connection,
-          user_model.id,
-          application_id,
-        )
-        .await
-        {
-          Ok(role_permissions) => role_permissions,
-          Err(e) => {
-            log::error!("failed to fetch permissions: {}", e);
-            return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
-          }
-        };
-
-        let mut permissions: HashSet<Permission> = HashSet::default();
-        for (_role_id, perms) in role_permissions.iter() {
-          for p in perms {
-            if let Ok(permission) = Permission::from_str(&p.uri) {
-              permissions.insert(permission);
-            }
-          }
-        }
-
         Ok(Self {
           claims: authorization.claims,
           user_model,
-          role_permissions,
-          permissions,
+          role_permissions: HashMap::default(),
+          permissions: HashSet::default(),
         })
       }
       Ok(None) => Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)),

@@ -10,6 +10,7 @@ use os_api::{
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
 };
 
+use crate::core::helper::json_to_string_vec;
 use crate::router::{
   common::{
     constants::{
@@ -22,6 +23,7 @@ use crate::router::{
   middleware::authorization::Authorization,
 };
 use os_oidc_model::entities::{
+  applications::get_application_by_urn,
   clients::get_client_by_client_id,
   permissions,
   roles::{self},
@@ -197,29 +199,59 @@ where
           }
         };
 
-        // Get the application_id from the client, or use a default if not set
-        let application_id = match client.application_id {
-          Some(app_id) => app_id,
-          None => {
-            log::error!("client has no application_id: {}", client.client_id);
-            return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-          }
-        };
+        let audience_urns: Vec<String> = json_to_string_vec(&client.audience);
 
-        // Fetch role permissions filtered by application_id
-        let role_permissions = match get_user_role_permissions_by_user_id_and_application_id(
-          &router_state.database_connection,
-          user_model.id,
-          application_id,
-        )
-        .await
-        {
-          Ok(role_permissions) => role_permissions,
-          Err(e) => {
-            log::error!("failed to fetch permissions: {}", e);
-            return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+        if audience_urns.is_empty() {
+          log::error!("client has no audiences: {}", client.client_id);
+          return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+        }
+
+        let mut role_permissions: HashMap<roles::Model, Vec<permissions::Model>> =
+          HashMap::default();
+
+        for audience_urn in audience_urns {
+          if !audience_urn.starts_with("urn:os:oidc:application:") {
+            continue;
           }
-        };
+
+          match get_application_by_urn(&router_state.database_connection, &audience_urn).await {
+            Ok(Some(app)) => {
+              match get_user_role_permissions_by_user_id_and_application_id(
+                &router_state.database_connection,
+                user_model.id,
+                app.id,
+              )
+              .await
+              {
+                Ok(app_role_permissions) => {
+                  role_permissions.extend(app_role_permissions);
+                }
+                Err(e) => {
+                  log::error!(
+                    "failed to fetch permissions for application {}: {}",
+                    audience_urn,
+                    e
+                  );
+                  return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+                }
+              }
+            }
+            Ok(None) => {
+              log::error!("application not found for audience: {}", audience_urn);
+              return Err(
+                HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR),
+              );
+            }
+            Err(e) => {
+              log::error!(
+                "failed to fetch application for audience {}: {}",
+                audience_urn,
+                e
+              );
+              return Err(HttpError::internal_error().with_application_error(INTERNAL_ERROR));
+            }
+          }
+        }
 
         let mut permissions: HashSet<Permission> = HashSet::default();
         for (_role_id, perms) in role_permissions.iter() {
