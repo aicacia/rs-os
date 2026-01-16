@@ -83,6 +83,7 @@ impl AppConfig {
     // Admin API Config Adjustments
     self.oidc_admin_api.server = self.server.clone();
     self.oidc_admin_api.log_level = self.log_level.clone();
+    self.oidc_admin_api.oidc_application_urn = self.oidc_api.application_urn.clone();
 
     self.oidc_admin_api.database = self.database.clone();
 

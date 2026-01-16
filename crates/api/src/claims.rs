@@ -14,7 +14,7 @@ pub struct BasicClaims {
   pub scope: String,
 }
 
-pub trait Claims: Serialize + Send + Sync + DeserializeOwned {
+pub trait Claims: Serialize + DeserializeOwned + Send + Sync {
   fn r#type(&self) -> &str;
   fn exp(&self) -> i64;
   fn iat(&self) -> i64;

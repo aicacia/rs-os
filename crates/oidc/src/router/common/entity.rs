@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use chrono::{DateTime, Utc};
 pub use os_api::claims::{BasicClaims, Claims};
@@ -304,8 +304,8 @@ pub struct UserInfo {
   #[serde(flatten)]
   pub profile: OpenIdProfile,
   pub username: String,
-  pub roles: Vec<String>,
-  pub permissions: Vec<Permission>,
+  pub roles: HashMap<String, Vec<String>>,
+  pub permissions: HashMap<String, Vec<Permission>>,
 }
 
 impl From<users::Model> for UserInfo {
@@ -321,8 +321,8 @@ impl From<users::Model> for UserInfo {
         ..Default::default()
       },
       username: user_model.username,
-      roles: Vec::new(),
-      permissions: Vec::new(),
+      roles: HashMap::new(),
+      permissions: HashMap::new(),
     }
   }
 }

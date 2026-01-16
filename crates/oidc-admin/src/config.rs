@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use os_api::{Environment, ServerConfig};
+use os_api::{
+  Environment, ServerConfig,
+  constants::{DEFAULT_OIDC_ADMIN_CLIENT_ID, DEFAULT_OIDC_APPLICATION_URN},
+};
 use os_oidc_model::DatabaseConfig;
 use serde::Deserialize;
 
@@ -38,6 +41,8 @@ pub struct AppConfig {
   pub log_level: String,
   pub env: Environment,
   pub password: PasswordConfig,
+  pub client_id: String,
+  pub oidc_application_urn: String,
   pub url: Option<String>,
   pub ui_url: Option<String>,
 }
@@ -50,6 +55,8 @@ impl Default for AppConfig {
       log_level: "DEBUG".to_owned(),
       env: Environment::default(),
       password: PasswordConfig::default(),
+      client_id: DEFAULT_OIDC_ADMIN_CLIENT_ID.to_owned(),
+      oidc_application_urn: DEFAULT_OIDC_APPLICATION_URN.to_owned(),
       url: None,
       ui_url: None,
     }

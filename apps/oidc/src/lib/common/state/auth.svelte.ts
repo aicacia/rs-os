@@ -88,7 +88,7 @@ function hasAdminAll(user: UserInfo): boolean {
 }
 
 function hasPermissionInternal(user: UserInfo, permission: Permission): boolean {
-	return user.permissions.includes(permission) ?? false;
+	return user.permissions[env.PUBLIC_OS_OIDC_APPLICATION_URN].includes(permission) ?? false;
 }
 
 export async function signInUsernamePassword(username: string, password: string) {

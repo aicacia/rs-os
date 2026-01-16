@@ -3,7 +3,7 @@ use axum::{
   response::IntoResponse,
 };
 use os_api::{
-  Json,
+  BasicClaims, Json, UserAuthorization,
   error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -13,9 +13,8 @@ use crate::router::{
     constants::TAG,
     entity::{Client, ClientUpsertRequest, client_upsert_request_changed},
   },
-  common::entity::Permission,
+  common::{entity::Permission, helper::has_permission},
   entity::RouterState,
-  middleware::user_authorization::UserAuthorization,
 };
 use os_oidc_model::entities::clients::{
   deactivate_client, get_client_by_id, list_clients, upsert_client,
@@ -39,10 +38,14 @@ use os_oidc_model::entities::clients::{
 )]
 pub async fn client_by_id(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(client_id): Path<i64>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientRead) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::ClientRead,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -83,9 +86,13 @@ pub async fn client_by_id(
 )]
 pub async fn client_list(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientRead) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::ClientRead,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -123,10 +130,14 @@ pub async fn client_list(
 )]
 pub async fn client_create(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Json(client_upsert_request): Json<ClientUpsertRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::ClientWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -174,11 +185,15 @@ pub async fn client_create(
 )]
 pub async fn client_update(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(client_id): Path<i64>,
   Json(client_upsert_request): Json<ClientUpsertRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::ClientWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -241,10 +256,14 @@ pub async fn client_update(
 )]
 pub async fn client_delete(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(client_id): Path<i64>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientDelete) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::ClientDelete,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }

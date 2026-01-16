@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use os_api::{Environment, ServerConfig};
+use os_api::{
+  Environment, ServerConfig,
+  constants::{DEFAULT_OIDC_APPLICATION_URN, DEFAULT_OIDC_CLIENT_ID},
+};
 use os_oidc_model::DatabaseConfig;
 use serde::Deserialize;
 
@@ -91,6 +94,8 @@ pub struct AppConfig {
   pub user: UserConfig,
   pub oauth2: OAuth2,
   pub token: TokenConfig,
+  pub client_id: String,
+  pub application_urn: String,
   pub url: Option<String>,
   pub ui_url: Option<String>,
 }
@@ -106,6 +111,8 @@ impl Default for AppConfig {
       user: UserConfig::default(),
       oauth2: OAuth2::default(),
       token: TokenConfig::default(),
+      client_id: DEFAULT_OIDC_CLIENT_ID.to_string(),
+      application_urn: DEFAULT_OIDC_APPLICATION_URN.to_string(),
       url: None,
       ui_url: None,
     }

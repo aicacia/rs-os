@@ -19,6 +19,7 @@ pub async fn create_test_application(
 
   let app = applications::ActiveModel {
     name: Set("Test Application".to_string()),
+    urn: Set(format!("urn:os:oidc:application:{}", uuid::Uuid::new_v4())),
     description: Set(Some("Test application for unit tests".to_string())),
     active: Set(1),
     created_at: Set(now),

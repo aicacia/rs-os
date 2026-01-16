@@ -18,8 +18,8 @@ pub use error::{
 };
 pub use extractors::{Form, Json};
 pub use middleware::{
-  AUTHORIZATION_BEARER_PREFIX, AUTHORIZATION_HEADER, Authorization, authorization_from_header,
-  parse_token_data,
+  AUTHORIZATION_BEARER_PREFIX, AUTHORIZATION_HEADER, Authorization, UserAuthorization,
+  authorization_from_header, parse_token_data,
 };
 pub use openapi::{SecurityAddon, ServersAddon};
 pub use state::RouterState;

@@ -90,7 +90,7 @@ function hasAdminAll(user: UserInfo): boolean {
 }
 
 function hasPermissionInternal(user: UserInfo, permission: string): boolean {
-	return user.permissions.includes(permission as Permission);
+	return user.permissions[env.PUBLIC_OS_OIDC_APPLICATION_URN].includes(permission as Permission);
 }
 
 if (browser) {

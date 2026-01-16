@@ -59,6 +59,19 @@ pub async fn get_application_by_urn(
   Entity::find().filter(Column::Urn.eq(urn)).one(db).await
 }
 
+pub async fn get_applications_by_urns(
+  db: &DatabaseConnection,
+  urns: &[String],
+) -> Result<Vec<Model>, DbErr> {
+  if urns.is_empty() {
+    return Ok(Vec::new());
+  }
+  Entity::find()
+    .filter(Column::Urn.is_in(urns.iter().cloned()))
+    .all(db)
+    .await
+}
+
 pub async fn list_applications(db: &DatabaseConnection) -> Result<Vec<Model>, DbErr> {
   Entity::find().all(db).await
 }

@@ -782,7 +782,7 @@ pub async fn register_client(
   user_authorization: UserAuthorization,
   Json(client_register_request): Json<ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientWrite) {
+  match user_authorization.has_oidc_application_permission(Permission::ClientWrite) {
     Ok(_) => {}
     Err(e) => {
       log::error!("error registering client: {}", e);
@@ -978,7 +978,7 @@ pub async fn client(
   user_authorization: UserAuthorization,
   Query(ClientByClientIdQuery { client_id }): Query<ClientByClientIdQuery>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::ClientRead) {
+  match user_authorization.has_oidc_application_permission(Permission::ClientRead) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   };
