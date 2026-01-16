@@ -1,10 +1,4 @@
-import {
-	Configuration,
-	type ConfigurationParameters,
-	CurrentUserApi,
-	ClientApi,
-	UserApi
-} from './oidc-admin';
+import { Configuration, type ConfigurationParameters, ClientApi, UserApi } from './oidc-admin';
 import { env } from '$env/dynamic/public';
 
 let authToken: string | undefined;
@@ -30,7 +24,6 @@ export const defaultConfigurationParameters: ConfigurationParameters = {
 
 export const adminConfiguration = new Configuration(defaultConfigurationParameters);
 
-export const currentUserApi = new CurrentUserApi(adminConfiguration);
 export const clientApi = new ClientApi(adminConfiguration);
 export const userApi = new UserApi(adminConfiguration);
 

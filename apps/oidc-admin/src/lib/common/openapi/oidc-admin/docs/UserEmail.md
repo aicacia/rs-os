@@ -8,9 +8,10 @@ Name | Type
 ------------ | -------------
 `createdAt` | Date
 `email` | string
-`id` | number
-`primary` | boolean
+`id` | string
+`isPrimary` | boolean
 `updatedAt` | Date
+`userId` | string
 `verified` | boolean
 
 ## Example
@@ -23,8 +24,9 @@ const example = {
   "createdAt": null,
   "email": null,
   "id": null,
-  "primary": null,
+  "isPrimary": null,
   "updatedAt": null,
+  "userId": null,
   "verified": null,
 } satisfies UserEmail
 

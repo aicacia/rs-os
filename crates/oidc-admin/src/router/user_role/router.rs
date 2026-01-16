@@ -5,13 +5,12 @@ use axum::{
   extract::{Path, State},
   response::IntoResponse,
 };
-use os_api::error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR};
+use os_api::{BasicClaims, error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR}, UserAuthorization};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::entity::Permission,
+  common::{entity::Permission, helper::has_permission},
   entity::RouterState,
-  middleware::user_authorization::UserAuthorization,
   user_role::{
     constants::TAG,
     entity::{AssignUserRoleRequest, UserPermissions, UserRole},
@@ -37,7 +36,7 @@ use os_oidc_model::entities::users::{
 )]
 pub async fn list_user_roles(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -50,8 +49,12 @@ pub async fn list_user_roles(
   };
 
   // Users can read their own roles, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -90,7 +93,7 @@ pub async fn list_user_roles(
 )]
 pub async fn list_user_permissions(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -103,8 +106,12 @@ pub async fn list_user_permissions(
   };
 
   // Users can read their own permissions, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -160,12 +167,16 @@ pub async fn list_user_permissions(
 )]
 pub async fn assign_user_role_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
   Json(request): Json<AssignUserRoleRequest>,
 ) -> impl IntoResponse {
   // Only admins can assign roles
-  match user_authorization.has_permission(Permission::UserWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -211,11 +222,15 @@ pub async fn assign_user_role_handler(
 )]
 pub async fn remove_user_role_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, role_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   // Only admins can remove roles
-  match user_authorization.has_permission(Permission::UserWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }

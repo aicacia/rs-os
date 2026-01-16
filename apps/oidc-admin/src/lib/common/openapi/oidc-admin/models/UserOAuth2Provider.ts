@@ -30,19 +30,19 @@ export interface UserOAuth2Provider {
      * @type {string}
      * @memberof UserOAuth2Provider
      */
-    email?: string | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof UserOAuth2Provider
-     */
-    id: number;
+    email: string;
     /**
      * 
      * @type {string}
      * @memberof UserOAuth2Provider
      */
     name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOAuth2Provider
+     */
+    oauth2ProviderId: string;
     /**
      * 
      * @type {Date}
@@ -55,6 +55,12 @@ export interface UserOAuth2Provider {
      * @memberof UserOAuth2Provider
      */
     uri: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOAuth2Provider
+     */
+    userId: string;
 }
 
 /**
@@ -62,10 +68,12 @@ export interface UserOAuth2Provider {
  */
 export function instanceOfUserOAuth2Provider(value: object): value is UserOAuth2Provider {
     if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
-    if (!('id' in value) || value['id'] === undefined) return false;
+    if (!('email' in value) || value['email'] === undefined) return false;
     if (!('name' in value) || value['name'] === undefined) return false;
+    if (!('oauth2ProviderId' in value) || value['oauth2ProviderId'] === undefined) return false;
     if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
     if (!('uri' in value) || value['uri'] === undefined) return false;
+    if (!('userId' in value) || value['userId'] === undefined) return false;
     return true;
 }
 
@@ -80,11 +88,12 @@ export function UserOAuth2ProviderFromJSONTyped(json: any, ignoreDiscriminator: 
     return {
         
         'createdAt': (new Date(json['created_at'])),
-        'email': json['email'] == null ? undefined : json['email'],
-        'id': json['id'],
+        'email': json['email'],
         'name': json['name'],
+        'oauth2ProviderId': json['oauth2_provider_id'],
         'updatedAt': (new Date(json['updated_at'])),
         'uri': json['uri'],
+        'userId': json['user_id'],
     };
 }
 
@@ -101,10 +110,11 @@ export function UserOAuth2ProviderToJSONTyped(value?: UserOAuth2Provider | null,
         
         'created_at': value['createdAt'].toISOString(),
         'email': value['email'],
-        'id': value['id'],
         'name': value['name'],
+        'oauth2_provider_id': value['oauth2ProviderId'],
         'updated_at': value['updatedAt'].toISOString(),
         'uri': value['uri'],
+        'user_id': value['userId'],
     };
 }
 

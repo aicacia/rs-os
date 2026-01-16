@@ -21,10 +21,28 @@ import { mapValues } from '../runtime';
 export interface UserRole {
     /**
      * 
-     * @type {Array<string>}
+     * @type {Date}
      * @memberof UserRole
      */
-    permissions: Array<string>;
+    createdAt: Date;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserRole
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserRole
+     */
+    id: string;
+    /**
+     * 
+     * @type {Date}
+     * @memberof UserRole
+     */
+    updatedAt: Date;
     /**
      * 
      * @type {string}
@@ -37,7 +55,10 @@ export interface UserRole {
  * Check if a given object implements the UserRole interface.
  */
 export function instanceOfUserRole(value: object): value is UserRole {
-    if (!('permissions' in value) || value['permissions'] === undefined) return false;
+    if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
+    if (!('description' in value) || value['description'] === undefined) return false;
+    if (!('id' in value) || value['id'] === undefined) return false;
+    if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
     if (!('uri' in value) || value['uri'] === undefined) return false;
     return true;
 }
@@ -52,7 +73,10 @@ export function UserRoleFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
     }
     return {
         
-        'permissions': json['permissions'],
+        'createdAt': (new Date(json['created_at'])),
+        'description': json['description'],
+        'id': json['id'],
+        'updatedAt': (new Date(json['updated_at'])),
         'uri': json['uri'],
     };
 }
@@ -68,7 +92,10 @@ export function UserRoleToJSONTyped(value?: UserRole | null, ignoreDiscriminator
 
     return {
         
-        'permissions': value['permissions'],
+        'created_at': value['createdAt'].toISOString(),
+        'description': value['description'],
+        'id': value['id'],
+        'updated_at': value['updatedAt'].toISOString(),
         'uri': value['uri'],
     };
 }

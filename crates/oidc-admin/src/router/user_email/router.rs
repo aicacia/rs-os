@@ -3,13 +3,15 @@ use axum::{
   extract::{Path, State},
   response::IntoResponse,
 };
-use os_api::error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR};
+use os_api::{
+  BasicClaims, UserAuthorization,
+  error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
+};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::entity::Permission,
+  common::{entity::Permission, helper::has_permission},
   entity::RouterState,
-  middleware::user_authorization::UserAuthorization,
   user_email::{
     constants::TAG,
     entity::{CreateUserEmailRequest, UpdateUserEmailRequest, UserEmail},
@@ -36,7 +38,7 @@ use os_oidc_model::entities::user_emails::{
 )]
 pub async fn list_user_emails(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -49,8 +51,12 @@ pub async fn list_user_emails(
   };
 
   // Users can read their own emails, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -87,7 +93,7 @@ pub async fn list_user_emails(
 )]
 pub async fn get_user_email(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, email_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -109,8 +115,12 @@ pub async fn get_user_email(
   };
 
   // Users can read their own emails, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -160,7 +170,7 @@ pub async fn get_user_email(
 )]
 pub async fn create_user_email_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
   Json(request): Json<CreateUserEmailRequest>,
 ) -> impl IntoResponse {
@@ -174,8 +184,12 @@ pub async fn create_user_email_handler(
   };
 
   // Users can add their own emails, admins can add any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -215,7 +229,7 @@ pub async fn create_user_email_handler(
 )]
 pub async fn update_user_email_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, email_id)): Path<(String, String)>,
   Json(request): Json<UpdateUserEmailRequest>,
 ) -> impl IntoResponse {
@@ -238,8 +252,12 @@ pub async fn update_user_email_handler(
   };
 
   // Users can update their own emails, admins can update any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -310,7 +328,7 @@ pub async fn update_user_email_handler(
 )]
 pub async fn delete_user_email_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, email_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -332,8 +350,12 @@ pub async fn delete_user_email_handler(
   };
 
   // Users can delete their own emails, admins can delete any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -370,7 +392,7 @@ pub async fn delete_user_email_handler(
 )]
 pub async fn verify_user_email_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, email_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -392,7 +414,11 @@ pub async fn verify_user_email_handler(
   };
 
   // Only admins can manually verify emails
-  match user_authorization.has_permission(Permission::UserWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }

@@ -1,7 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from './ClientApi';
-export * from './CurrentUserApi';
 export * from './OpenapiApi';
 export * from './UserApi';
 export * from './UserEmailApi';

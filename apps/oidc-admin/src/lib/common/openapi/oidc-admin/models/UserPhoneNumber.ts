@@ -27,10 +27,16 @@ export interface UserPhoneNumber {
     createdAt: Date;
     /**
      * 
-     * @type {number}
+     * @type {string}
      * @memberof UserPhoneNumber
      */
-    id: number;
+    id: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPhoneNumber
+     */
+    isPrimary: boolean;
     /**
      * 
      * @type {string}
@@ -39,16 +45,16 @@ export interface UserPhoneNumber {
     phoneNumber: string;
     /**
      * 
-     * @type {boolean}
-     * @memberof UserPhoneNumber
-     */
-    primary: boolean;
-    /**
-     * 
      * @type {Date}
      * @memberof UserPhoneNumber
      */
     updatedAt: Date;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserPhoneNumber
+     */
+    userId: string;
     /**
      * 
      * @type {boolean}
@@ -63,9 +69,10 @@ export interface UserPhoneNumber {
 export function instanceOfUserPhoneNumber(value: object): value is UserPhoneNumber {
     if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
     if (!('id' in value) || value['id'] === undefined) return false;
+    if (!('isPrimary' in value) || value['isPrimary'] === undefined) return false;
     if (!('phoneNumber' in value) || value['phoneNumber'] === undefined) return false;
-    if (!('primary' in value) || value['primary'] === undefined) return false;
     if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
+    if (!('userId' in value) || value['userId'] === undefined) return false;
     if (!('verified' in value) || value['verified'] === undefined) return false;
     return true;
 }
@@ -82,9 +89,10 @@ export function UserPhoneNumberFromJSONTyped(json: any, ignoreDiscriminator: boo
         
         'createdAt': (new Date(json['created_at'])),
         'id': json['id'],
+        'isPrimary': json['is_primary'],
         'phoneNumber': json['phone_number'],
-        'primary': json['primary'],
         'updatedAt': (new Date(json['updated_at'])),
+        'userId': json['user_id'],
         'verified': json['verified'],
     };
 }
@@ -102,9 +110,10 @@ export function UserPhoneNumberToJSONTyped(value?: UserPhoneNumber | null, ignor
         
         'created_at': value['createdAt'].toISOString(),
         'id': value['id'],
+        'is_primary': value['isPrimary'],
         'phone_number': value['phoneNumber'],
-        'primary': value['primary'],
         'updated_at': value['updatedAt'].toISOString(),
+        'user_id': value['userId'],
         'verified': value['verified'],
     };
 }

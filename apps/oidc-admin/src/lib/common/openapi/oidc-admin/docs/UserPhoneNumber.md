@@ -7,10 +7,11 @@
 Name | Type
 ------------ | -------------
 `createdAt` | Date
-`id` | number
+`id` | string
+`isPrimary` | boolean
 `phoneNumber` | string
-`primary` | boolean
 `updatedAt` | Date
+`userId` | string
 `verified` | boolean
 
 ## Example
@@ -22,9 +23,10 @@ import type { UserPhoneNumber } from ''
 const example = {
   "createdAt": null,
   "id": null,
+  "isPrimary": null,
   "phoneNumber": null,
-  "primary": null,
   "updatedAt": null,
+  "userId": null,
   "verified": null,
 } satisfies UserPhoneNumber
 

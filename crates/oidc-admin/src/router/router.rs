@@ -3,8 +3,8 @@ use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::router::{
-  client, common::entity::Permission, current_user, entity::RouterState, user, user_email,
-  user_oauth2_provider, user_phone_number, user_role,
+  client, common::entity::Permission, entity::RouterState, user, user_email, user_oauth2_provider,
+  user_phone_number, user_role,
 };
 
 #[derive(OpenApi)]
@@ -28,7 +28,6 @@ pub fn create_openapi_router(state: RouterState, prefix_optional: Option<&str>) 
       state.clone(),
       health_check,
     ))
-    .merge(current_user::router::create_router(state.clone()))
     .merge(user::router::create_router(state.clone()))
     .merge(user_email::router::create_router(state.clone()))
     .merge(user_phone_number::router::create_router(state.clone()))

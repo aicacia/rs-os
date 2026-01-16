@@ -33,22 +33,28 @@ export interface UserEmail {
     email: string;
     /**
      * 
-     * @type {number}
+     * @type {string}
      * @memberof UserEmail
      */
-    id: number;
+    id: string;
     /**
      * 
      * @type {boolean}
      * @memberof UserEmail
      */
-    primary: boolean;
+    isPrimary: boolean;
     /**
      * 
      * @type {Date}
      * @memberof UserEmail
      */
     updatedAt: Date;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserEmail
+     */
+    userId: string;
     /**
      * 
      * @type {boolean}
@@ -64,8 +70,9 @@ export function instanceOfUserEmail(value: object): value is UserEmail {
     if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
     if (!('email' in value) || value['email'] === undefined) return false;
     if (!('id' in value) || value['id'] === undefined) return false;
-    if (!('primary' in value) || value['primary'] === undefined) return false;
+    if (!('isPrimary' in value) || value['isPrimary'] === undefined) return false;
     if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
+    if (!('userId' in value) || value['userId'] === undefined) return false;
     if (!('verified' in value) || value['verified'] === undefined) return false;
     return true;
 }
@@ -83,8 +90,9 @@ export function UserEmailFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         'createdAt': (new Date(json['created_at'])),
         'email': json['email'],
         'id': json['id'],
-        'primary': json['primary'],
+        'isPrimary': json['is_primary'],
         'updatedAt': (new Date(json['updated_at'])),
+        'userId': json['user_id'],
         'verified': json['verified'],
     };
 }
@@ -103,8 +111,9 @@ export function UserEmailToJSONTyped(value?: UserEmail | null, ignoreDiscriminat
         'created_at': value['createdAt'].toISOString(),
         'email': value['email'],
         'id': value['id'],
-        'primary': value['primary'],
+        'is_primary': value['isPrimary'],
         'updated_at': value['updatedAt'].toISOString(),
+        'user_id': value['userId'],
         'verified': value['verified'],
     };
 }

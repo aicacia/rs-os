@@ -3,13 +3,12 @@ use axum::{
   extract::{Path, State},
   response::IntoResponse,
 };
-use os_api::error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR};
+use os_api::{BasicClaims, error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR}, UserAuthorization};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::entity::Permission,
+  common::{entity::Permission, helper::has_permission},
   entity::RouterState,
-  middleware::user_authorization::UserAuthorization,
   user_oauth2_provider::{
     constants::TAG,
     entity::{LinkUserOAuth2ProviderRequest, UserOAuth2Provider},
@@ -36,7 +35,7 @@ use os_oidc_model::entities::user_o_auth2_providers::{
 )]
 pub async fn list_user_oauth2_providers(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -49,8 +48,12 @@ pub async fn list_user_oauth2_providers(
   };
 
   // Users can read their own OAuth2 providers, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -102,7 +105,7 @@ pub async fn list_user_oauth2_providers(
 )]
 pub async fn get_user_oauth2_provider(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, provider_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -124,8 +127,12 @@ pub async fn get_user_oauth2_provider(
   };
 
   // Users can read their own OAuth2 providers, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -188,7 +195,7 @@ pub async fn get_user_oauth2_provider(
 )]
 pub async fn link_user_oauth2_provider_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
   Json(request): Json<LinkUserOAuth2ProviderRequest>,
 ) -> impl IntoResponse {
@@ -202,8 +209,12 @@ pub async fn link_user_oauth2_provider_handler(
   };
 
   // Users can link their own OAuth2 providers, admins can link any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -258,7 +269,7 @@ pub async fn link_user_oauth2_provider_handler(
 )]
 pub async fn unlink_user_oauth2_provider_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, provider_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -280,8 +291,12 @@ pub async fn unlink_user_oauth2_provider_handler(
   };
 
   // Users can unlink their own OAuth2 providers, admins can unlink any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }

@@ -3,13 +3,15 @@ use axum::{
   extract::{Path, State},
   response::IntoResponse,
 };
-use os_api::error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR};
+use os_api::{
+  BasicClaims, UserAuthorization,
+  error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR},
+};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::entity::Permission,
+  common::{entity::Permission, helper::has_permission},
   entity::RouterState,
-  middleware::user_authorization::UserAuthorization,
   user::{
     constants::TAG,
     entity::{CreateUserRequest, UpdateUserRequest, User},
@@ -35,9 +37,13 @@ use os_oidc_model::entities::users::{
 )]
 pub async fn user_list(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::UserRead) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserRead,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -73,10 +79,14 @@ pub async fn user_list(
 )]
 pub async fn get_user(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<i64>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::UserRead) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserRead,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -118,10 +128,14 @@ pub async fn get_user(
 )]
 pub async fn create_user_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Json(request): Json<CreateUserRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::UserWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -159,11 +173,15 @@ pub async fn create_user_handler(
 )]
 pub async fn update_user_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<i64>,
   Json(request): Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::UserWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
@@ -197,10 +215,14 @@ pub async fn update_user_handler(
 )]
 pub async fn delete_user_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<i64>,
 ) -> impl IntoResponse {
-  match user_authorization.has_permission(Permission::UserDelete) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserDelete,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }

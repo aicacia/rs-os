@@ -2,9 +2,13 @@ import { UserManager, type UserManagerSettings } from 'oidc-client-ts';
 import { browser } from '$app/environment';
 import icon256x256Png from '$lib/assets/icon256x256.png';
 import { env } from '$env/dynamic/public';
-import { Permission, type UserInfo } from '../openapi/oidc-admin';
+import { Permission } from '../openapi/oidc-admin';
 import { setAuthToken } from '../openapi';
 import { getOIDCAPIURL } from './services.svelte';
+
+export type UserInfo = {
+	permissions: Record<string, Permission[]>;
+};
 
 const userSettings = async () =>
 	browser

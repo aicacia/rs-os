@@ -8,10 +8,11 @@ Name | Type
 ------------ | -------------
 `createdAt` | Date
 `email` | string
-`id` | number
 `name` | string
+`oauth2ProviderId` | string
 `updatedAt` | Date
 `uri` | string
+`userId` | string
 
 ## Example
 
@@ -22,10 +23,11 @@ import type { UserOAuth2Provider } from ''
 const example = {
   "createdAt": null,
   "email": null,
-  "id": null,
   "name": null,
+  "oauth2ProviderId": null,
   "updatedAt": null,
   "uri": null,
+  "userId": null,
 } satisfies UserOAuth2Provider
 
 console.log(example)

@@ -6,7 +6,10 @@
 
 Name | Type
 ------------ | -------------
-`permissions` | Array&lt;string&gt;
+`createdAt` | Date
+`description` | string
+`id` | string
+`updatedAt` | Date
 `uri` | string
 
 ## Example
@@ -16,7 +19,10 @@ import type { UserRole } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "permissions": null,
+  "createdAt": null,
+  "description": null,
+  "id": null,
+  "updatedAt": null,
   "uri": null,
 } satisfies UserRole
 

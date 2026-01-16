@@ -3,13 +3,12 @@ use axum::{
   extract::{Path, State},
   response::IntoResponse,
 };
-use os_api::error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR};
+use os_api::{BasicClaims, error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR}, UserAuthorization};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::entity::Permission,
+  common::{entity::Permission, helper::has_permission},
   entity::RouterState,
-  middleware::user_authorization::UserAuthorization,
   user_phone_number::{
     constants::TAG,
     entity::{CreateUserPhoneNumberRequest, UpdateUserPhoneNumberRequest, UserPhoneNumber},
@@ -36,7 +35,7 @@ use os_oidc_model::entities::user_phone_numbers::{
 )]
 pub async fn list_user_phone_numbers(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -49,8 +48,12 @@ pub async fn list_user_phone_numbers(
   };
 
   // Users can read their own phone numbers, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -88,7 +91,7 @@ pub async fn list_user_phone_numbers(
 )]
 pub async fn get_user_phone_number(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, phone_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -110,8 +113,12 @@ pub async fn get_user_phone_number(
   };
 
   // Users can read their own phone numbers, admins can read any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserRead) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserRead,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -162,7 +169,7 @@ pub async fn get_user_phone_number(
 )]
 pub async fn create_user_phone_number_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<String>,
   Json(request): Json<CreateUserPhoneNumberRequest>,
 ) -> impl IntoResponse {
@@ -176,8 +183,12 @@ pub async fn create_user_phone_number_handler(
   };
 
   // Users can add their own phone numbers, admins can add any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -222,7 +233,7 @@ pub async fn create_user_phone_number_handler(
 )]
 pub async fn update_user_phone_number_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, phone_id)): Path<(String, String)>,
   Json(request): Json<UpdateUserPhoneNumberRequest>,
 ) -> impl IntoResponse {
@@ -245,8 +256,12 @@ pub async fn update_user_phone_number_handler(
   };
 
   // Users can update their own phone numbers, admins can update any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -320,7 +335,7 @@ pub async fn update_user_phone_number_handler(
 )]
 pub async fn delete_user_phone_number_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, phone_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -342,8 +357,12 @@ pub async fn delete_user_phone_number_handler(
   };
 
   // Users can delete their own phone numbers, admins can delete any
-  if user_authorization.user_model.id != user_id_parsed {
-    match user_authorization.has_permission(Permission::UserWrite) {
+  if user_authorization.user_info.claims.user != user_id_parsed {
+    match has_permission(
+      &user_authorization,
+      &state.config.oidc_application_urn,
+      Permission::UserWrite,
+    ) {
       Ok(_) => {}
       Err(e) => return e.into_response(),
     }
@@ -381,7 +400,7 @@ pub async fn delete_user_phone_number_handler(
 )]
 pub async fn verify_user_phone_number_handler(
   State(state): State<RouterState>,
-  user_authorization: UserAuthorization,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path((user_id, phone_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -403,7 +422,11 @@ pub async fn verify_user_phone_number_handler(
   };
 
   // Only admins can manually verify phone numbers
-  match user_authorization.has_permission(Permission::UserWrite) {
+  match has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::UserWrite,
+  ) {
     Ok(_) => {}
     Err(e) => return e.into_response(),
   }
