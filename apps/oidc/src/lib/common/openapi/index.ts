@@ -1,5 +1,7 @@
 import { Configuration, type ConfigurationParameters, OidcApi } from './oidc';
 import { env } from '$env/dynamic/public';
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 
 let authToken: string | undefined;
 
@@ -13,6 +15,15 @@ export const defaultConfigurationParameters: ConfigurationParameters = {
 					mode: 'cors'
 				}
 			})
+		},
+		{
+			post: async (context) => {
+				if (context.response.status === 401) {
+					setAuthToken(undefined);
+					await goto(resolve('/signin'));
+				}
+				return context.response;
+			}
 		}
 	],
 	accessToken() {
