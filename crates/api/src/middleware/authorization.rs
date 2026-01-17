@@ -59,20 +59,28 @@ pub const AUTHORIZATION_BEARER_PREFIX: &str = "Bearer ";
 pub fn authorization_from_header(
   authorization_header_value: &HeaderValue,
 ) -> Result<&str, HttpError> {
+  log::debug!("parsing authorization header");
   match authorization_header_value.to_str() {
     Ok(authorization_string) => {
       if authorization_string.len() < AUTHORIZATION_BEARER_PREFIX.len() {
-        log::error!("invalid authorization header is too short");
+        log::warn!(
+          "invalid authorization header is too short: length={}",
+          authorization_string.len()
+        );
         return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
       }
       if !authorization_string.starts_with(AUTHORIZATION_BEARER_PREFIX) {
-        log::error!("authorization header does not start with 'Bearer '");
+        log::warn!(
+          "authorization header does not start with 'Bearer ', starts with: {}",
+          &authorization_string.chars().take(10).collect::<String>()
+        );
         return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
       }
+      log::debug!("authorization header parsed successfully");
       Ok(&authorization_string[AUTHORIZATION_BEARER_PREFIX.len()..])
     }
     Err(e) => {
-      log::error!(
+      log::warn!(
         "invalid authorization header cannot be parsed as string: {}",
         e
       );
@@ -84,6 +92,7 @@ pub fn authorization_from_header(
 static JWK_CACHE: Lazy<DashMap<String, JwkEntry>> = Lazy::new(DashMap::new);
 
 async fn fetch_jwk_from_server(jku: &str, kid: &str) -> Result<DecodingKey, HttpError> {
+  log::debug!("fetching JWK from server: jku={}, kid={}", jku, kid);
   let resp = reqwest::get(jku).await.map_err(|e| {
     log::error!("failed to fetch JWK from {}: {}", jku, e);
     HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
@@ -110,6 +119,7 @@ async fn fetch_jwk_from_server(jku: &str, kid: &str) -> Result<DecodingKey, Http
 
   for jwk_value in keys {
     if jwk_value.get("kid").and_then(|v| v.as_str()) == Some(kid) {
+      log::debug!("found matching JWK for kid={}", kid);
       let jwk: Jwk = serde_json::from_value(jwk_value.clone()).map_err(|e| {
         log::error!("failed to parse JWK from value: {}", e);
         HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
@@ -118,10 +128,17 @@ async fn fetch_jwk_from_server(jku: &str, kid: &str) -> Result<DecodingKey, Http
         log::error!("failed to create decoding key from JWK: {}", e);
         HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
       })?;
+      log::debug!("successfully created decoding key for kid={}", kid);
       return Ok(decoding_key);
     }
   }
 
+  log::warn!(
+    "JWK not found for kid={} in {} keys from {}",
+    kid,
+    keys.len(),
+    jku
+  );
   Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))
 }
 
@@ -134,9 +151,16 @@ async fn fetch_decoding_key(jku: &str, kid: &str) -> Result<DecodingKey, HttpErr
     let remaining = entry.expires_at.saturating_duration_since(now);
 
     if remaining.is_zero() {
+      log::debug!("JWK cache entry expired for {}", cache_key);
       drop(entry);
     } else {
+      log::debug!(
+        "JWK cache hit for {}, remaining: {:?}",
+        cache_key,
+        remaining
+      );
       if remaining <= CACHE_REFRESH_WINDOW {
+        log::debug!("JWK cache entry within refresh window, spawning background refresh");
         let cache_key = cache_key.clone();
         let jku = jku.to_owned();
         let kid = kid.to_owned();
@@ -161,6 +185,7 @@ async fn fetch_decoding_key(jku: &str, kid: &str) -> Result<DecodingKey, HttpErr
     }
   }
 
+  log::debug!("JWK cache miss for {}, fetching from server", cache_key);
   let decoding_key = fetch_jwk_from_server(jku, kid).await?;
   let expires_at = Instant::now() + CACHE_TTL;
   JWK_CACHE.insert(
@@ -195,35 +220,49 @@ fn map_algorithm(alg: &str) -> Result<Algorithm, HttpError> {
 pub async fn parse_token_data<T: Claims>(
   authorization_string: &str,
 ) -> Result<jsonwebtoken::TokenData<T>, HttpError> {
+  log::debug!("parsing token data");
   let token = authorization_string.trim();
   let mut segments = token.split('.');
-  let header_segment = segments
-    .next()
-    .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))?;
-  let _payload_segment = segments
-    .next()
-    .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))?;
-  let _signature_segment = segments
-    .next()
-    .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))?;
+  let header_segment = segments.next().ok_or_else(|| {
+    log::warn!("token missing header segment");
+    HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
+  })?;
+  let _payload_segment = segments.next().ok_or_else(|| {
+    log::warn!("token missing payload segment");
+    HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
+  })?;
+  let _signature_segment = segments.next().ok_or_else(|| {
+    log::warn!("token missing signature segment");
+    HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
+  })?;
 
   let raw_header = parse_header(header_segment)?;
-  let kid = raw_header
-    .kid
-    .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))?;
-  let jku = raw_header
-    .jku
-    .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))?;
+  log::debug!(
+    "parsed token header: alg={}, kid={:?}, jku={:?}",
+    raw_header.alg,
+    raw_header.kid,
+    raw_header.jku
+  );
+  let kid = raw_header.kid.ok_or_else(|| {
+    log::warn!("token header missing kid");
+    HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
+  })?;
+  let jku = raw_header.jku.ok_or_else(|| {
+    log::warn!("token header missing jku");
+    HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
+  })?;
   let algorithm = map_algorithm(&raw_header.alg)?;
 
   let decoding_key = fetch_decoding_key(&jku, &kid).await?;
   let mut validation = Validation::new(algorithm);
   validation.validate_aud = false;
+  log::debug!("attempting to decode JWT with algorithm={:?}", algorithm);
   let token_data = decode::<T>(token, &decoding_key, &validation).map_err(|e| {
     log::warn!("failed to decode JWT: {}", e);
     HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
   })?;
 
+  log::debug!("successfully decoded JWT");
   Ok(token_data)
 }
 
@@ -235,14 +274,16 @@ where
   type Rejection = HttpError;
 
   async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-    let authorization_header_value = parts
-      .headers
-      .get(AUTHORIZATION_HEADER)
-      .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, REQUIRED_ERROR))?;
+    log::debug!("extracting Authorization from request");
+    let authorization_header_value = parts.headers.get(AUTHORIZATION_HEADER).ok_or_else(|| {
+      log::warn!("authorization header missing from request");
+      HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, REQUIRED_ERROR)
+    })?;
     let authorization_string = authorization_from_header(authorization_header_value)?;
 
     let token_data = parse_token_data::<T>(authorization_string).await?;
 
+    log::debug!("successfully extracted Authorization");
     Ok(Self {
       claims: token_data.claims,
     })
@@ -296,20 +337,24 @@ struct OidcConfigEntry {
 static OIDC_CONFIG_CACHE: Lazy<DashMap<String, OidcConfigEntry>> = Lazy::new(DashMap::new);
 
 async fn fetch_oidc_configuration(issuer: &str) -> Result<String, HttpError> {
+  log::debug!("fetching OIDC configuration for issuer: {}", issuer);
   let cache_key = issuer.to_string();
   let now = Instant::now();
 
   if let Some(entry) = OIDC_CONFIG_CACHE.get(&cache_key) {
     let remaining = entry.expires_at.saturating_duration_since(now);
     if !remaining.is_zero() {
+      log::debug!("OIDC config cache hit for issuer: {}", issuer);
       return Ok(entry.userinfo_endpoint.clone());
     }
+    log::debug!("OIDC config cache entry expired for issuer: {}", issuer);
     drop(entry);
   }
 
   let issuer_trimmed = issuer.trim_end_matches('/');
   let well_known_url = format!("{}/.well-known/openid-configuration", issuer_trimmed);
 
+  log::debug!("fetching OIDC well-known config from: {}", well_known_url);
   let resp = reqwest::get(&well_known_url).await.map_err(|e| {
     log::error!(
       "failed to fetch OIDC configuration from {}: {}",
@@ -354,8 +399,10 @@ async fn fetch_user_info<T: Claims>(
   authorization_string: &str,
   issuer: &str,
 ) -> Result<UserInfo<T>, HttpError> {
+  log::debug!("fetching user info for issuer: {}", issuer);
   let userinfo_endpoint = fetch_oidc_configuration(issuer).await?;
 
+  log::debug!("userinfo endpoint: {}", userinfo_endpoint);
   let client = reqwest::Client::new();
   let resp = client
     .get(&userinfo_endpoint)
@@ -388,6 +435,10 @@ async fn fetch_user_info<T: Claims>(
     HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR)
   })?;
 
+  log::debug!(
+    "successfully fetched user info for username: {}",
+    user_info.username
+  );
   Ok(user_info)
 }
 
@@ -399,20 +450,23 @@ where
   type Rejection = HttpError;
 
   async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-    let authorization_header_value = parts
-      .headers
-      .get(AUTHORIZATION_HEADER)
-      .ok_or_else(|| HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, REQUIRED_ERROR))?;
+    log::debug!("extracting UserAuthorization from request");
+    let authorization_header_value = parts.headers.get(AUTHORIZATION_HEADER).ok_or_else(|| {
+      log::warn!("authorization header missing from request for UserAuthorization");
+      HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, REQUIRED_ERROR)
+    })?;
     let authorization_string = authorization_from_header(authorization_header_value)?;
 
     let token_data = parse_token_data::<T>(authorization_string).await?;
     let issuer = token_data.claims.iss();
+    log::debug!("token parsed, issuer: {}", issuer);
 
     let user_info = fetch_user_info::<T>(authorization_string, issuer).await?;
 
     log::info!(
-      "fetched user info for issuer {}: roles: {:?}, permissions: {:?}",
+      "fetched user info for issuer {}: username={}, roles: {:?}, permissions: {:?}",
       issuer,
+      user_info.username,
       user_info.roles,
       user_info.permissions
     );

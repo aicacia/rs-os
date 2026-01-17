@@ -239,7 +239,8 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
   tags = [TAG],
   params(EndSessionRequest),
   responses(
-    (status = 204, description = "Session ended"),
+    (status = 302, description = "Redirect to post_logout_redirect_uri"),
+    (status = 400, description = "Bad Request Error", body = HttpError),
     (status = 401, description = "Unauthorized Error", body = HttpError),
     (status = 403, description = "Forbiddon Error", body = HttpError),
     (status = 500, description = "Application Error", body = HttpError),
@@ -249,6 +250,43 @@ pub async fn end_session(
   State(state): State<RouterState>,
   Query(end_session_request): Query<EndSessionRequest>,
 ) -> impl IntoResponse {
+  let build_error_redirect =
+    |mut redirect_uri: Url, error: &str, error_description: &str, state: &Option<String>| {
+      redirect_uri
+        .query_pairs_mut()
+        .append_pair("error", error)
+        .append_pair("error_description", error_description);
+      if let Some(state_value) = state {
+        redirect_uri
+          .query_pairs_mut()
+          .append_pair("state", state_value);
+      }
+      match Response::builder()
+        .status(StatusCode::FOUND)
+        .header(header::LOCATION, redirect_uri.to_string())
+        .body(Body::empty())
+      {
+        Ok(response) => response.into_response(),
+        Err(e) => {
+          log::error!("Failed to build redirect response: {}", e);
+          HttpError::internal_error()
+            .with_application_error(INTERNAL_ERROR)
+            .into_response()
+        }
+      }
+    };
+
+  let mut post_logout_redirect_uri = match Url::parse(&end_session_request.post_logout_redirect_uri)
+  {
+    Ok(uri) => uri,
+    Err(e) => {
+      log::error!("invalid post_logout_redirect_uri: {}", e);
+      return HttpError::bad_request()
+        .with_error("post_logout_redirect_uri", INVALID_ERROR)
+        .into_response();
+    }
+  };
+
   let client_id = match end_session_request.client_id {
     Some(client_id) => client_id,
     None => match end_session_request.id_token_hint {
@@ -263,15 +301,22 @@ pub async fn end_session(
           Ok((token, _jwk)) => token.claims.client,
           Err(e) => {
             log::error!("failed to parse id_token_hint: {}", e);
-            return e.into_response();
+            return build_error_redirect(
+              post_logout_redirect_uri,
+              "invalid_request",
+              "Invalid id_token_hint",
+              &end_session_request.state,
+            );
           }
         }
       }
       None => {
-        return HttpError::bad_request()
-          .with_error("client_id", INVALID_ERROR)
-          .with_error("id_token_hint", INVALID_ERROR)
-          .into_response();
+        return build_error_redirect(
+          post_logout_redirect_uri,
+          "invalid_request",
+          "Either client_id or id_token_hint is required",
+          &end_session_request.state,
+        );
       }
     },
   };
@@ -280,50 +325,58 @@ pub async fn end_session(
     match clients::get_client_by_client_id(&state.database_connection, &client_id).await {
       Ok(Some(client_model)) => client_model,
       Ok(None) => {
-        return HttpError::not_found()
-          .with_error("client", NOT_FOUND_ERROR)
-          .into_response();
+        return build_error_redirect(
+          post_logout_redirect_uri,
+          "invalid_request",
+          "Client not found",
+          &end_session_request.state,
+        );
       }
       Err(e) => {
         log::error!("failed to fetch client: {}", e);
-        return HttpError::internal_error()
-          .with_application_error(INTERNAL_ERROR)
-          .into_response();
+        return build_error_redirect(
+          post_logout_redirect_uri,
+          "server_error",
+          "Internal server error",
+          &end_session_request.state,
+        );
       }
     };
 
-  let post_logout_redirect_uri = match Url::parse(&end_session_request.post_logout_redirect_uri) {
-    Ok(post_logout_redirect_uri) => post_logout_redirect_uri,
-    Err(e) => {
-      log::error!("invalid post_logout_redirect_uri: {}", e);
-      return HttpError::bad_request()
-        .with_error("post_logout_redirect_uri", INVALID_ERROR)
-        .into_response();
-    }
-  };
-
-  let post_logout_redirect_uri_string = if let Some(post_logout_redirect_uris) = client_model
+  if let Some(post_logout_redirect_uris) = client_model
     .post_logout_redirect_uris
     .as_ref()
     .map(json_to_string_vec)
   {
     let post_logout_redirect_uri_string =
       post_logout_redirect_uri.origin().ascii_serialization() + post_logout_redirect_uri.path();
+
     if !post_logout_redirect_uris.contains(&post_logout_redirect_uri_string) {
-      return HttpError::bad_request()
-        .with_error("post_logout_redirect_uri", NOT_ALLOWED_ERROR)
-        .into_response();
+      return build_error_redirect(
+        post_logout_redirect_uri,
+        "invalid_request",
+        "post_logout_redirect_uri not allowed for this client",
+        &end_session_request.state,
+      );
     }
-    post_logout_redirect_uri_string
   } else {
-    return HttpError::bad_request()
-      .with_error("client", INVALID_ERROR)
-      .into_response();
+    return build_error_redirect(
+      post_logout_redirect_uri,
+      "invalid_request",
+      "Client has no configured post_logout_redirect_uris",
+      &end_session_request.state,
+    );
   };
+
+  if let Some(state_value) = &end_session_request.state {
+    post_logout_redirect_uri
+      .query_pairs_mut()
+      .append_pair("state", state_value);
+  }
 
   match Response::builder()
     .status(StatusCode::FOUND)
-    .header(header::LOCATION, post_logout_redirect_uri_string)
+    .header(header::LOCATION, post_logout_redirect_uri.to_string())
     .body(Body::empty())
   {
     Ok(response) => response.into_response(),
@@ -477,7 +530,7 @@ async fn refresh_token_grant(
   )
   .await?;
 
-  let user_id = match token_data.claims.sub.parse::<i64>() {
+  let user_id = match crate::router::common::helper::parse_user_sub(&token_data.claims.sub) {
     Ok(id) => id,
     Err(e) => {
       log::error!(
@@ -560,7 +613,7 @@ async fn authorization_code_grant(
   )
   .await?;
 
-  let user_id = match token_data.claims.basic_claims.sub.parse::<i64>() {
+  let user_id = match crate::router::common::helper::parse_user_sub(&token_data.claims.basic_claims.sub) {
     Ok(id) => id,
     Err(e) => {
       log::error!(

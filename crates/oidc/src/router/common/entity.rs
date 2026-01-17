@@ -313,7 +313,7 @@ impl From<users::Model> for UserInfo {
     Self {
       basic_claims: BasicClaims {
         user: user_model.id,
-        sub: user_model.id.to_string(),
+        sub: format!("urn:os:sub:user:{}", user_model.id),
         ..Default::default()
       },
       profile: OpenIdProfile {

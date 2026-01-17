@@ -207,6 +207,8 @@ pub struct EndSessionRequest {
   pub client_id: Option<String>,
   pub id_token_hint: Option<String>,
   pub post_logout_redirect_uri: String,
+  #[serde(skip_serializing_if = "Option::is_none", default)]
+  pub state: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]

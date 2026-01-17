@@ -8,6 +8,12 @@ export function setAfterSigninRedirectPathFromURL(url: URL) {
 	afterSigninRedirectPath.item = url.toString().substring(url.origin.length);
 }
 
+export function getAndClearAfterSigninRedirectPath() {
+	const path = afterSigninRedirectPath.item;
+	afterSigninRedirectPath.item = null;
+	return path ?? resolve('/');
+}
+
 export async function afterSigninRedirect() {
 	const path = afterSigninRedirectPath.item;
 	if (path) {

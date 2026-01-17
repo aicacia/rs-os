@@ -21,6 +21,22 @@ use crate::{
 };
 use sea_orm::DatabaseConnection;
 
+/// Parses a user URN (urn:os:sub:user:{id}) and extracts the user ID
+pub fn parse_user_sub(sub: &str) -> Result<i64, String> {
+  const PREFIX: &str = "urn:os:sub:user:";
+
+  if let Some(id_str) = sub.strip_prefix(PREFIX) {
+    id_str
+      .parse::<i64>()
+      .map_err(|e| format!("invalid user id in sub: {}", e))
+  } else {
+    Err(format!(
+      "invalid sub format, expected '{}{{id}}', got '{}'",
+      PREFIX, sub
+    ))
+  }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn create_user_token(
   db: &DatabaseConnection,
@@ -37,7 +53,7 @@ pub async fn create_user_token(
   let issuer = app_config.url();
   let claims = BasicClaims {
     r#type: TOKEN_TYPE_BEARER.to_owned(),
-    sub: user.id.to_string(),
+    sub: format!("urn:os:sub:user:{}", user.id),
     aud: audience,
     user: user.id,
     client: client_id,
@@ -251,7 +267,7 @@ pub(crate) async fn create_user_authorization_code_token(
   let claims = AuthorizationCodeClaims {
     basic_claims: BasicClaims {
       r#type: TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
-      sub: user_id.to_string(),
+      sub: format!("urn:os:sub:user:{}", user_id),
       aud: audience,
       user: user_id,
       client: client_id.clone(),

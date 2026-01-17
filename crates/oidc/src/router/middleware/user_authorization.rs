@@ -6,7 +6,7 @@ use std::{
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
 use os_api::{
-  Claims,
+  Authorization, Claims,
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
 };
 
@@ -19,7 +19,6 @@ use crate::router::{
     entity::{BasicClaims, Permission, UserInfo},
   },
   entity::RouterState,
-  middleware::authorization::Authorization,
 };
 use os_oidc_model::entities::{
   applications::get_applications_by_urns,
@@ -196,7 +195,7 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, "invalid-token-type"));
     }
 
-    let user_id = match authorization.claims.sub.parse::<i64>() {
+    let user_id = match crate::router::common::helper::parse_user_sub(&authorization.claims.sub) {
       Ok(id) => id,
       Err(e) => {
         log::error!(
