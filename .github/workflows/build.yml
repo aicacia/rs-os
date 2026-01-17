@@ -11,6 +11,10 @@ on:
     types:
       - completed
 
+concurrency:
+  group: build-images-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   packages: write
