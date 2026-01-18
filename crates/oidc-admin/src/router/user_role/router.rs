@@ -9,7 +9,7 @@ use os_api::{BasicClaims, error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR}, U
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::{entity::Permission, helper::has_permission},
+  common::entity::Permission,
   entity::RouterState,
   user_role::{
     constants::TAG,
@@ -50,13 +50,8 @@ pub async fn list_user_roles(
 
   // Users can read their own roles, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -107,13 +102,8 @@ pub async fn list_user_permissions(
 
   // Users can read their own permissions, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -172,13 +162,8 @@ pub async fn assign_user_role_handler(
   Json(request): Json<AssignUserRoleRequest>,
 ) -> impl IntoResponse {
   // Only admins can assign roles
-  match has_permission(
-    &user_authorization,
-    &state.config.oidc_application_urn,
-    Permission::UserWrite,
-  ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    return e.into_response();
   }
 
   let user_id_parsed = match user_id.parse::<i64>() {
@@ -226,13 +211,8 @@ pub async fn remove_user_role_handler(
   Path((user_id, role_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   // Only admins can remove roles
-  match has_permission(
-    &user_authorization,
-    &state.config.oidc_application_urn,
-    Permission::UserWrite,
-  ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    return e.into_response();
   }
 
   let user_id_parsed = match user_id.parse::<i64>() {

@@ -76,31 +76,35 @@ export function getUser() {
 }
 
 export function hasPermission(user: UserInfo, permission: string): boolean {
-	if (hasAdminAll(user)) {
-		return true;
-	}
 	return hasPermissionInternal(user, permission);
 }
 
 export function hasPermissions(user: UserInfo, permissions: string[]): boolean {
-	if (hasAdminAll(user)) {
-		return true;
-	}
 	return permissions.every((p) => hasPermissionInternal(user, p));
 }
 
-function hasAdminAll(user: UserInfo): boolean {
-	return hasPermissionInternal(user, Permission.Admin);
-}
-
 function hasPermissionInternal(user: UserInfo, permission: string): boolean {
-	return user.permissions[env.PUBLIC_OS_OIDC_APPLICATION_URN].includes(permission as Permission);
+	const userPermissions = user.permissions[env.PUBLIC_OS_OIDC_APPLICATION_URN] ?? [];
+
+	if (userPermissions.includes(permission as Permission)) {
+		return true;
+	}
+
+	return userPermissions.some((userPerm) => {
+		if (userPerm === '*') {
+			return true;
+		}
+		if (userPerm.endsWith('*')) {
+			const prefix = userPerm.slice(0, -1);
+			return permission.startsWith(prefix);
+		}
+		return false;
+	});
 }
 
 if (browser) {
 	$effect.root(() => {
 		$effect(() => {
-			// TODO: on first sign in this never gets called
 			getUserManager().then(async (userManager) => {
 				const user = await userManager.getUser();
 				if (!user) {

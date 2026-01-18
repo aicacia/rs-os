@@ -70,25 +70,32 @@ export async function getCurrentUserInfo() {
 }
 
 export function hasPermission(user: UserInfo, permission: Permission): boolean {
-	if (hasAdminAll(user)) {
-		return true;
-	}
 	return hasPermissionInternal(user, permission);
 }
 
 export function hasPermissions(user: UserInfo, permissions: Permission[]): boolean {
-	if (hasAdminAll(user)) {
-		return true;
-	}
 	return permissions.every((p) => hasPermissionInternal(user, p));
 }
 
-function hasAdminAll(user: UserInfo): boolean {
-	return hasPermissionInternal(user, Permission.Admin);
-}
-
 function hasPermissionInternal(user: UserInfo, permission: Permission): boolean {
-	return user.permissions[env.PUBLIC_OS_OIDC_APPLICATION_URN].includes(permission) ?? false;
+	const userPermissions = user.permissions[env.PUBLIC_OS_OIDC_APPLICATION_URN] ?? [];
+
+	// Check for exact match
+	if (userPermissions.includes(permission)) {
+		return true;
+	}
+
+	// Check for wildcard matches
+	return userPermissions.some((userPerm) => {
+		if (userPerm === '*') {
+			return true;
+		}
+		if (userPerm.endsWith('*')) {
+			const prefix = userPerm.slice(0, -1);
+			return permission.startsWith(prefix);
+		}
+		return false;
+	});
 }
 
 export async function signInUsernamePassword(username: string, password: string) {

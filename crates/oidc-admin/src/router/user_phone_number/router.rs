@@ -7,7 +7,7 @@ use os_api::{BasicClaims, error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR}, U
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::{entity::Permission, helper::has_permission},
+  common::entity::Permission,
   entity::RouterState,
   user_phone_number::{
     constants::TAG,
@@ -49,13 +49,8 @@ pub async fn list_user_phone_numbers(
 
   // Users can read their own phone numbers, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -114,13 +109,8 @@ pub async fn get_user_phone_number(
 
   // Users can read their own phone numbers, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -184,13 +174,8 @@ pub async fn create_user_phone_number_handler(
 
   // Users can add their own phone numbers, admins can add any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -257,13 +242,8 @@ pub async fn update_user_phone_number_handler(
 
   // Users can update their own phone numbers, admins can update any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -358,13 +338,8 @@ pub async fn delete_user_phone_number_handler(
 
   // Users can delete their own phone numbers, admins can delete any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -422,13 +397,8 @@ pub async fn verify_user_phone_number_handler(
   };
 
   // Only admins can manually verify phone numbers
-  match has_permission(
-    &user_authorization,
-    &state.config.oidc_application_urn,
-    Permission::UserWrite,
-  ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    return e.into_response();
   }
 
   let phone_model =

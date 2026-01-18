@@ -6,9 +6,11 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub enum Permission {
-  #[serde(rename = "admin:*")]
-  AdminAll,
+  #[serde(rename = "*")]
+  All,
 
+  #[serde(rename = "client:*")]
+  ClientAll,
   #[serde(rename = "client:read")]
   ClientRead,
   #[serde(rename = "client:write")]
@@ -16,6 +18,8 @@ pub enum Permission {
   #[serde(rename = "client:delete")]
   ClientDelete,
 
+  #[serde(rename = "user:*")]
+  UserAll,
   #[serde(rename = "user:read")]
   UserRead,
   #[serde(rename = "user:write")]
@@ -27,10 +31,12 @@ pub enum Permission {
 impl Permission {
   pub fn as_str(&self) -> &'static str {
     match self {
-      Permission::AdminAll => "admin:*",
+      Permission::All => "*",
+      Permission::ClientAll => "client:*",
       Permission::ClientRead => "client:read",
       Permission::ClientWrite => "client:write",
       Permission::ClientDelete => "client:delete",
+      Permission::UserAll => "user:*",
       Permission::UserRead => "user:read",
       Permission::UserWrite => "user:write",
       Permission::UserDelete => "user:delete",
@@ -49,10 +55,12 @@ impl FromStr for Permission {
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s {
-      "admin:*" => Ok(Permission::AdminAll),
+      "*" => Ok(Permission::All),
+      "client:*" => Ok(Permission::ClientAll),
       "client:read" => Ok(Permission::ClientRead),
       "client:write" => Ok(Permission::ClientWrite),
       "client:delete" => Ok(Permission::ClientDelete),
+      "user:*" => Ok(Permission::UserAll),
       "user:read" => Ok(Permission::UserRead),
       "user:write" => Ok(Permission::UserWrite),
       "user:delete" => Ok(Permission::UserDelete),

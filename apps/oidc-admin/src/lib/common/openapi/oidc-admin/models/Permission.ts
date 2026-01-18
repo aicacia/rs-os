@@ -18,10 +18,12 @@
  * @export
  */
 export const Permission = {
-    Admin: 'admin:*',
+    Star: '*',
+    Client: 'client:*',
     ClientRead: 'client:read',
     ClientWrite: 'client:write',
     ClientDelete: 'client:delete',
+    User: 'user:*',
     UserRead: 'user:read',
     UserWrite: 'user:write',
     UserDelete: 'user:delete'

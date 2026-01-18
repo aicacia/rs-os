@@ -400,7 +400,7 @@ No authorization required
 
 ## endSession
 
-> endSession(postLogoutRedirectUri, clientId, idTokenHint)
+> endSession(postLogoutRedirectUri, clientId, idTokenHint, state)
 
 
 
@@ -424,6 +424,8 @@ async function example() {
     clientId: clientId_example,
     // string (optional)
     idTokenHint: idTokenHint_example,
+    // string (optional)
+    state: state_example,
   } satisfies EndSessionRequest;
 
   try {
@@ -446,6 +448,7 @@ example().catch(console.error);
 | **postLogoutRedirectUri** | `string` |  | [Defaults to `undefined`] |
 | **clientId** | `string` |  | [Optional] [Defaults to `undefined`] |
 | **idTokenHint** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **state** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 
@@ -464,7 +467,8 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **204** | Session ended |  -  |
+| **302** | Redirect to post_logout_redirect_uri |  -  |
+| **400** | Bad Request Error |  -  |
 | **401** | Unauthorized Error |  -  |
 | **403** | Forbiddon Error |  -  |
 | **500** | Application Error |  -  |
@@ -538,7 +542,7 @@ This endpoint does not need any parameter.
 
 ## isClientAllowedForUser
 
-> ClientAllowed isClientAllowedForUser(clientId)
+> ClientAllowed isClientAllowedForUser(clientId, scope)
 
 
 
@@ -562,6 +566,8 @@ async function example() {
   const body = {
     // string
     clientId: clientId_example,
+    // string (optional)
+    scope: scope_example,
   } satisfies IsClientAllowedForUserRequest;
 
   try {
@@ -582,6 +588,7 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **clientId** | `string` |  | [Defaults to `undefined`] |
+| **scope** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
 

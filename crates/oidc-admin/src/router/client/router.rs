@@ -13,7 +13,7 @@ use crate::router::{
     constants::TAG,
     entity::{Client, ClientUpsertRequest, client_upsert_request_changed},
   },
-  common::{entity::Permission, helper::has_permission},
+  common::entity::Permission,
   entity::RouterState,
 };
 use os_oidc_model::entities::clients::{
@@ -41,13 +41,11 @@ pub async fn client_by_id(
   user_authorization: UserAuthorization<BasicClaims>,
   Path(client_id): Path<i64>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::ClientRead,
+    Permission::ClientRead.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   let client_model = match get_client_by_id(&state.database_connection, client_id).await {
@@ -88,13 +86,11 @@ pub async fn client_list(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization<BasicClaims>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::ClientRead,
+    Permission::ClientRead.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   match list_clients(&state.database_connection).await {
@@ -133,13 +129,11 @@ pub async fn client_create(
   user_authorization: UserAuthorization<BasicClaims>,
   Json(client_upsert_request): Json<ClientUpsertRequest>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::ClientWrite,
+    Permission::ClientWrite.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   let (client_model, is_new) = match upsert_client(
@@ -189,13 +183,11 @@ pub async fn client_update(
   Path(client_id): Path<i64>,
   Json(client_upsert_request): Json<ClientUpsertRequest>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::ClientWrite,
+    Permission::ClientWrite.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   let existing_client = match get_client_by_id(&state.database_connection, client_id).await {
@@ -259,13 +251,11 @@ pub async fn client_delete(
   user_authorization: UserAuthorization<BasicClaims>,
   Path(client_id): Path<i64>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::ClientDelete,
+    Permission::ClientDelete.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   match deactivate_client(&state.database_connection, client_id).await {

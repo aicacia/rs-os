@@ -7,7 +7,7 @@ use os_api::{BasicClaims, error::{HttpError, INTERNAL_ERROR, NOT_FOUND_ERROR}, U
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::{entity::Permission, helper::has_permission},
+  common::entity::Permission,
   entity::RouterState,
   user_oauth2_provider::{
     constants::TAG,
@@ -49,13 +49,8 @@ pub async fn list_user_oauth2_providers(
 
   // Users can read their own OAuth2 providers, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -128,13 +123,8 @@ pub async fn get_user_oauth2_provider(
 
   // Users can read their own OAuth2 providers, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -210,13 +200,8 @@ pub async fn link_user_oauth2_provider_handler(
 
   // Users can link their own OAuth2 providers, admins can link any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -292,13 +277,8 @@ pub async fn unlink_user_oauth2_provider_handler(
 
   // Users can unlink their own OAuth2 providers, admins can unlink any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 

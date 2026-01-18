@@ -115,7 +115,6 @@ async fn ensure_admin_user_exists(
 ) -> io::Result<()> {
   let now = Utc::now().timestamp();
 
-  // Ensure all permissions exist
   for permission_enum in Permission::all() {
     let permission_uri = permission_enum.to_string();
     let permission = permissions::Entity::find()
@@ -158,9 +157,8 @@ async fn ensure_admin_user_exists(
     }
   };
 
-  // Link admin:* permission to the admin role
   let permission = permissions::Entity::find()
-    .filter(permissions::Column::Uri.eq("admin:*"))
+    .filter(permissions::Column::Uri.eq("*"))
     .filter(permissions::Column::ApplicationId.eq(app.id))
     .one(db)
     .await
@@ -242,8 +240,7 @@ async fn ensure_admin_user_exists(
   if pw_exists.is_none() {
     let pw = user_passwords::ActiveModel {
       user_id: Set(user.id),
-      // The password is "admin" hashed with Argon2id
-      // TODO: generate a secure password
+      // TODO: generate a secure password or force the user to reset after login
       encrypted_password: Set(
         "$argon2id$v=19$m=19,t=2,p=1$cmc5ZXVXT1N0RmxjZFR1NQ$/0nLLEJDUFjP/lO6UhUHlzvL6Zlz1NO8BW+XdMNTG3c"
           .to_owned(),

@@ -10,7 +10,7 @@ use os_api::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::{entity::Permission, helper::has_permission},
+  common::entity::Permission,
   entity::RouterState,
   user_email::{
     constants::TAG,
@@ -52,13 +52,8 @@ pub async fn list_user_emails(
 
   // Users can read their own emails, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -116,13 +111,8 @@ pub async fn get_user_email(
 
   // Users can read their own emails, admins can read any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserRead,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserRead.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -185,13 +175,8 @@ pub async fn create_user_email_handler(
 
   // Users can add their own emails, admins can add any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -253,13 +238,8 @@ pub async fn update_user_email_handler(
 
   // Users can update their own emails, admins can update any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -351,13 +331,8 @@ pub async fn delete_user_email_handler(
 
   // Users can delete their own emails, admins can delete any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    match has_permission(
-      &user_authorization,
-      &state.config.oidc_application_urn,
-      Permission::UserWrite,
-    ) {
-      Ok(_) => {}
-      Err(e) => return e.into_response(),
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+      return e.into_response();
     }
   }
 
@@ -414,13 +389,8 @@ pub async fn verify_user_email_handler(
   };
 
   // Only admins can manually verify emails
-  match has_permission(
-    &user_authorization,
-    &state.config.oidc_application_urn,
-    Permission::UserWrite,
-  ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    return e.into_response();
   }
 
   let email_model =

@@ -10,7 +10,7 @@ use os_api::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::router::{
-  common::{entity::Permission, helper::has_permission},
+  common::entity::Permission,
   entity::RouterState,
   user::{
     constants::TAG,
@@ -39,13 +39,11 @@ pub async fn user_list(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization<BasicClaims>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::UserRead,
+    Permission::UserRead.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   match list_users(&state.database_connection).await {
@@ -82,13 +80,11 @@ pub async fn get_user(
   user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<i64>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::UserRead,
+    Permission::UserRead.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   let user_model = match get_user_by_id(&state.database_connection, user_id).await {
@@ -131,13 +127,11 @@ pub async fn create_user_handler(
   user_authorization: UserAuthorization<BasicClaims>,
   Json(request): Json<CreateUserRequest>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::UserWrite,
+    Permission::UserWrite.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   let user_model = match create_user(&state.database_connection, &request.username).await {
@@ -177,13 +171,11 @@ pub async fn update_user_handler(
   Path(user_id): Path<i64>,
   Json(request): Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::UserWrite,
+    Permission::UserWrite.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   let user_model = match update_user(&state.database_connection, user_id, &request.username).await {
@@ -218,13 +210,11 @@ pub async fn delete_user_handler(
   user_authorization: UserAuthorization<BasicClaims>,
   Path(user_id): Path<i64>,
 ) -> impl IntoResponse {
-  match has_permission(
-    &user_authorization,
+  if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::UserDelete,
+    Permission::UserDelete.as_str(),
   ) {
-    Ok(_) => {}
-    Err(e) => return e.into_response(),
+    return e.into_response();
   }
 
   match delete_user(&state.database_connection, user_id).await {
