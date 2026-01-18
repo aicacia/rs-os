@@ -12,6 +12,7 @@ use os_oidc::config::AppConfig;
 use os_oidc::router::common::helper::create_user_token;
 use os_oidc_model::entities::users::upsert_user_client;
 
+#[allow(dead_code)]
 pub async fn create_test_application(
   db: &DatabaseConnection,
 ) -> Result<applications::Model, Box<dyn Error>> {
@@ -31,6 +32,7 @@ pub async fn create_test_application(
   Ok(app)
 }
 
+#[allow(dead_code)]
 pub async fn create_test_user(
   db: &DatabaseConnection,
   username: Option<&str>,
@@ -43,6 +45,7 @@ pub async fn create_test_user(
   Ok(user)
 }
 
+#[allow(dead_code)]
 pub async fn create_test_role_with_permissions(
   db: &DatabaseConnection,
   application_id: i64,
@@ -98,6 +101,7 @@ pub async fn create_test_role_with_permissions(
   Ok((role, permissions))
 }
 
+#[allow(dead_code)]
 pub async fn assign_role_to_user(
   db: &DatabaseConnection,
   user_id: i64,
@@ -116,6 +120,7 @@ pub async fn assign_role_to_user(
   Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn create_admin_user(
   db: &DatabaseConnection,
   application_id: i64,
@@ -126,7 +131,7 @@ pub async fn create_admin_user(
     db,
     application_id,
     "test_admin",
-    vec![Permission::AdminAll.as_str()],
+    vec![Permission::All.as_str()],
   )
   .await?;
 
@@ -135,6 +140,7 @@ pub async fn create_admin_user(
   Ok(user)
 }
 
+#[allow(dead_code)]
 pub async fn create_jwt_for_user(
   db: &DatabaseConnection,
   app_config: &AppConfig,
@@ -169,6 +175,7 @@ pub async fn create_jwt_for_user(
   Ok(token)
 }
 
+#[allow(dead_code)]
 pub async fn create_test_client(
   db: &DatabaseConnection,
   application_urn: &str,
@@ -209,6 +216,7 @@ pub async fn create_test_client(
   Ok(client)
 }
 
+#[allow(dead_code)]
 pub async fn approve_client_for_user(
   db: &DatabaseConnection,
   user_id: i64,

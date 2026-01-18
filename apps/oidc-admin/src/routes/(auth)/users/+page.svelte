@@ -1,15 +1,21 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { Search, Plus, ArrowLeft, Eye, Pencil } from '@lucide/svelte';
+	import { Search, Plus, ArrowLeft, Eye, Pencil, Trash } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import { hasPermissions } from '$lib/common/state/user.svelte';
 	import { Permission, type User as OUser } from '$lib/common/openapi/oidc-admin/models';
+	import { userApi } from '$lib/common/openapi';
+	import { handleError } from '$lib/common/errors';
+	import { notifications } from '$lib/common/state/notifications.svelte';
+	import DeleteUserDialog from './DeleteUserDialog.svelte';
 
 	let { data }: PageProps = $props();
 	let query = $state('');
 	let users = $derived<OUser[]>(data.users ?? []);
 	let canCreate = $derived(hasPermissions(data.user, [Permission.UserWrite]));
+	let showDelete = $state(false);
+	let selectedUser: OUser | null = $state(null);
 
 	$effect(() => {
 		users = data.users ?? [];
@@ -24,6 +30,19 @@
 		const q = query.toLowerCase();
 		return users.filter((u) => String(u.id).includes(q) || u.username.toLowerCase().includes(q));
 	});
+
+	async function onDeleteConfirm() {
+		if (!selectedUser) return;
+		try {
+			await userApi.deleteUserHandler({ id: parseInt(String(selectedUser.id)) });
+			users = users.filter((u) => String(u.id) !== String(selectedUser?.id));
+			notifications.add(m.users_deleted_success(), 'success');
+			showDelete = false;
+			selectedUser = null;
+		} catch (e) {
+			await handleError(e);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -91,7 +110,17 @@
 												aria-label={m.users_edit_title()}
 											>
 												<Pencil class="h-4 w-4" />
-								</a>
+											</a>
+											<button
+												class="btn icon danger sm"
+												aria-label={m.actions_delete()}
+												onclick={() => {
+													selectedUser = u;
+													showDelete = true;
+												}}
+											>
+												<Trash class="h-4 w-4" />
+											</button>
 										{/if}
 									</div>
 								</td>
@@ -103,3 +132,16 @@
 		{/if}
 	</section>
 </div>
+
+{#if showDelete && selectedUser}
+	<DeleteUserDialog
+		username={selectedUser.username}
+		message={m.users_delete_confirm({ username: selectedUser.username })}
+		onConfirm={onDeleteConfirm}
+		onCancel={() => {
+			showDelete = false;
+			selectedUser = null;
+		}}
+		open
+	/>
+{/if}

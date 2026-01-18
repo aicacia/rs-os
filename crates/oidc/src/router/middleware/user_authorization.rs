@@ -8,6 +8,7 @@ use http::request::Parts;
 use os_api::{
   Authorization, Claims,
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
+  util::permission_grants,
 };
 
 use crate::router::{
@@ -125,13 +126,26 @@ impl UserAuthorization {
     Ok(user_info)
   }
 
+  fn permission_grants_enum(user_permission: Permission, required_permission: Permission) -> bool {
+    permission_grants(user_permission.as_str(), required_permission.as_str())
+  }
+
+  fn has_permission_for(
+    permissions: &HashSet<Permission>,
+    required_permission: Permission,
+  ) -> bool {
+    permissions
+      .iter()
+      .any(|user_permission| Self::permission_grants_enum(*user_permission, required_permission))
+  }
+
   pub fn has_permission(
     &self,
     application_urn: &str,
     permission: Permission,
   ) -> Result<(), HttpError> {
     if let Some(app_permissions) = self.permissions.get(application_urn) {
-      if app_permissions.contains(&Permission::AdminAll) || app_permissions.contains(&permission) {
+      if Self::has_permission_for(app_permissions, permission) {
         return Ok(());
       }
     }
@@ -147,13 +161,10 @@ impl UserAuthorization {
     I: IntoIterator<Item = &'a Permission>,
   {
     if let Some(app_permissions) = self.permissions.get(application_urn) {
-      if app_permissions.contains(&Permission::AdminAll) {
-        return Ok(());
-      }
-      let mut missing_permissions: HashSet<&Permission> = HashSet::default();
+      let mut missing_permissions: Vec<Permission> = Vec::default();
       for permission in permissions {
-        if !app_permissions.contains(permission) {
-          missing_permissions.insert(permission);
+        if !Self::has_permission_for(app_permissions, *permission) {
+          missing_permissions.push(*permission);
         }
       }
       if missing_permissions.is_empty() {

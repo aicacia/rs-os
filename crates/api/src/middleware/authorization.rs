@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   Claims,
   error::{HttpError, INVALID_ERROR, REQUIRED_ERROR},
+  util::permission_grants,
 };
 
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -298,11 +299,29 @@ where
 }
 
 impl<T: Claims> UserAuthorization<T> {
+  fn has_permission_for(
+    permissions: &HashMap<String, Vec<String>>,
+    application_urn: &str,
+    required_permission: &str,
+  ) -> bool {
+    if let Some(user_permissions) = permissions.get(application_urn) {
+      return user_permissions
+        .iter()
+        .any(|user_permission| permission_grants(user_permission, required_permission));
+    }
+
+    if let Some(user_permissions) = permissions.get("*") {
+      return user_permissions
+        .iter()
+        .any(|user_permission| permission_grants(user_permission, required_permission));
+    }
+
+    false
+  }
+
   pub fn has_permission(&self, application_urn: &str, permission: &str) -> Result<(), HttpError> {
-    if let Some(permissions) = self.user_info.permissions.get(application_urn) {
-      if permissions.contains(&permission.to_string()) {
-        return Ok(());
-      }
+    if Self::has_permission_for(&self.user_info.permissions, application_urn, permission) {
+      return Ok(());
     }
     Err(HttpError::forbidden().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))
   }
@@ -312,15 +331,43 @@ impl<T: Claims> UserAuthorization<T> {
     application_urn: &str,
     permissions: &[&str],
   ) -> Result<(), HttpError> {
-    if let Some(user_permissions) = self.user_info.permissions.get(application_urn) {
-      if permissions
-        .iter()
-        .all(|p| user_permissions.contains(&p.to_string()))
-      {
-        return Ok(());
-      }
+    if permissions.iter().all(|permission| {
+      Self::has_permission_for(&self.user_info.permissions, application_urn, permission)
+    }) {
+      return Ok(());
     }
     Err(HttpError::forbidden().with_error(AUTHORIZATION_HEADER, INVALID_ERROR))
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use hashbrown::HashMap;
+
+  use super::*;
+  use crate::claims::BasicClaims;
+
+  #[test]
+  fn has_permission_for_scoped_and_global() {
+    let mut permissions: HashMap<String, Vec<String>> = HashMap::new();
+    permissions.insert("fs".to_string(), vec!["fs:*".to_string()]);
+    permissions.insert("*".to_string(), vec!["os:*".to_string()]);
+
+    assert!(UserAuthorization::<BasicClaims>::has_permission_for(
+      &permissions,
+      "fs",
+      "fs:read"
+    ));
+    assert!(UserAuthorization::<BasicClaims>::has_permission_for(
+      &permissions,
+      "os",
+      "os:oidc"
+    ));
+    assert!(!UserAuthorization::<BasicClaims>::has_permission_for(
+      &permissions,
+      "fs",
+      "os:read"
+    ));
   }
 }
 

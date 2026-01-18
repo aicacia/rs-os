@@ -23,3 +23,4 @@ pub use middleware::{
 };
 pub use openapi::{SecurityAddon, ServersAddon};
 pub use state::RouterState;
+pub use util::permission_grants;
