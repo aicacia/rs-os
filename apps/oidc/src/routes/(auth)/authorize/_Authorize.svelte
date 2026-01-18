@@ -61,12 +61,17 @@
 		}
 		loadingUserAllowed = true;
 		oidcApi
-			.isClientAllowedForUser({ clientId: authorizeRequest.clientId })
-			.catch((e) => {
-				loadingUserAllowed = false;
-				throw e;
-			})
-			.then(onAuthorize);
+				.isClientAllowedForUser({
+					clientId: authorizeRequest.clientId,
+					scope: authorizeRequest.scope
+				})
+				.then(onAuthorize)
+				.catch(() => {
+					// Not yet approved or scopes changed; fall back to consent screen
+				})
+				.finally(() => {
+					loadingUserAllowed = false;
+				});
 	});
 
 	let loadingAuthorizeRequest = $state(false);

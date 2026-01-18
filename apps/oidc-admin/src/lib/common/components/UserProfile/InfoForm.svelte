@@ -16,17 +16,34 @@
 			zoneInfo: v.optional(v.string()),
 			profilePicture: v.optional(v.string())
 		});
+
+	export interface UserInfo {
+		givenName?: string;
+		middleName?: string;
+		familyName?: string;
+		nickname?: string;
+		website?: string;
+		locale?: string;
+		address?: string;
+		birthdate?: number;
+		gender?: string;
+		zoneInfo?: string;
+		profilePicture?: string;
+	}
+
+	export interface InfoFormProps {
+		userInfo: UserInfo;
+		onUpdate: (info: UserInfo) => Promise<UserInfo>;
+		readonly?: boolean;
+	}
 </script>
 
 <script lang="ts">
-	import type { CurrentUser } from '$lib/common/openapi/oidc-admin/models/index';
-	import { currentUserApi } from '$lib/common/openapi';
-	import { handleError } from '$lib/common/errors';
 	import { createForm } from '@aicacia/svelte-forms';
 	import Issues from '$lib/common/components/Issues.svelte';
-	import { invalidateAll } from '$app/navigation';
+	import { handleError } from '$lib/common/errors';
 
-	let { user = $bindable() }: { user: CurrentUser } = $props();
+	let { userInfo = $bindable(), onUpdate, readonly = false }: InfoFormProps = $props();
 
 	const supportedLocales = $derived(
 		typeof navigator !== 'undefined' ? Array.from(new Set(navigator.languages)) : []
@@ -37,55 +54,57 @@
 	);
 
 	const form = createForm(InfoFormSchema(), {
-		givenName: user.info?.givenName ?? undefined,
-		middleName: user.info?.middleName ?? undefined,
-		familyName: user.info?.familyName ?? undefined,
-		nickname: user.info?.nickname ?? undefined,
-		website: user.info?.website ?? undefined,
-		locale: user.info?.locale ?? undefined,
-		address: user.info?.address ?? undefined,
-		birthdate: user.info?.birthdate ?? undefined,
-		gender: user.info?.gender ?? undefined,
-		zoneInfo: user.info?.zoneInfo ?? undefined,
-		profilePicture: user.info?.profilePicture ?? undefined
+		givenName: userInfo?.givenName ?? undefined,
+		middleName: userInfo?.middleName ?? undefined,
+		familyName: userInfo?.familyName ?? undefined,
+		nickname: userInfo?.nickname ?? undefined,
+		website: userInfo?.website ?? undefined,
+		locale: userInfo?.locale ?? undefined,
+		address: userInfo?.address ?? undefined,
+		birthdate: userInfo?.birthdate ?? undefined,
+		gender: userInfo?.gender ?? undefined,
+		zoneInfo: userInfo?.zoneInfo ?? undefined,
+		profilePicture: userInfo?.profilePicture ?? undefined
 	});
 
 	$effect(() => {
-		form.fields.givenName.value = user.info?.givenName ?? undefined;
+		form.fields.givenName.value = userInfo?.givenName ?? undefined;
 	});
 	$effect(() => {
-		form.fields.familyName.value = user.info?.familyName ?? undefined;
+		form.fields.familyName.value = userInfo?.familyName ?? undefined;
 	});
 	$effect(() => {
-		form.fields.website.value = user.info?.website ?? undefined;
+		form.fields.website.value = userInfo?.website ?? undefined;
 	});
 	$effect(() => {
-		form.fields.locale.value = user.info?.locale ?? undefined;
+		form.fields.locale.value = userInfo?.locale ?? undefined;
 	});
 	$effect(() => {
-		form.fields.middleName.value = user.info?.middleName ?? undefined;
+		form.fields.middleName.value = userInfo?.middleName ?? undefined;
 	});
 	$effect(() => {
-		form.fields.nickname.value = user.info?.nickname ?? undefined;
+		form.fields.nickname.value = userInfo?.nickname ?? undefined;
 	});
 	$effect(() => {
-		form.fields.address.value = user.info?.address ?? undefined;
+		form.fields.address.value = userInfo?.address ?? undefined;
 	});
 	$effect(() => {
-		form.fields.birthdate.value = user.info?.birthdate ?? undefined;
+		form.fields.birthdate.value = userInfo?.birthdate ?? undefined;
 	});
 	$effect(() => {
-		form.fields.gender.value = user.info?.gender ?? undefined;
+		form.fields.gender.value = userInfo?.gender ?? undefined;
 	});
 	$effect(() => {
-		form.fields.zoneInfo.value = user.info?.zoneInfo ?? undefined;
+		form.fields.zoneInfo.value = userInfo?.zoneInfo ?? undefined;
 	});
 	$effect(() => {
-		form.fields.profilePicture.value = user.info?.profilePicture ?? undefined;
+		form.fields.profilePicture.value = userInfo?.profilePicture ?? undefined;
 	});
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
+
+		if (readonly) return;
 
 		const [value, err] = await form.validate();
 
@@ -94,8 +113,7 @@
 		}
 
 		try {
-			user.info = await currentUserApi.updateUserInfo({ updateUserInfoRequest: value });
-			await invalidateAll();
+			userInfo = await onUpdate(value);
 		} catch (e) {
 			handleError(e);
 		}
@@ -108,66 +126,72 @@
 		<label class="block">
 			<span>{m.profile_given_name_label()}</span>
 			<input
-				id="profile-given-name"
+				id="given-name"
 				class="block w-full"
 				bind:value={form.fields.givenName.value}
 				placeholder={m.profile_given_name_placeholder()}
 				aria-label={m.profile_given_name_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.givenName.issues} />
 		</label>
 		<label class="block">
 			<span>{m.profile_middle_name_label()}</span>
 			<input
-				id="profile-middle-name"
+				id="middle-name"
 				class="block w-full"
 				bind:value={form.fields.middleName.value}
 				placeholder={m.profile_middle_name_placeholder()}
 				aria-label={m.profile_middle_name_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.middleName.issues} />
 		</label>
 		<label class="block">
 			<span>{m.profile_family_name_label()}</span>
 			<input
-				id="profile-family-name"
+				id="family-name"
 				class="block w-full"
 				bind:value={form.fields.familyName.value}
 				placeholder={m.profile_family_name_placeholder()}
 				aria-label={m.profile_family_name_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.familyName.issues} />
 		</label>
 		<label class="block">
 			<span>{m.profile_nickname_label()}</span>
 			<input
-				id="profile-nickname"
+				id="nickname"
 				class="block w-full"
 				bind:value={form.fields.nickname.value}
 				placeholder={m.profile_nickname_placeholder()}
 				aria-label={m.profile_nickname_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.nickname.issues} />
 		</label>
 		<label class="block">
 			<span>{m.profile_website_label()}</span>
 			<input
-				id="profile-website"
+				id="website"
 				class="block w-full"
 				bind:value={form.fields.website.value}
 				placeholder={m.profile_website_placeholder()}
 				aria-label={m.profile_website_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.website.issues} />
 		</label>
 		<label class="block">
 			<span>{m.profile_locale_label()}</span>
 			<select
-				id="profile-locale"
+				id="locale"
 				class="block w-full"
 				bind:value={form.fields.locale.value}
 				placeholder={m.profile_locale_placeholder()}
 				aria-label={m.profile_locale_label()}
+				disabled={readonly}
 			>
 				{#each supportedLocales as locale}
 					<option value={locale}>{locale}</option>
@@ -178,11 +202,12 @@
 		<label class="block">
 			<span>{m.profile_zone_info_label()}</span>
 			<select
-				id="profile-zone-info"
+				id="zone-info"
 				class="block w-full"
 				bind:value={form.fields.zoneInfo.value}
 				placeholder={m.profile_zone_info_placeholder()}
 				aria-label={m.profile_zone_info_label()}
+				disabled={readonly}
 			>
 				<option value="">{m.profile_zone_info_placeholder()}</option>
 				{#each timeZones as timeZone}
@@ -194,18 +219,19 @@
 		<label class="md:col-span-2">
 			<span>{m.profile_address_label()}</span>
 			<input
-				id="profile-address"
+				id="address"
 				class="block w-full"
 				bind:value={form.fields.address.value}
 				placeholder={m.profile_address_placeholder()}
 				aria-label={m.profile_address_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.address.issues} />
 		</label>
 		<label class="block">
 			<span>{m.profile_birthdate_label()}</span>
 			<input
-				id="profile-birthdate"
+				id="birthdate"
 				type="date"
 				class="block w-full"
 				value={form.fields.birthdate.value
@@ -219,17 +245,19 @@
 				}}
 				placeholder={m.profile_birthdate_placeholder()}
 				aria-label={m.profile_birthdate_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.birthdate.issues} />
 		</label>
 		<label class="block">
 			<span>{m.profile_gender_label()}</span>
 			<input
-				id="profile-gender"
+				id="gender"
 				class="block w-full"
 				bind:value={form.fields.gender.value}
 				placeholder={m.profile_gender_placeholder()}
 				aria-label={m.profile_gender_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.gender.issues} />
 		</label>
@@ -242,9 +270,12 @@
 				bind:value={form.fields.profilePicture.value}
 				placeholder={m.profile_profile_picture_placeholder()}
 				aria-label={m.profile_profile_picture_label()}
+				disabled={readonly}
 			/>
 			<Issues issues={form.fields.profilePicture.issues} />
 		</label>
 	</div>
-	<button type="submit" class="btn success mt-4">{m.profile_save_profile()}</button>
+	{#if !readonly}
+		<button type="submit" class="btn success mt-4">{m.profile_save_profile()}</button>
+	{/if}
 </form>

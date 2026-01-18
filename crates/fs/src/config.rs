@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use os_api::{Environment, ServerConfig};
+use os_api::{Environment, ServerConfig, constants::DEFAULT_OIDC_APPLICATION_URN};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -10,6 +10,7 @@ pub struct AppConfig {
   pub log_level: String,
   pub env: Environment,
   pub data_dir: String,
+  pub oidc_application_urn: String,
   pub url: Option<String>,
 }
 
@@ -20,6 +21,7 @@ impl Default for AppConfig {
       log_level: "DEBUG".to_owned(),
       env: Environment::default(),
       data_dir: "./data".to_owned(),
+      oidc_application_urn: DEFAULT_OIDC_APPLICATION_URN.to_owned(),
       url: None,
     }
   }

@@ -613,16 +613,17 @@ async fn authorization_code_grant(
   )
   .await?;
 
-  let user_id = match crate::router::common::helper::parse_user_sub(&token_data.claims.basic_claims.sub) {
-    Ok(id) => id,
-    Err(e) => {
-      log::error!(
-        "invalid authorization code sub claim is not a valid user id: {}",
-        e
-      );
-      return Err(HttpError::unauthorized());
-    }
-  };
+  let user_id =
+    match crate::router::common::helper::parse_user_sub(&token_data.claims.basic_claims.sub) {
+      Ok(id) => id,
+      Err(e) => {
+        log::error!(
+          "invalid authorization code sub claim is not a valid user id: {}",
+          e
+        );
+        return Err(HttpError::unauthorized());
+      }
+    };
 
   let user = match users::get_user_by_id(&state.database_connection, user_id).await {
     Ok(Some(user)) => user,
@@ -1207,8 +1208,24 @@ pub async fn authorize_client(
 pub async fn is_client_allowed_for_user(
   State(state): State<RouterState>,
   user_authorization: UserAuthorization,
-  Query(ClientAllowedQuery { client_id }): Query<ClientAllowedQuery>,
+  Query(ClientAllowedQuery { client_id, scope }): Query<ClientAllowedQuery>,
 ) -> impl IntoResponse {
+  let client_model =
+    match clients::get_client_by_client_id(&state.database_connection, &client_id).await {
+      Ok(Some(client_model)) => client_model,
+      Ok(None) => {
+        return HttpError::not_found()
+          .with_error("client", NOT_FOUND_ERROR)
+          .into_response();
+      }
+      Err(e) => {
+        log::error!("failed to fetch client: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
+
   match get_user_client_by_client_id(
     &state.database_connection,
     user_authorization.user_model.id,
@@ -1216,10 +1233,37 @@ pub async fn is_client_allowed_for_user(
   )
   .await
   {
-    Ok(Some(user_client_model)) => axum::Json(ClientAllowed {
-      allowed_scopes: json_to_string_vec(user_client_model.allowed_scopes),
-    })
-    .into_response(),
+    Ok(Some(user_client_model)) => {
+      let allowed_scopes_vec = json_to_string_vec(user_client_model.allowed_scopes);
+      let allowed_scopes: HashSet<String> = allowed_scopes_vec.iter().cloned().collect();
+
+      let client_scopes_vec = json_to_string_vec(&client_model.scopes);
+      let client_scopes: HashSet<String> = client_scopes_vec.iter().cloned().collect();
+
+      let client_scopes_changed = allowed_scopes != client_scopes;
+
+      let requested_scope_mismatch = if let Some(scope) = scope {
+        let requested_scopes: HashSet<String> = scope
+          .split_whitespace()
+          .filter(|s| !s.is_empty())
+          .map(str::to_string)
+          .collect();
+        !requested_scopes.is_subset(&allowed_scopes) || !requested_scopes.is_subset(&client_scopes)
+      } else {
+        false
+      };
+
+      if client_scopes_changed || requested_scope_mismatch {
+        return HttpError::forbidden()
+          .with_error("scope", NOT_ALLOWED_ERROR)
+          .into_response();
+      }
+
+      axum::Json(ClientAllowed {
+        allowed_scopes: allowed_scopes_vec,
+      })
+      .into_response()
+    }
     Ok(None) => HttpError::forbidden()
       .with_error("client", NOT_ALLOWED_ERROR)
       .into_response(),

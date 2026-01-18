@@ -35,6 +35,9 @@
 			"pre-commit": "pnpm run preCommit"
 		}
 	},
+	"dependencies": {
+		"eventemitter3": "^5.0.1"
+	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.1",
 		"@eslint/js": "^9.39.2",

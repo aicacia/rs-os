@@ -392,6 +392,7 @@ pub struct ClientByClientIdQuery {
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct ClientAllowedQuery {
   pub client_id: String,
+  pub scope: Option<String>,
 }
 
 #[derive(Deserialize, IntoParams, ToSchema)]

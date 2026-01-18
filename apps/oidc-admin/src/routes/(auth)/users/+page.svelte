@@ -84,13 +84,6 @@
 								<td class="px-4 py-3">{new Date(u.updatedAt).toLocaleString()}</td>
 								<td class="px-4 py-3 text-right">
 									<div class="flex items-center justify-end gap-2">
-										<a
-											class="btn icon light sm"
-											href={resolve('/(auth)/users/[id=integer]', { id: u.id.toString() })}
-											aria-label="view user"
-										>
-											<Eye class="h-4 w-4" />
-									</a>
 										{#if canCreate}
 											<a
 												class="btn icon primary sm"

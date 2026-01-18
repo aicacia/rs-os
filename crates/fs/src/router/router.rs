@@ -3,10 +3,12 @@ use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::router::{entity::RouterState, fs};
+use crate::router::fs::entity::Permission;
 
 #[derive(OpenApi)]
 #[openapi(
   info(license(name = "MIT OR Apache-2.0", identifier = "https://spdx.org/licenses/MIT.html")),
+  components(schemas(Permission)),
   modifiers(&SecurityAddon)
 )]
 pub struct ApiDoc;

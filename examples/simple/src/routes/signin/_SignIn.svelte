@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getOSBaseUrl, setOSBaseUrl } from "$lib/common/state/services.svelte";
+	import { getIsServicesReady, getOSBaseUrl, setOSBaseUrl } from "$lib/common/state/services.svelte";
 	import { getUserManager } from "$lib/common/state/user.svelte";
 
 	let osBaseUrl = $state(getOSBaseUrl());
@@ -15,7 +15,6 @@
 	async function onSubmit(e: SubmitEvent) {
 		e.preventDefault();
 
-		
 		const userManager = await getUserManager();
 		await userManager.signinRedirect();
 	}
@@ -30,5 +29,5 @@
 		bind:value={osBaseUrl}
 		oninput={onChangeOSBaseUrl}
 	/>
-	<input class="btn primary mt-4" type="submit" value="Sign in" />
+	<input class="btn primary mt-4" disabled={!getIsServicesReady()} type="submit" value="Sign in" />
 </form>

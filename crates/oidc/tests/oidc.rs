@@ -11,6 +11,8 @@ use common::helper::{
   approve_client_for_user, create_admin_user, create_jwt_for_user, create_test_application,
   create_test_client, create_test_user,
 };
+use os_oidc_model::entities::clients;
+use sea_orm::{ActiveModelTrait, Set};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_jwks_endpoint() -> Result<(), Box<dyn Error>> {
@@ -542,6 +544,104 @@ async fn test_client_allowed_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
   let (parts, _body) = response.into_parts();
 
   assert_eq!(parts.status, StatusCode::OK);
+
+  Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_client_allowed_requires_reapprove_on_requested_scope_change()
+-> Result<(), Box<dyn Error>> {
+  let (teardown, router, config, database_connection) = common::util::setup().await?;
+  defer! { teardown() }
+
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, &app.urn, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
+  approve_client_for_user(
+    &database_connection,
+    admin.id,
+    &client.client_id,
+    vec!["openid".to_string()],
+  )
+  .await?;
+  let token = create_jwt_for_user(
+    &database_connection,
+    &config,
+    &admin,
+    &client.client_id,
+    &["test_audience"],
+    "openid",
+  )
+  .await?;
+
+  let response = router
+    .oneshot(
+      Request::builder()
+        .uri(&format!(
+          "/client-allowed?client_id={}&scope=openid%20profile",
+          client.client_id
+        ))
+        .header("authorization", format!("Bearer {}", token.access_token))
+        .body(Body::empty())?,
+    )
+    .await
+    .expect("failed to send request");
+
+  let (parts, _body) = response.into_parts();
+
+  assert_eq!(parts.status, StatusCode::FORBIDDEN);
+
+  Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_client_allowed_requires_reapprove_on_client_scope_change()
+-> Result<(), Box<dyn Error>> {
+  let (teardown, router, config, database_connection) = common::util::setup().await?;
+  defer! { teardown() }
+
+  let app = create_test_application(&database_connection).await?;
+  let client = create_test_client(&database_connection, &app.urn, Some("test_client")).await?;
+  let admin = create_admin_user(&database_connection, app.id).await?;
+  approve_client_for_user(
+    &database_connection,
+    admin.id,
+    &client.client_id,
+    vec![
+      "openid".to_string(),
+      "profile".to_string(),
+      "email".to_string(),
+    ],
+  )
+  .await?;
+
+  let mut updated_client: clients::ActiveModel = client.clone().into();
+  updated_client.scopes = Set(r#"[\"openid\",\"profile\"]"#.to_string());
+  updated_client.update(&database_connection).await?;
+
+  let token = create_jwt_for_user(
+    &database_connection,
+    &config,
+    &admin,
+    &client.client_id,
+    &["test_audience"],
+    "openid profile",
+  )
+  .await?;
+
+  let response = router
+    .oneshot(
+      Request::builder()
+        .uri(&format!("/client-allowed?client_id={}", client.client_id))
+        .header("authorization", format!("Bearer {}", token.access_token))
+        .body(Body::empty())?,
+    )
+    .await
+    .expect("failed to send request");
+
+  let (parts, _body) = response.into_parts();
+
+  assert_eq!(parts.status, StatusCode::FORBIDDEN);
 
   Ok(())
 }

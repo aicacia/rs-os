@@ -1,5 +1,1 @@
-export {
-	createServices,
-	type ServicesJSONResponse,
-	type ServicesPromise
-} from './createServices.js';
+export { ServiceDiscovery, type ServicesJSONResponse } from './ServiceDiscovery.js';

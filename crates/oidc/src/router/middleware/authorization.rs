@@ -66,6 +66,17 @@ pub async fn parse_authorization<T>(
 where
   T: Claims,
 {
+  match revoked_tokens::is_token_revoked(db, authorization_string).await {
+    Ok(true) => {
+      log::error!("token has been revoked");
+      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+    }
+    Ok(false) => {}
+    Err(e) => {
+      log::error!("failed to check token revocation status: {}", e);
+      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
+    }
+  }
   let header = match jsonwebtoken::decode_header(authorization_string) {
     Ok(header) => header,
     Err(e) => {
@@ -116,18 +127,6 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
     }
   };
-
-  match revoked_tokens::is_token_revoked(db, authorization_string).await {
-    Ok(true) => {
-      log::error!("token has been revoked");
-      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-    }
-    Ok(false) => {}
-    Err(e) => {
-      log::error!("failed to check token revocation status: {}", e);
-      return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, INVALID_ERROR));
-    }
-  }
 
   Ok((token_data, jwk_row))
 }

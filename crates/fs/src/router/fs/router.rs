@@ -5,7 +5,7 @@ use axum::{
   response::IntoResponse,
 };
 
-use os_api::{Authorization, BasicClaims, error::HttpError};
+use os_api::{BasicClaims, UserAuthorization, error::HttpError};
 use std::path::PathBuf;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
@@ -15,7 +15,8 @@ use crate::router::{
   entity::RouterState,
   fs::{
     constants::TAG,
-    entity::{DeleteResponse, ListQuery, ListResponse, ObjectMetadata, UploadResponse},
+    entity::{DeleteResponse, ListQuery, ListResponse, ObjectMetadata, Permission, UploadResponse},
+    helper::has_permission,
   },
 };
 
@@ -37,13 +38,19 @@ use crate::router::{
 )]
 pub async fn list(
   State(state): State<RouterState>,
-  _user_authorization: Authorization<BasicClaims>,
+  user_authorization: UserAuthorization<BasicClaims>,
   Query(ListQuery {
     prefix,
     max_keys,
     continuation_token: _continuation_token,
   }): Query<ListQuery>,
 ) -> Result<impl IntoResponse, HttpError> {
+  has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::FsRead,
+  )?;
+
   let max_keys = max_keys.unwrap_or(1000).min(1000);
   let base_dir = PathBuf::from(&state.config.data_dir);
   let prefix_str = prefix.as_deref().unwrap_or("");
@@ -135,9 +142,15 @@ pub async fn list(
 )]
 pub async fn get_object(
   State(state): State<RouterState>,
-  _user_authorization: Authorization<BasicClaims>,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(key): Path<String>,
 ) -> Result<impl IntoResponse, HttpError> {
+  has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::FsRead,
+  )?;
+
   let base_dir = PathBuf::from(&state.config.data_dir);
   let file_path = base_dir.join(&key);
 
@@ -216,9 +229,15 @@ pub async fn get_object(
 )]
 pub async fn head_object(
   State(state): State<RouterState>,
-  _user_authorization: Authorization<BasicClaims>,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(key): Path<String>,
 ) -> Result<impl IntoResponse, HttpError> {
+  has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::FsRead,
+  )?;
+
   let base_dir = PathBuf::from(&state.config.data_dir);
   let file_path = base_dir.join(&key);
 
@@ -293,9 +312,15 @@ pub async fn head_object(
 )]
 pub async fn upload_object(
   State(state): State<RouterState>,
-  _user_authorization: Authorization<BasicClaims>,
+  user_authorization: UserAuthorization<BasicClaims>,
   mut multipart: Multipart,
 ) -> Result<impl IntoResponse, HttpError> {
+  has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::FsWrite,
+  )?;
+
   let mut key: Option<String> = None;
   let mut file_data: Option<Bytes> = None;
 
@@ -391,10 +416,16 @@ pub async fn upload_object(
 )]
 pub async fn put_object(
   State(state): State<RouterState>,
-  _user_authorization: Authorization<BasicClaims>,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(key): Path<String>,
   body: Bytes,
 ) -> Result<impl IntoResponse, HttpError> {
+  has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::FsWrite,
+  )?;
+
   let base_dir = PathBuf::from(&state.config.data_dir);
   let file_path = base_dir.join(&key);
 
@@ -458,9 +489,15 @@ pub async fn put_object(
 )]
 pub async fn delete_object(
   State(state): State<RouterState>,
-  _user_authorization: Authorization<BasicClaims>,
+  user_authorization: UserAuthorization<BasicClaims>,
   Path(key): Path<String>,
 ) -> Result<impl IntoResponse, HttpError> {
+  has_permission(
+    &user_authorization,
+    &state.config.oidc_application_urn,
+    Permission::FsWrite,
+  )?;
+
   let base_dir = PathBuf::from(&state.config.data_dir);
   let file_path = base_dir.join(&key);
 

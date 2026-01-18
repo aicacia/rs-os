@@ -243,6 +243,7 @@ async fn ensure_admin_user_exists(
     let pw = user_passwords::ActiveModel {
       user_id: Set(user.id),
       // The password is "admin" hashed with Argon2id
+      // TODO: generate a secure password
       encrypted_password: Set(
         "$argon2id$v=19$m=19,t=2,p=1$cmc5ZXVXT1N0RmxjZFR1NQ$/0nLLEJDUFjP/lO6UhUHlzvL6Zlz1NO8BW+XdMNTG3c"
           .to_owned(),
