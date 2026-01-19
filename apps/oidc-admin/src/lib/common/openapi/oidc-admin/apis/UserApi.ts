@@ -145,7 +145,7 @@ export class UserApi extends runtime.BaseAPI implements UserApiInterface {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:create"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -282,7 +282,7 @@ export class UserApi extends runtime.BaseAPI implements UserApiInterface {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:update"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

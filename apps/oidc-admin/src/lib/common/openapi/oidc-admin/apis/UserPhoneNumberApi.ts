@@ -184,7 +184,7 @@ export class UserPhoneNumberApi extends runtime.BaseAPI implements UserPhoneNumb
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:create"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -235,7 +235,7 @@ export class UserPhoneNumberApi extends runtime.BaseAPI implements UserPhoneNumb
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:delete"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -388,7 +388,7 @@ export class UserPhoneNumberApi extends runtime.BaseAPI implements UserPhoneNumb
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:update"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -440,7 +440,7 @@ export class UserPhoneNumberApi extends runtime.BaseAPI implements UserPhoneNumb
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:update"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

@@ -11,6 +11,7 @@ Name | Type
 `idToken` | string
 `issuedAt` | Date
 `issuedTokenType` | string
+`passwordResetRequired` | boolean
 `refreshToken` | string
 `refreshTokenExpiresIn` | number
 `scope` | string
@@ -28,6 +29,7 @@ const example = {
   "idToken": null,
   "issuedAt": null,
   "issuedTokenType": null,
+  "passwordResetRequired": null,
   "refreshToken": null,
   "refreshTokenExpiresIn": null,
   "scope": null,

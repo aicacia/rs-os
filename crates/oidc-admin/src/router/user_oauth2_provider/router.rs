@@ -180,7 +180,7 @@ pub async fn get_user_oauth2_provider(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:create"])
   )
 )]
 pub async fn link_user_oauth2_provider_handler(
@@ -200,7 +200,7 @@ pub async fn link_user_oauth2_provider_handler(
 
   // Users can link their own OAuth2 providers, admins can link any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserCreate.as_str()) {
       return e.into_response();
     }
   }
@@ -249,7 +249,7 @@ pub async fn link_user_oauth2_provider_handler(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:delete"])
   )
 )]
 pub async fn unlink_user_oauth2_provider_handler(
@@ -277,7 +277,7 @@ pub async fn unlink_user_oauth2_provider_handler(
 
   // Users can unlink their own OAuth2 providers, admins can unlink any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserDelete.as_str()) {
       return e.into_response();
     }
   }

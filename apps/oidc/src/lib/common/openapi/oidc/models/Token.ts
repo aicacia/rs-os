@@ -51,6 +51,12 @@ export interface Token {
     issuedTokenType: string;
     /**
      * 
+     * @type {boolean}
+     * @memberof Token
+     */
+    passwordResetRequired?: boolean | null;
+    /**
+     * 
      * @type {string}
      * @memberof Token
      */
@@ -103,6 +109,7 @@ export function TokenFromJSONTyped(json: any, ignoreDiscriminator: boolean): Tok
         'idToken': json['id_token'] == null ? undefined : json['id_token'],
         'issuedAt': (new Date(json['issued_at'])),
         'issuedTokenType': json['issued_token_type'],
+        'passwordResetRequired': json['password_reset_required'] == null ? undefined : json['password_reset_required'],
         'refreshToken': json['refresh_token'] == null ? undefined : json['refresh_token'],
         'refreshTokenExpiresIn': json['refresh_token_expires_in'] == null ? undefined : json['refresh_token_expires_in'],
         'scope': json['scope'],
@@ -126,6 +133,7 @@ export function TokenToJSONTyped(value?: Token | null, ignoreDiscriminator: bool
         'id_token': value['idToken'],
         'issued_at': value['issuedAt'].toISOString(),
         'issued_token_type': value['issuedTokenType'],
+        'password_reset_required': value['passwordResetRequired'],
         'refresh_token': value['refreshToken'],
         'refresh_token_expires_in': value['refreshTokenExpiresIn'],
         'scope': value['scope'],

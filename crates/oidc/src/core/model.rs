@@ -240,11 +240,12 @@ async fn ensure_admin_user_exists(
   if pw_exists.is_none() {
     let pw = user_passwords::ActiveModel {
       user_id: Set(user.id),
-      // TODO: generate a secure password or force the user to reset after login
+      // Force the user to reset password on first login
       encrypted_password: Set(
         "$argon2id$v=19$m=19,t=2,p=1$cmc5ZXVXT1N0RmxjZFR1NQ$/0nLLEJDUFjP/lO6UhUHlzvL6Zlz1NO8BW+XdMNTG3c"
           .to_owned(),
       ),
+      reset_required: Set(1),
       active: Set(1),
       created_at: Set(now),
       updated_at: Set(now),

@@ -1,4 +1,6 @@
-import { oidcApi, setAuthToken } from '../openapi';
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
+import { oidcApi, setAuthToken, getAuthToken } from '../openapi';
 import {
 	Permission,
 	TokenFromJSON,
@@ -107,8 +109,66 @@ export async function signInUsernamePassword(username: string, password: string)
 		scope: 'openid profile address email phone offline'
 	});
 	const user = await currentUserInfo;
+
+	if (requiresPasswordReset()) {
+		// Force the password reset flow before allowing the user to continue
+		await goto(resolve('/password-reset'));
+		return user;
+	}
+
 	await afterSigninRedirect();
 	return user;
+}
+
+export function requiresPasswordReset(): boolean {
+	return token.item?.passwordResetRequired === true;
+}
+
+export async function resetPassword(newPassword: string, confirmPassword: string) {
+	const authToken = getAuthToken();
+	if (!authToken) {
+		throw new Error('Not authenticated');
+	}
+
+	const url = new URL('/oidc/api/reset-password', env.PUBLIC_OS_OIDC_API_URL);
+	const response = await fetch(url, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${authToken}`
+		},
+		body: JSON.stringify({
+			new_password: newPassword,
+			confirm_password: confirmPassword
+		})
+	});
+
+	if (!response.ok) {
+		let message = 'Failed to reset password';
+		try {
+			const body = await response.json();
+			if (body?.error?.message) {
+				message = body.error.message;
+			} else if (body?.message) {
+				message = body.message;
+			}
+		} catch (_e) {
+			// ignore JSON parse errors and use default message
+		}
+		throw new Error(message);
+	}
+
+	// Clear the local reset flag so downstream checks allow navigation
+	if (token.item) {
+		token.item = { ...token.item, passwordResetRequired: false };
+	}
+
+	// Refresh user info to keep local cache consistent
+	try {
+		userInfo.item = await oidcApi.userInfo();
+	} catch (e) {
+		handleError(e);
+	}
 }
 
 function resetAuth() {

@@ -21,11 +21,13 @@ export const Permission = {
     Star: '*',
     Client: 'client:*',
     ClientRead: 'client:read',
-    ClientWrite: 'client:write',
+    ClientCreate: 'client:create',
+    ClientUpdate: 'client:update',
     ClientDelete: 'client:delete',
     User: 'user:*',
     UserRead: 'user:read',
-    UserWrite: 'user:write',
+    UserCreate: 'user:create',
+    UserUpdate: 'user:update',
     UserDelete: 'user:delete'
 } as const;
 export type Permission = typeof Permission[keyof typeof Permission];

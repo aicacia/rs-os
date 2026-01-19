@@ -225,6 +225,37 @@ pub async fn create_user_token(
     };
   }
 
+  // Check if password reset is required
+  let password_reset_required = match users::get_user_active_password_by_user_id(db, user.id).await
+  {
+    Ok(Some(user_password)) => {
+      let is_expired = app_config
+        .password
+        .force_reset_after_days
+        .and_then(|days| {
+          if days == 0 {
+            None
+          } else {
+            Some((days as i64) * 86400)
+          }
+        })
+        .map(|max_age_seconds| user_password.is_password_expired(max_age_seconds))
+        .unwrap_or(false);
+      let is_reset_required = user_password.is_reset_required();
+      
+      if is_expired || is_reset_required {
+        Some(true)
+      } else {
+        None
+      }
+    }
+    Ok(None) => None,
+    Err(e) => {
+      log::error!("error checking password reset requirement: {}", e);
+      None
+    }
+  };
+
   Ok(Token {
     access_token,
     token_type: claims.r#type,
@@ -235,6 +266,7 @@ pub async fn create_user_token(
     refresh_token,
     refresh_token_expires_in,
     id_token,
+    password_reset_required,
   })
 }
 

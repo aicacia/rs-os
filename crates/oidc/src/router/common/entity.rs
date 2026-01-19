@@ -20,6 +20,8 @@ pub struct Token {
   pub refresh_token_expires_in: Option<i64>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub id_token: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub password_reset_required: Option<bool>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, ToSchema)]
@@ -237,8 +239,10 @@ pub enum Permission {
   ClientAll,
   #[serde(rename = "client:read")]
   ClientRead,
-  #[serde(rename = "client:write")]
-  ClientWrite,
+  #[serde(rename = "client:create")]
+  ClientCreate,
+  #[serde(rename = "client:update")]
+  ClientUpdate,
   #[serde(rename = "client:delete")]
   ClientDelete,
 
@@ -246,8 +250,10 @@ pub enum Permission {
   UserAll,
   #[serde(rename = "user:read")]
   UserRead,
-  #[serde(rename = "user:write")]
-  UserWrite,
+  #[serde(rename = "user:create")]
+  UserCreate,
+  #[serde(rename = "user:update")]
+  UserUpdate,
   #[serde(rename = "user:delete")]
   UserDelete,
 }
@@ -258,11 +264,13 @@ impl Permission {
       Permission::All => "*",
       Permission::ClientAll => "client:*",
       Permission::ClientRead => "client:read",
-      Permission::ClientWrite => "client:write",
+      Permission::ClientCreate => "client:create",
+      Permission::ClientUpdate => "client:update",
       Permission::ClientDelete => "client:delete",
       Permission::UserAll => "user:*",
       Permission::UserRead => "user:read",
-      Permission::UserWrite => "user:write",
+      Permission::UserCreate => "user:create",
+      Permission::UserUpdate => "user:update",
       Permission::UserDelete => "user:delete",
     }
   }
@@ -272,11 +280,13 @@ impl Permission {
       Permission::All,
       Permission::ClientAll,
       Permission::ClientRead,
-      Permission::ClientWrite,
+      Permission::ClientCreate,
+      Permission::ClientUpdate,
       Permission::ClientDelete,
       Permission::UserAll,
       Permission::UserRead,
-      Permission::UserWrite,
+      Permission::UserCreate,
+      Permission::UserUpdate,
       Permission::UserDelete,
     ]
   }
@@ -296,11 +306,17 @@ impl FromStr for Permission {
       "*" => Ok(Permission::All),
       "client:*" => Ok(Permission::ClientAll),
       "client:read" => Ok(Permission::ClientRead),
-      "client:write" => Ok(Permission::ClientWrite),
+      // Backward compatibility: map write -> update
+      "client:write" => Ok(Permission::ClientUpdate),
+      "client:create" => Ok(Permission::ClientCreate),
+      "client:update" => Ok(Permission::ClientUpdate),
       "client:delete" => Ok(Permission::ClientDelete),
       "user:*" => Ok(Permission::UserAll),
       "user:read" => Ok(Permission::UserRead),
-      "user:write" => Ok(Permission::UserWrite),
+      // Backward compatibility: map write -> update
+      "user:write" => Ok(Permission::UserUpdate),
+      "user:create" => Ok(Permission::UserCreate),
+      "user:update" => Ok(Permission::UserUpdate),
       "user:delete" => Ok(Permission::UserDelete),
       _ => Err(format!("unknown permission: {}", s)),
     }

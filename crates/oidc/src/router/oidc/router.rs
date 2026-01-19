@@ -17,7 +17,7 @@ use os_api::{
 use os_oidc_model::entities::{
   clients,
   jwks::{get_jwk_for_sign_and_verify, list_jwks},
-  revoked_tokens,
+  revoked_tokens, user_passwords,
   users::{self, get_user_client_by_client_id},
 };
 use sha2::{Digest, Sha256};
@@ -49,8 +49,8 @@ use crate::{
       entity::{
         ApproveClientQuery, AuthorizeRequest, Client, ClientAllowed, ClientAllowedQuery,
         ClientAuthentication, ClientAuthorization, ClientAuthorizeRequest, ClientByClientIdQuery,
-        ClientRegisterRequest, EndSessionRequest, JWK, JWKs, OpenIdConfiguration, RevokeRequest,
-        TokenRequest,
+        ClientRegisterRequest, EndSessionRequest, JWK, JWKs, OpenIdConfiguration,
+        PasswordResetRequest, RevokeRequest, TokenRequest,
       },
     },
   },
@@ -828,7 +828,7 @@ async fn authorize_internal(
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
-    ("Authorization" = ["client:create"])
+    ("Authorization" = ["client:create", "client:update"])
   )
 )]
 pub async fn register_client(
@@ -836,15 +836,15 @@ pub async fn register_client(
   user_authorization: UserAuthorization,
   Json(client_register_request): Json<ClientRegisterRequest>,
 ) -> impl IntoResponse {
-  match user_authorization.has_oidc_application_permission(Permission::ClientWrite) {
-    Ok(_) => {}
-    Err(e) => {
-      log::error!("error registering client: {}", e);
+  // Allow either create or update permission for upsert
+  if let Err(e1) = user_authorization.has_oidc_application_permission(Permission::ClientCreate) {
+    if let Err(e2) = user_authorization.has_oidc_application_permission(Permission::ClientUpdate) {
+      log::error!("error registering client: {} | {}", e1, e2);
       return HttpError::internal_error()
         .with_application_error(INTERNAL_ERROR)
         .into_response();
     }
-  };
+  }
 
   let client_active_model: os_oidc_model::entities::clients::ActiveModel =
     client_register_request.into();
@@ -897,6 +897,94 @@ pub async fn user_info(
   {
     Ok(user_info) => axum::Json(user_info).into_response(),
     Err(e) => e.into_response(),
+  }
+}
+
+#[utoipa::path(
+  post,
+  path = "/reset-password",
+  tags = [TAG],
+  request_body(content = PasswordResetRequest, content_type = "application/json"),
+  responses(
+    (status = 204, description = "Password reset successful"),
+    (status = 400, description = "Invalid request", body = HttpError),
+    (status = 401, description = "Unauthorized", body = HttpError),
+    (status = 500, description = "Application Error", body = HttpError),
+  ),
+  security(
+    ("Authorization" = [])
+  )
+)]
+pub async fn reset_password(
+  State(state): State<RouterState>,
+  user_authorization: UserAuthorization,
+  Json(request): Json<PasswordResetRequest>,
+) -> impl IntoResponse {
+  let user_id = user_authorization.user_model.id;
+
+  // Validate password strength
+  if request.new_password.is_empty() || request.new_password.len() < 8 {
+    return HttpError::bad_request()
+      .with_error(
+        "new_password",
+        "Password must be at least 8 characters long",
+      )
+      .into_response();
+  }
+
+  if request.new_password != request.confirm_password {
+    return HttpError::bad_request()
+      .with_error("confirm_password", "Passwords do not match")
+      .into_response();
+  }
+
+  // Encrypt the new password
+  let encrypted_password =
+    match crate::core::encryption::encrypt_password(&state.config, &request.new_password) {
+      Ok(encrypted) => encrypted,
+      Err(e) => {
+        log::error!("error encrypting password: {}", e);
+        return HttpError::internal_error()
+          .with_application_error(INTERNAL_ERROR)
+          .into_response();
+      }
+    };
+
+  // Update the password and clear reset_required flag
+  match users::update_user_password(
+    &state.database_connection,
+    user_id,
+    &request.new_password,
+    |_| Ok::<String, Box<dyn std::error::Error>>(encrypted_password.clone()),
+  )
+  .await
+  {
+    Ok(_) => {
+      // Clear the password reset required flag
+      if let Ok(Some(user_password)) =
+        users::get_user_active_password_by_user_id(&state.database_connection, user_id).await
+      {
+        if let Err(e) = user_passwords::set_password_reset_required(
+          &state.database_connection,
+          user_password.id,
+          false,
+        )
+        .await
+        {
+          log::error!("error clearing password reset flag: {}", e);
+          return HttpError::internal_error()
+            .with_application_error(INTERNAL_ERROR)
+            .into_response();
+        }
+      }
+      StatusCode::NO_CONTENT.into_response()
+    }
+    Err(e) => {
+      log::error!("error updating user password: {}", e);
+      HttpError::internal_error()
+        .with_application_error(INTERNAL_ERROR)
+        .into_response()
+    }
   }
 }
 

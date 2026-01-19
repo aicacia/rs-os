@@ -119,7 +119,7 @@ pub async fn get_user(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:create"])
   )
 )]
 pub async fn create_user_handler(
@@ -129,7 +129,7 @@ pub async fn create_user_handler(
 ) -> impl IntoResponse {
   if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::UserWrite.as_str(),
+    Permission::UserCreate.as_str(),
   ) {
     return e.into_response();
   }
@@ -162,7 +162,7 @@ pub async fn create_user_handler(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:update"])
   )
 )]
 pub async fn update_user_handler(
@@ -173,7 +173,7 @@ pub async fn update_user_handler(
 ) -> impl IntoResponse {
   if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::UserWrite.as_str(),
+    Permission::UserUpdate.as_str(),
   ) {
     return e.into_response();
   }

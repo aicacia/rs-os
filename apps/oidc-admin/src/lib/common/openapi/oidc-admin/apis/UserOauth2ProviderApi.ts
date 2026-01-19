@@ -192,7 +192,7 @@ export class UserOauth2ProviderApi extends runtime.BaseAPI implements UserOauth2
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:create"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -286,7 +286,7 @@ export class UserOauth2ProviderApi extends runtime.BaseAPI implements UserOauth2
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:delete"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

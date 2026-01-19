@@ -154,7 +154,7 @@ pub async fn get_user_phone_number(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:create"])
   )
 )]
 pub async fn create_user_phone_number_handler(
@@ -174,7 +174,7 @@ pub async fn create_user_phone_number_handler(
 
   // Users can add their own phone numbers, admins can add any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserCreate.as_str()) {
       return e.into_response();
     }
   }
@@ -213,7 +213,7 @@ pub async fn create_user_phone_number_handler(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:update"])
   )
 )]
 pub async fn update_user_phone_number_handler(
@@ -242,7 +242,7 @@ pub async fn update_user_phone_number_handler(
 
   // Users can update their own phone numbers, admins can update any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserUpdate.as_str()) {
       return e.into_response();
     }
   }
@@ -310,7 +310,7 @@ pub async fn update_user_phone_number_handler(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:delete"])
   )
 )]
 pub async fn delete_user_phone_number_handler(
@@ -338,7 +338,7 @@ pub async fn delete_user_phone_number_handler(
 
   // Users can delete their own phone numbers, admins can delete any
   if user_authorization.user_info.claims.user != user_id_parsed {
-    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+    if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserDelete.as_str()) {
       return e.into_response();
     }
   }
@@ -370,7 +370,7 @@ pub async fn delete_user_phone_number_handler(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:update"])
   )
 )]
 pub async fn verify_user_phone_number_handler(
@@ -397,7 +397,7 @@ pub async fn verify_user_phone_number_handler(
   };
 
   // Only admins can manually verify phone numbers
-  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserUpdate.as_str()) {
     return e.into_response();
   }
 

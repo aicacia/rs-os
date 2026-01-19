@@ -41,6 +41,9 @@ export class ServiceDiscovery extends EventEmitter<ServicesEvents> {
 	}
 
 	setBaseUrl(baseUrl: string) {
+		if (this.baseUrl === baseUrl) {
+			return this;
+		}
 		this.baseUrl = baseUrl;
 		this.refresh();
 		return this;

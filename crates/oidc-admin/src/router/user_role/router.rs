@@ -152,7 +152,7 @@ pub async fn list_user_permissions(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:update"])
   )
 )]
 pub async fn assign_user_role_handler(
@@ -162,7 +162,7 @@ pub async fn assign_user_role_handler(
   Json(request): Json<AssignUserRoleRequest>,
 ) -> impl IntoResponse {
   // Only admins can assign roles
-  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserUpdate.as_str()) {
     return e.into_response();
   }
 
@@ -202,7 +202,7 @@ pub async fn assign_user_role_handler(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["user:write"])
+    ("Authorization" = ["user:update"])
   )
 )]
 pub async fn remove_user_role_handler(
@@ -211,7 +211,7 @@ pub async fn remove_user_role_handler(
   Path((user_id, role_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
   // Only admins can remove roles
-  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserWrite.as_str()) {
+  if let Err(e) = user_authorization.has_permission(&state.config.oidc_application_urn, Permission::UserUpdate.as_str()) {
     return e.into_response();
   }
 

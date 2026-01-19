@@ -866,7 +866,7 @@ export class OidcApi extends runtime.BaseAPI implements OidcApiInterface {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["client:create"]);
+            const tokenString = await token("Authorization", ["client:create", "client:update"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

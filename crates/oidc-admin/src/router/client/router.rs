@@ -121,7 +121,7 @@ pub async fn client_list(
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
-    ("Authorization" = ["client:write"])
+    ("Authorization" = ["client:create"])
   )
 )]
 pub async fn client_create(
@@ -131,7 +131,7 @@ pub async fn client_create(
 ) -> impl IntoResponse {
   if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::ClientWrite.as_str(),
+    Permission::ClientCreate.as_str(),
   ) {
     return e.into_response();
   }
@@ -174,7 +174,7 @@ pub async fn client_create(
     (status = 500, description = "Application Error", body = HttpError),
   ),
   security(
-    ("Authorization" = ["client:write"])
+    ("Authorization" = ["client:update"])
   )
 )]
 pub async fn client_update(
@@ -185,7 +185,7 @@ pub async fn client_update(
 ) -> impl IntoResponse {
   if let Err(e) = user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::ClientWrite.as_str(),
+    Permission::ClientUpdate.as_str(),
   ) {
     return e.into_response();
   }

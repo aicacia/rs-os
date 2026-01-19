@@ -220,6 +220,12 @@ pub struct RevokeRequest {
   pub client_auth: ClientAuthentication,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct PasswordResetRequest {
+  pub new_password: String,
+  pub confirm_password: String,
+}
+
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct AuthorizeRequest {
   pub client_id: String,

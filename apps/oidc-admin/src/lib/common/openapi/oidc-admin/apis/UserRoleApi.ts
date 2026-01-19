@@ -142,7 +142,7 @@ export class UserRoleApi extends runtime.BaseAPI implements UserRoleApiInterface
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:update"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -279,7 +279,7 @@ export class UserRoleApi extends runtime.BaseAPI implements UserRoleApiInterface
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("Authorization", ["user:write"]);
+            const tokenString = await token("Authorization", ["user:update"]);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

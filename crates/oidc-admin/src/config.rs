@@ -17,6 +17,7 @@ pub struct PasswordConfig {
   pub parallelism: u32,
   pub history: u8,
   pub expire_days: u8,
+  pub force_reset_after_days: Option<u8>,
 }
 
 impl Default for PasswordConfig {
@@ -29,6 +30,7 @@ impl Default for PasswordConfig {
       parallelism: 4,
       history: 24,
       expire_days: 60,
+      force_reset_after_days: None,
     }
   }
 }
