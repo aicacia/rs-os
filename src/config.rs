@@ -10,6 +10,8 @@ pub const OIDC_ADMIN_API_URL_PREFIX: &str = "/oidc-admin/api";
 
 pub const FS_API_URL_PREFIX: &str = "/fs/api";
 
+pub const DOCUMENT_STORE_API_URL_PREFIX: &str = "/document-store/api";
+
 pub const SIGNALING_API_URL_PREFIX: &str = "/signaling/api";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -22,6 +24,7 @@ pub struct AppConfig {
   pub oidc_admin_api: os_oidc_admin::config::AppConfig,
   pub oidc_admin_ui: os_ui::config::AppConfig,
   pub fs_api: os_fs::config::AppConfig,
+  pub document_store_api: os_document_store::config::AppConfig,
   pub service_discovery_api: os_service_discovery::config::AppConfig,
   pub signaling_api: os_signaling::config::AppConfig,
   pub log_level: String,
@@ -38,6 +41,7 @@ impl Default for AppConfig {
       oidc_admin_api: Default::default(),
       oidc_admin_ui: Default::default(),
       fs_api: Default::default(),
+      document_store_api: Default::default(),
       service_discovery_api: Default::default(),
       signaling_api: Default::default(),
       log_level: "DEBUG".to_owned(),
@@ -104,6 +108,14 @@ impl AppConfig {
       self.fs_api.url = Some(format!("{}{}", self.url, FS_API_URL_PREFIX));
     }
 
+    // Document Store API Config Adjustments
+    self.document_store_api.server = self.server.clone();
+    self.document_store_api.log_level = self.log_level.clone();
+
+    if self.document_store_api.url.is_none() {
+      self.document_store_api.url = Some(format!("{}{}", self.url, DOCUMENT_STORE_API_URL_PREFIX));
+    }
+
     // Signaling API Config Adjustments
     self.signaling_api.server = self.server.clone();
     self.signaling_api.log_level = self.log_level.clone();
@@ -117,6 +129,7 @@ impl AppConfig {
     self.service_discovery_api.services.oidc_ui = self.oidc_ui.url();
     self.service_discovery_api.services.oidc_admin_api = Some(self.oidc_admin_api.url());
     self.service_discovery_api.services.oidc_admin_ui = Some(self.oidc_admin_ui.url());
+    self.service_discovery_api.services.document_store_api = Some(self.document_store_api.url());
     self.service_discovery_api.services.signaling_api = Some(self.signaling_api.url());
   }
 }

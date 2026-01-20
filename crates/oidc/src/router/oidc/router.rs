@@ -1440,5 +1440,6 @@ pub fn create_router(state: RouterState) -> OpenApiRouter {
     .routes(routes!(authorize_client))
     .routes(routes!(is_client_allowed_for_user))
     .routes(routes!(approve_client_for_user))
+    .routes(routes!(reset_password))
     .with_state(state)
 }

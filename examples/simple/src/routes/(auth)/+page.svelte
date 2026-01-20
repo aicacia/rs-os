@@ -6,7 +6,8 @@
 	let { data } = $props();
 	
 	async function onSignOut() {
-		getUserManager().signoutRedirect();
+		const userManager = await getUserManager();
+		userManager.signoutRedirect();
 	}
 
 	let handle: DocHandle<TestDocument> | null = $state(null);

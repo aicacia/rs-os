@@ -1,9 +1,22 @@
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Serialize, Deserialize, ToSchema, IntoParams)]
+const fn _default_true() -> bool {
+  true
+}
+
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct WSAuthorizationRequest {
+  #[serde(default = "_default_true")]
+  pub client: bool,
+  #[serde(default = "_default_true")]
+  pub user: bool,
   pub token: String,
+}
+
+#[derive(Deserialize, ToSchema, IntoParams)]
+pub struct WSRequest {
+  pub storage: String,
 }
 
 pub type PeerId = String;

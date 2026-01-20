@@ -21,8 +21,8 @@ use crate::cli::completions;
 use crate::{
   cli::args::{CliArgs, CliCommand},
   config::{
-    AppConfig, FS_API_URL_PREFIX, OIDC_ADMIN_API_URL_PREFIX, OIDC_ADMIN_UI_URL_PREFIX,
-    OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX, SIGNALING_API_URL_PREFIX,
+    AppConfig, DOCUMENT_STORE_API_URL_PREFIX, FS_API_URL_PREFIX, OIDC_ADMIN_API_URL_PREFIX,
+    OIDC_ADMIN_UI_URL_PREFIX, OIDC_API_URL_PREFIX, OIDC_UI_URL_PREFIX, SIGNALING_API_URL_PREFIX,
   },
 };
 
@@ -173,11 +173,19 @@ pub async fn run() -> io::Result<()> {
     Some(FS_API_URL_PREFIX),
   );
 
+  let document_store_openapi_router = os_document_store::router::create_openapi_router(
+    os_document_store::router::entity::RouterState {
+      config: Arc::new(app_config.document_store_api.clone()),
+    },
+    Some(DOCUMENT_STORE_API_URL_PREFIX),
+  );
+
   let router = Router::new()
     .merge(oidc_openapi_router)
     .merge(oidc_admin_openapi_router)
     .merge(signaling_openapi_router)
     .merge(fs_openapi_router)
+    .merge(document_store_openapi_router)
     .merge(service_discovery_openapi_router)
     .layer(CorsLayer::very_permissive())
     .layer(TraceLayer::new_for_http())

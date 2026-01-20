@@ -40,6 +40,7 @@
 	},
 	"dependencies": {
 		"@aicacia/automerge-repo-network-webrtc": "workspace:*",
+		"@aicacia/automerge-repo-network-websocket": "workspace:*",
 		"@aicacia/keepalivewebsocket": "^0.1.9",
 		"@aicacia/service-discovery": "workspace:*",
 		"@aicacia/peer": "^0.1.5",
@@ -47,6 +48,7 @@
 		"@aicacia/svelte-headless": "workspace:*",
 		"@automerge/automerge-repo": "^2.5.1",
 		"@automerge/automerge-repo-storage-indexeddb": "^2.5.1",
+		"@automerge/automerge-repo-network-websocket": "^2.5.1",
 		"@lucide/svelte": "0.562.0",
 		"cbor-x": "^1.6.0",
 		"eventemitter3": "^5.0.1",

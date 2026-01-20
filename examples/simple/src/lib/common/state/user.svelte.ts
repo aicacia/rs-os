@@ -22,7 +22,7 @@ const userSettings = async () =>
 				filterProtocolClaims: true,
 				extraQueryParams: {
 					registration: JSON.stringify({
-						name: 'OIDC Admin UI',
+						name: 'Simple Example',
 						client_id: `${env.PUBLIC_URL}`,
 						redirect_uris: [
 							`${env.PUBLIC_URL}/callback`,

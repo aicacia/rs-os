@@ -12,12 +12,12 @@ const testDocumentHandle = $derived.by(initTestDocumentHandle);
 async function initTestDocumentHandle() {
 	let testDocumentHandle: DocHandle<TestDocument>;
 
-	if (testDocumentId.value == null) {
+	if (testDocumentId.item == null) {
 		testDocumentHandle = repo.create<TestDocument>({ count: 0 });
 		await testDocumentHandle.whenReady();
-		testDocumentId.value = testDocumentHandle.documentId;
+		testDocumentId.item = testDocumentHandle.documentId;
 	} else {
-		testDocumentHandle = await repo.find(testDocumentId.value);
+		testDocumentHandle = await repo.find(testDocumentId.item);
 		await testDocumentHandle.whenReady();
 	}
 

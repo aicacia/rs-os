@@ -7,6 +7,7 @@ use crate::config::ServicesConfig;
 pub struct ServicesDiscovered {
   oidc: String,
   fs: Option<String>,
+  document_store: Option<String>,
   signaling: Option<String>,
 }
 
@@ -15,6 +16,7 @@ impl<'a> From<&'a ServicesConfig> for ServicesDiscovered {
     Self {
       fs: config.fs_api.clone(),
       oidc: config.oidc_api.clone(),
+      document_store: config.document_store_api.clone(),
       signaling: config.signaling_api.clone(),
     }
   }

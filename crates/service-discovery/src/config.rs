@@ -11,6 +11,7 @@ pub struct ServicesConfig {
   pub oidc_ui: String,
   pub oidc_admin_api: Option<String>,
   pub oidc_admin_ui: Option<String>,
+  pub document_store_api: Option<String>,
   pub signaling_api: Option<String>,
 }
 
@@ -22,6 +23,7 @@ impl Default for ServicesConfig {
       oidc_ui: "http://localhost:3000/oidc".to_owned(),
       oidc_admin_api: None,
       oidc_admin_ui: None,
+      document_store_api: None,
       signaling_api: None,
     }
   }
