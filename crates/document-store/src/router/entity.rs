@@ -1,3 +1,8 @@
+use std::sync::Arc;
+
 use crate::config::AppConfig;
 
-pub type RouterState = os_api::RouterState<AppConfig>;
+#[derive(Clone)]
+pub struct RouterState {
+  pub config: Arc<AppConfig>,
+}

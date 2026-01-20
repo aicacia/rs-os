@@ -45,16 +45,15 @@ pub struct StorageSystem {
 }
 
 impl StorageSystem {
-  pub async fn get(base_path: &Path, aud: &str, sub: &str) -> Result<Self, HttpError> {
-    let key = Self::storage_key(aud, sub);
+  pub async fn get(base_path: &Path, unique_key: &str) -> Result<Self, HttpError> {
+    let key = Self::storage_key(unique_key);
 
     let inner = match SYNC_REGISTRY.entry(key) {
       Entry::Occupied(existing) => existing.get().clone(),
       Entry::Vacant(vacant) => {
         let storage_path = base_path
           .join(DATA_PATH_DOCUMENTS)
-          .join(BASE64_URL_SAFE_NO_PAD.encode(aud.as_bytes()))
-          .join(BASE64_URL_SAFE_NO_PAD.encode(sub.as_bytes()));
+          .join(BASE64_URL_SAFE_NO_PAD.encode(unique_key.as_bytes()));
 
         let storage_adapter = match FSStorageAdapter::try_from(storage_path.as_path()) {
           Ok(adapter) => adapter,
@@ -84,10 +83,9 @@ impl StorageSystem {
     Ok(Self { inner })
   }
 
-  fn storage_key(aud: &str, sub: &str) -> u64 {
+  fn storage_key(unique_key: &str) -> u64 {
     let mut hasher = DefaultHasher::new();
-    aud.hash(&mut hasher);
-    sub.hash(&mut hasher);
+    unique_key.hash(&mut hasher);
     hasher.finish()
   }
 

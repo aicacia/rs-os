@@ -45,10 +45,11 @@ async fn ws(
   };
 
   let sub = claims.sub;
-  let aud = claims.aud;
+  let client = claims.client;
+  let unique_key = format!("{}:{}", client, sub);
 
   let shared_sync =
-    match StorageSystem::get(Path::new(&state.config.storage.data_path), &aud, &sub).await {
+    match StorageSystem::get(Path::new(&state.config.storage.data_path), &unique_key).await {
       Ok(sync) => sync,
       Err(err) => return err.into_response(),
     };
@@ -65,7 +66,7 @@ async fn handle_ws(socket: WebSocket, shared_sync: StorageSystem) -> Result<(), 
   let (mut ws_sender, ws_receiver) = socket.split();
   let (peer_sender, mut peer_receiver) = mpsc::unbounded_channel();
 
-  let mut sender_task_handle = tokio::spawn(async move {
+  let sender_task_handle = tokio::spawn(async move {
     while let Some(msg) = peer_receiver.recv().await {
       if let Err(err) = ws_sender.send(msg).await {
         log::error!("Failed to send message to WebSocket: {}", err);

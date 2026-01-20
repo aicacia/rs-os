@@ -29,39 +29,37 @@ impl Default for StorageConfig {
 #[serde(default)]
 pub struct AppConfig {
   pub server: ServerConfig,
+  pub storage: StorageConfig,
   pub log_level: String,
   pub env: Environment,
-  pub storage: StorageConfig,
-  pub api_url: Option<String>,
-  pub ui_url: Option<String>,
+  pub url: Option<String>,
+  pub redis_url: Option<String>,
 }
 
 impl Default for AppConfig {
   fn default() -> Self {
     Self {
       server: ServerConfig::default(),
+      storage: StorageConfig::default(),
       log_level: "DEBUG".to_owned(),
       env: Environment::default(),
-      storage: StorageConfig::default(),
-      api_url: None,
-      ui_url: None,
+      url: None,
+      redis_url: None,
     }
   }
 }
 
-impl os_api::AppConfig for AppConfig {
-  fn base_api_url(&self) -> Result<String, url::ParseError> {
-    let url = url::Url::parse(&self.api_url())?;
-    Ok(url.origin().unicode_serialization())
-  }
-}
-
 impl AppConfig {
-  pub fn api_url(&self) -> String {
+  pub fn url(&self) -> String {
     self
-      .api_url
+      .url
       .to_owned()
       .unwrap_or_else(|| format!("http://{}:{}", self.server.host, self.server.port))
+  }
+
+  pub fn base_url(&self) -> Result<String, url::ParseError> {
+    let url = url::Url::parse(self.url().as_ref())?;
+    Ok(url.origin().unicode_serialization())
   }
 }
 
@@ -69,14 +67,12 @@ impl<'a> TryFrom<&'a Path> for AppConfig {
   type Error = config::ConfigError;
 
   fn try_from(config_path: &'a Path) -> Result<Self, Self::Error> {
-    Ok(
-      config::Config::builder()
-        .add_source(config::File::with_name(
-          config_path.to_string_lossy().as_ref(),
-        ))
-        .add_source(config::Environment::with_prefix("APP"))
-        .build()?
-        .try_deserialize()?,
-    )
+    config::Config::builder()
+      .add_source(config::File::with_name(
+        config_path.to_string_lossy().as_ref(),
+      ))
+      .add_source(config::Environment::with_prefix("APP"))
+      .build()?
+      .try_deserialize()
   }
 }

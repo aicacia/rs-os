@@ -1,3 +1,6 @@
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
+#[cfg(feature = "bin")]
+pub mod cli;
+pub mod config;
 pub mod core;
 pub mod router;

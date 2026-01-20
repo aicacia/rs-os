@@ -24,6 +24,7 @@ members = [
   "crates/oidc-admin",
   "crates/oidc-model",
   "crates/service-discovery",
+  "crates/document-store",
   "crates/signaling",
   "crates/ui",
 ]
@@ -52,6 +53,7 @@ os-oidc = { version = "0.1", path = "./crates/oidc", default-features = false }
 os-oidc-admin = { version = "0.1", path = "./crates/oidc-admin", default-features = false }
 os-oidc-model = { version = "0.1", path = "./crates/oidc-model", default-features = false }
 os-service-discovery = { version = "0.1", path = "./crates/service-discovery", default-features = false }
+os-document-store = { version = "0.1", path = "./crates/document-store", default-features = false }
 os-signaling = { version = "0.1", path = "./crates/signaling", default-features = false }
 os-ui = { version = "0.1", path = "./crates/ui", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }

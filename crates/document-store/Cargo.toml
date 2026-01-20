@@ -8,11 +8,18 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/aicacia/rs-os"
 rust-version = "1.92"
 
+[[bin]]
+name = "os-document-store"
+
+[lib]
+name = "os_document_store"
+
 [dependencies]
 os-api = { version = "0.1", path = "../api", default-features = false }
 axum = { version = "0.8", default-features = false, features = ["ws"] }
 config = { version = "0.15", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
+serde_bytes = { version = "0.11", default-features = false, features = ["std"] }
 url = { version = "2.5", default-features = false }
 tracing = { version = "0.1", features = ["std"], default-features = false }
 log = { version = "0.4", default-features = false }
@@ -31,13 +38,9 @@ tokio = { version = "1.48", features = [
   "signal",
   "fs",
 ], default-features = false }
+tokio-util = { version = "0.7", features = ["io"], default-features = false }
 once_cell = { version = "1.19", default-features = false }
 dashmap = { version = "6.1", default-features = false }
-tower-http = { version = "0.6", features = [
-  "cors",
-  "trace",
-  "compression-gzip",
-], default-features = false }
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
 sha2 = { version = "0.10", default-features = false }
 sled = { version = "0.34", default-features = false, optional = false }
@@ -47,5 +50,50 @@ bs58 = { version = "0.5", default-features = false, features = ["std"] }
 hex = { version = "0.4", default-features = false }
 futures = { version = "0.3", default-features = false, features = ["std"] }
 
-[lib]
-name = "os_document_store"
+# bin dependencies
+dotenvy = { version = "0.15", default-features = false, optional = true }
+tracing-subscriber = { version = "0.3", features = [
+  "ansi",
+  "fmt",
+  "std",
+  "tracing-log",
+  "env-filter",
+], default-features = false, optional = true }
+tracing-log = { version = "0.2", default-features = false, optional = true }
+tower-http = { version = "0.6", features = [
+  "cors",
+  "trace",
+  "compression-gzip",
+], default-features = false, optional = true }
+os-cli = { version = "0.1", path = "../cli", default-features = false, optional = true }
+clap = { version = "4.5", features = [
+  "std",
+  "derive",
+  "help",
+], default-features = false, optional = true }
+clap_complete = { version = "4.5", optional = true, default-features = false }
+
+[dev-dependencies]
+tokio = { version = "1.48", features = [
+  "rt",
+  "rt-multi-thread",
+  "fs",
+  "macros",
+  "signal",
+], default-features = false }
+tracing-subscriber = "0.3"
+dotenvy = "0.15"
+tower = "0.5"
+uuid = { version = "1.18", features = ["v4"] }
+
+[features]
+completions = ["dep:clap_complete"]
+bin = [
+  "dep:clap",
+  "dep:tracing-subscriber",
+  "dep:tracing-log",
+  "dep:dotenvy",
+  "dep:os-cli",
+  "dep:tower-http",
+]
+default = ["bin", "completions"]

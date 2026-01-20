@@ -84,7 +84,11 @@ impl StorageKey {
 
   #[inline]
   pub fn as_bytes(&self) -> &[u8; Self::BYTE_LEN] {
-    unsafe { &*(self as *const StorageKey as *const [u8; Self::BYTE_LEN]) }
+    // SAFETY: StorageKey is #[repr(C)] and consists of a Uuid, a ChunkType (u8), and a [u8; 32],
+    #[allow(unsafe_code)]
+    unsafe {
+      &*(self as *const StorageKey as *const [u8; Self::BYTE_LEN])
+    }
   }
 
   pub fn to_bytes(&self) -> [u8; Self::BYTE_LEN] {
