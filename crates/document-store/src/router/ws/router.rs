@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, time::Duration};
 
 use axum::{
   extract::{
@@ -20,6 +20,8 @@ use crate::router::{
     service::StorageSystem,
   },
 };
+
+const SEND_TIMEOUT_SECS: u64 = 10;
 
 #[utoipa::path(
   get,
@@ -114,21 +116,32 @@ async fn handle_ws(socket: WebSocket, shared_sync: StorageSystem) -> Result<(), 
   let (peer_sender, mut peer_receiver) = mpsc::unbounded_channel();
 
   let sender_task_handle = tokio::spawn(async move {
+    // Forward messages produced by the storage system to the WebSocket with a timeout
     while let Some(msg) = peer_receiver.recv().await {
-      if let Err(err) = ws_sender.send(msg).await {
-        log::error!("Failed to send message to WebSocket: {}", err);
-        break;
+      match tokio::time::timeout(Duration::from_secs(SEND_TIMEOUT_SECS), ws_sender.send(msg)).await
+      {
+        Ok(Ok(())) => {}
+        Ok(Err(err)) => {
+          log::error!("Failed to send message to WebSocket: {}", err);
+          break;
+        }
+        Err(_) => {
+          log::warn!("WebSocket send timeout, closing connection due to slow client");
+          break;
+        }
       }
     }
   });
 
   shared_sync
-    .handle_ws_messages(peer_sender, ws_receiver)
+    .handle_ws_messages(peer_sender.clone(), ws_receiver)
     .await;
 
-  // Ensure the sender task terminates promptly when the receiver side ends.
-  sender_task_handle.abort();
-  tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+  // Close the sender side so the forwarding task exits cleanly and wait for it to finish
+  drop(peer_sender);
+  if let Err(join_err) = sender_task_handle.await {
+    log::warn!("WebSocket sender task join error: {}", join_err);
+  }
 
   Ok(())
 }

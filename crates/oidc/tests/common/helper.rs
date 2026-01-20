@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use chrono::Utc;
+use os_api::constants::TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE;
 use os_oidc::router::common::entity::{Permission, Token};
 use os_oidc_model::entities::{
   applications, clients, jwks::get_jwk_for_sign_and_verify, permissions, roles, roles_permissions,
@@ -167,7 +168,7 @@ pub async fn create_jwt_for_user(
     client_id.to_owned(),
     audience.into_iter().map(ToString::to_string).collect(),
     scope.to_owned(),
-    "urn:ietf:params:oauth:token-type:access_token".to_owned(),
+    TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE.to_owned(),
   )
   .await
   .map_err(|e| format!("Error creating user token: {}", e))?;

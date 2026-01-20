@@ -1328,7 +1328,9 @@ pub async fn is_client_allowed_for_user(
       let client_scopes_vec = json_to_string_vec(&client_model.scopes);
       let client_scopes: HashSet<String> = client_scopes_vec.iter().cloned().collect();
 
-      let client_scopes_changed = allowed_scopes != client_scopes;
+      // Only treat scopes as changed if the user's allowed scopes are no longer a subset
+      // of the client's configured scopes (new client scopes should not invalidate approval).
+      let client_scopes_changed = !allowed_scopes.is_subset(&client_scopes);
 
       let requested_scope_mismatch = if let Some(scope) = scope {
         let requested_scopes: HashSet<String> = scope

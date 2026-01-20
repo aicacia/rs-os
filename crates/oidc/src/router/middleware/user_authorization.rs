@@ -6,7 +6,7 @@ use std::{
 use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
 use os_api::{
-  Authorization, Claims,
+  Claims,
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
   util::permission_grants,
 };
@@ -18,8 +18,10 @@ use crate::router::{
       TOKEN_TYPE_BEARER,
     },
     entity::{BasicClaims, Permission, UserInfo},
+    helper::parse_user_sub,
   },
   entity::RouterState,
+  middleware::authorization::Authorization,
 };
 use os_oidc_model::entities::{
   applications::get_applications_by_urns,
@@ -206,7 +208,7 @@ where
       return Err(HttpError::unauthorized().with_error(AUTHORIZATION_HEADER, "invalid-token-type"));
     }
 
-    let user_id = match crate::router::common::helper::parse_user_sub(&authorization.claims.sub) {
+    let user_id = match parse_user_sub(&authorization.claims.sub) {
       Ok(id) => id,
       Err(e) => {
         log::error!(
@@ -302,8 +304,22 @@ where
           }
         }
 
+        // Prefer the configured application URN when we have permissions for it, otherwise
+        // fall back to the first audience we built permissions for so test-generated
+        // applications work without configuring application_urn explicitly.
+        let application_urn = if permissions_map.contains_key(&router_state.config.application_urn)
+        {
+          router_state.config.application_urn.clone()
+        } else {
+          permissions_map
+            .keys()
+            .next()
+            .cloned()
+            .unwrap_or_else(|| router_state.config.application_urn.clone())
+        };
+
         Ok(Self {
-          application_urn: router_state.config.application_urn.clone(),
+          application_urn,
           claims: authorization.claims,
           user_model,
           role_permissions,

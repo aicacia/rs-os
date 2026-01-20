@@ -349,7 +349,7 @@ async fn test_introspect_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -359,7 +359,10 @@ async fn test_introspect_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
       Request::builder()
         .method("POST")
         .uri("/introspect")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -392,7 +395,7 @@ async fn test_register_client_endpoint_with_auth() -> Result<(), Box<dyn Error>>
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -417,7 +420,10 @@ async fn test_register_client_endpoint_with_auth() -> Result<(), Box<dyn Error>>
       Request::builder()
         .method("POST")
         .uri("/register-client")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .header("content-type", "application/json")
         .body(Body::from(serde_json::to_string(&client_body)?))?,
     )
@@ -444,7 +450,7 @@ async fn test_user_info_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -453,7 +459,10 @@ async fn test_user_info_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     .oneshot(
       Request::builder()
         .uri("/user-info")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -484,7 +493,7 @@ async fn test_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -493,7 +502,10 @@ async fn test_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> {
     .oneshot(
       Request::builder()
         .uri(&format!("/client?client_id={}", client.client_id))
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -526,7 +538,7 @@ async fn test_client_allowed_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -535,7 +547,10 @@ async fn test_client_allowed_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
     .oneshot(
       Request::builder()
         .uri(&format!("/client-allowed?client_id={}", client.client_id))
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -569,7 +584,7 @@ async fn test_client_allowed_requires_reapprove_on_requested_scope_change()
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid",
   )
   .await?;
@@ -581,7 +596,10 @@ async fn test_client_allowed_requires_reapprove_on_requested_scope_change()
           "/client-allowed?client_id={}&scope=openid%20profile",
           client.client_id
         ))
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -624,7 +642,7 @@ async fn test_client_allowed_requires_reapprove_on_client_scope_change()
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -633,7 +651,10 @@ async fn test_client_allowed_requires_reapprove_on_client_scope_change()
     .oneshot(
       Request::builder()
         .uri(&format!("/client-allowed?client_id={}", client.client_id))
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -659,7 +680,7 @@ async fn test_approve_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -669,7 +690,10 @@ async fn test_approve_client_endpoint_with_auth() -> Result<(), Box<dyn Error>> 
       Request::builder()
         .method("POST")
         .uri(&format!("/approve-client?client_id={}", client.client_id))
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -702,7 +726,7 @@ async fn test_authorize_client_endpoint_with_auth() -> Result<(), Box<dyn Error>
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -721,7 +745,10 @@ async fn test_authorize_client_endpoint_with_auth() -> Result<(), Box<dyn Error>
       Request::builder()
         .method("POST")
         .uri("/authorize-client")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .header("content-type", "application/json")
         .body(Body::from(serde_json::to_string(&auth_body)?))?,
     )
@@ -748,7 +775,7 @@ async fn test_user_info_response_contains_required_claims() -> Result<(), Box<dy
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -757,7 +784,10 @@ async fn test_user_info_response_contains_required_claims() -> Result<(), Box<dy
     .oneshot(
       Request::builder()
         .uri("/user-info")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -776,8 +806,8 @@ async fn test_user_info_response_contains_required_claims() -> Result<(), Box<dy
   );
   assert_eq!(
     user_info["sub"].as_str().unwrap(),
-    admin.id.to_string(),
-    "Subject should match user ID"
+    format!("urn:os:sub:user:{}", admin.id),
+    "Subject should match user URN"
   );
 
   Ok(())
@@ -796,7 +826,7 @@ async fn test_client_endpoint_returns_valid_client_object() -> Result<(), Box<dy
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -805,7 +835,10 @@ async fn test_client_endpoint_returns_valid_client_object() -> Result<(), Box<dy
     .oneshot(
       Request::builder()
         .uri(&format!("/client?client_id={}", client.client_id))
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -900,7 +933,7 @@ async fn test_register_client_requires_admin_permissions() -> Result<(), Box<dyn
     &config,
     &regular_user,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid",
   )
   .await?;
@@ -925,7 +958,10 @@ async fn test_register_client_requires_admin_permissions() -> Result<(), Box<dyn
       Request::builder()
         .method("POST")
         .uri("/register-client")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .header("content-type", "application/json")
         .body(Body::from(serde_json::to_string(&client_body)?))?,
     )
@@ -1027,7 +1063,7 @@ async fn test_authorize_client_validates_scopes() -> Result<(), Box<dyn Error>> 
     &config,
     &user,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid",
   )
   .await?;
@@ -1046,7 +1082,10 @@ async fn test_authorize_client_validates_scopes() -> Result<(), Box<dyn Error>> 
       Request::builder()
         .method("POST")
         .uri("/authorize-client")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .header("content-type", "application/json")
         .body(Body::from(serde_json::to_string(&auth_body)?))?,
     )
@@ -1070,7 +1109,7 @@ async fn test_user_info_rejects_malformed_jwt() -> Result<(), Box<dyn Error>> {
     .oneshot(
       Request::builder()
         .uri("/user-info")
-        .header("authorization", "Bearer malformed.jwt.token")
+        .header(http::header::AUTHORIZATION, "Bearer malformed.jwt.token")
         .body(Body::empty())?,
     )
     .await
@@ -1096,7 +1135,7 @@ async fn test_user_info_rejects_missing_bearer_token() -> Result<(), Box<dyn Err
     .oneshot(
       Request::builder()
         .uri("/user-info")
-        .header("authorization", "NotABearerToken")
+        .header(http::header::AUTHORIZATION, "NotABearerToken")
         .body(Body::empty())?,
     )
     .await
@@ -1256,7 +1295,7 @@ async fn test_introspect_returns_token_metadata() -> Result<(), Box<dyn Error>> 
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid profile",
   )
   .await?;
@@ -1266,7 +1305,10 @@ async fn test_introspect_returns_token_metadata() -> Result<(), Box<dyn Error>> 
       Request::builder()
         .method("POST")
         .uri("/introspect")
-        .header("authorization", format!("Bearer {}", token.access_token))
+        .header(
+          http::header::AUTHORIZATION,
+          format!("Bearer {}", token.access_token),
+        )
         .body(Body::empty())?,
     )
     .await
@@ -1306,7 +1348,7 @@ async fn test_introspect_endpoint_with_invalid_token() -> Result<(), Box<dyn Err
     &config,
     &admin,
     &client.client_id,
-    &["test_audience"],
+    &[app.urn.as_str()],
     "openid",
   )
   .await?;
@@ -1316,7 +1358,7 @@ async fn test_introspect_endpoint_with_invalid_token() -> Result<(), Box<dyn Err
       Request::builder()
         .method("POST")
         .uri("/introspect")
-        .header("authorization", "Bearer invalid.token.here")
+        .header(http::header::AUTHORIZATION, "Bearer invalid.token.here")
         .body(Body::empty())?,
     )
     .await

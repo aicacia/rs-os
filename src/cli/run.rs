@@ -175,6 +175,7 @@ pub async fn run() -> io::Result<()> {
 
   let document_store_openapi_router = os_document_store::router::create_openapi_router(
     os_document_store::router::entity::RouterState {
+      cancellation_token: cancellation_token.clone(),
       config: Arc::new(app_config.document_store_api.clone()),
     },
     Some(DOCUMENT_STORE_API_URL_PREFIX),

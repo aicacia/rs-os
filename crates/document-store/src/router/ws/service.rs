@@ -113,24 +113,43 @@ impl StorageSystem {
     self.inner.sync_states.remove(peer_id);
   }
 
+  fn drop_peer(&self, peer_id: &PeerId) {
+    self.inner.peer_senders.remove(peer_id);
+    self.inner.sync_states.remove(peer_id);
+  }
+
   fn broadcast_to_peers(&self, sender_id: PeerId, mut from_server_message: FromServerMessage) {
     from_server_message.set_sender_id(self.peer_id());
 
-    for entry in self.inner.peer_senders.iter() {
-      let peer_id = entry.key();
+    let peers_to_send: Vec<(PeerId, PeerSender)> = self
+      .inner
+      .peer_senders
+      .iter()
+      .filter_map(|entry| {
+        if entry.key() == &sender_id {
+          None
+        } else {
+          Some((entry.key().clone(), entry.value().clone()))
+        }
+      })
+      .collect();
 
-      if peer_id == &sender_id {
-        continue;
-      }
+    let mut peers_to_drop = Vec::new();
+
+    for (peer_id, sender) in peers_to_send {
       let mut message = from_server_message.clone();
-
       message.set_target_id(peer_id.clone());
 
       if let Some(bytes) = encode_to_bytes(&message) {
-        if let Err(err) = entry.value().send(Message::Binary(bytes.into())) {
+        if let Err(err) = sender.send(Message::Binary(bytes.into())) {
           log::error!("Failed to broadcast to peer {}: {}", peer_id, err);
+          peers_to_drop.push(peer_id);
         }
       }
+    }
+
+    for peer_id in peers_to_drop {
+      self.drop_peer(&peer_id);
     }
   }
 
@@ -139,9 +158,15 @@ impl StorageSystem {
     from_server_message.set_target_id(peer_id.clone());
 
     if let Some(bytes) = encode_to_bytes(&from_server_message) {
-      if let Some(entry) = self.inner.peer_senders.get(&peer_id) {
-        if let Err(err) = entry.value().send(Message::Binary(bytes.into())) {
+      let sender_opt = self
+        .inner
+        .peer_senders
+        .get(&peer_id)
+        .map(|e| e.value().clone());
+      if let Some(sender) = sender_opt {
+        if let Err(err) = sender.send(Message::Binary(bytes.into())) {
           log::error!("Failed to send to peer {}: {}", peer_id, err);
+          self.drop_peer(&peer_id);
         }
       }
     }
@@ -161,6 +186,7 @@ impl StorageSystem {
     if let Some(encoded) = encode_to_bytes(&from_server_message) {
       if let Err(err) = peer_sender.send(Message::Binary(encoded.into())) {
         log::error!("Failed to send peer message: {}", err);
+        self.drop_peer(&registered_peer_id);
         return None;
       }
     }
@@ -206,15 +232,16 @@ impl StorageSystem {
       }
     };
 
-    let peer_states = self
-      .inner
-      .sync_states
-      .entry(sync_message.sender_id.clone())
-      .or_insert_with(DashMap::new);
-    let mut sync_state = peer_states
-      .entry(sync_message.document_id.clone())
-      .or_insert_with(automerge::sync::State::new)
-      .clone();
+    let mut sync_state = {
+      self
+        .inner
+        .sync_states
+        .entry(sync_message.sender_id.clone())
+        .or_insert_with(DashMap::new)
+        .entry(sync_message.document_id.clone())
+        .or_insert_with(automerge::sync::State::new)
+        .clone()
+    };
 
     if let Err(err) = document.receive_sync_message(&mut sync_state, message) {
       log::error!("Failed to receive sync message: {}", err);
@@ -232,15 +259,19 @@ impl StorageSystem {
       Some(outgoing) => outgoing,
       None => {
         log::debug!("No sync message to send in response");
-        if let Some(peer_states) = self.inner.sync_states.get(&sync_message.sender_id) {
-          peer_states.insert(sync_message.document_id.clone(), sync_state);
+        {
+          if let Some(peer_states) = self.inner.sync_states.get(&sync_message.sender_id) {
+            peer_states.insert(sync_message.document_id.clone(), sync_state);
+          }
         }
         return;
       }
     };
 
-    if let Some(peer_states) = self.inner.sync_states.get(&sync_message.sender_id) {
-      peer_states.insert(sync_message.document_id.clone(), sync_state);
+    {
+      if let Some(peer_states) = self.inner.sync_states.get(&sync_message.sender_id) {
+        peer_states.insert(sync_message.document_id.clone(), sync_state);
+      }
     }
 
     match self.storage().save_document(document_id, &document) {
@@ -320,15 +351,16 @@ impl StorageSystem {
       }
     };
 
-    let peer_states = self
-      .inner
-      .sync_states
-      .entry(request_message.sender_id.clone())
-      .or_insert_with(DashMap::new);
-    let mut sync_state = peer_states
-      .entry(request_message.document_id.clone())
-      .or_insert_with(automerge::sync::State::new)
-      .clone();
+    let mut sync_state = {
+      self
+        .inner
+        .sync_states
+        .entry(request_message.sender_id.clone())
+        .or_insert_with(DashMap::new)
+        .entry(request_message.document_id.clone())
+        .or_insert_with(automerge::sync::State::new)
+        .clone()
+    };
 
     if let Err(err) = document.receive_sync_message(&mut sync_state, message) {
       log::error!("Failed to receive sync message: {}", err);
@@ -339,15 +371,19 @@ impl StorageSystem {
       Some(outgoing) => outgoing,
       None => {
         log::debug!("No sync message to send in response");
-        if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
-          peer_states.insert(request_message.document_id.clone(), sync_state);
+        {
+          if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
+            peer_states.insert(request_message.document_id.clone(), sync_state);
+          }
         }
         return;
       }
     };
 
-    if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
-      peer_states.insert(request_message.document_id.clone(), sync_state);
+    {
+      if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
+        peer_states.insert(request_message.document_id.clone(), sync_state);
+      }
     }
 
     let response = FromServerMessage::Sync(SyncMessage {
@@ -383,6 +419,22 @@ impl StorageSystem {
     );
   }
 
+  pub fn close(&self) {
+    let peer_ids: Vec<PeerId> = self
+      .inner
+      .peer_senders
+      .iter()
+      .map(|e| e.key().clone())
+      .collect();
+    for peer_id in peer_ids {
+      self.unregister_peer(&peer_id);
+    }
+
+    if let Err(err) = self.storage().flush() {
+      log::error!("Failed to flush storage on close: {}", err);
+    }
+  }
+
   pub async fn handle_ws_messages(
     &self,
     peer_sender: PeerSender,
@@ -396,8 +448,8 @@ impl StorageSystem {
       let msg = match result {
         Ok(m) => m,
         Err(e) => {
-          log::error!("WebSocket receive error: {}", e);
-          continue;
+          log::debug!("WebSocket receive error, closing stream: {}", e);
+          break;
         }
       };
       match msg {
@@ -459,6 +511,8 @@ impl StorageSystem {
 
 impl Drop for StorageSystem {
   fn drop(&mut self) {
+    self.close();
+
     if Arc::strong_count(&self.inner) == 2 {
       SYNC_REGISTRY.remove(&self.inner.key);
     }

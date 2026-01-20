@@ -59,6 +59,7 @@ pub async fn run() -> io::Result<()> {
 
   let open_api_router = crate::router::create_openapi_router(
     crate::router::entity::RouterState {
+      cancellation_token: cancellation_token.clone(),
       config: app_config.clone(),
     },
     None,
