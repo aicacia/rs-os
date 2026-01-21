@@ -5,7 +5,10 @@ use std::{
 
 use uuid::Uuid;
 
-use crate::core::storage::{storage_adapter::StorageAdapter, storage_key::StorageKey};
+use crate::core::storage::{
+  storage_adapter::StorageAdapter,
+  storage_key::{ChunkType, StorageKey},
+};
 
 pub struct FSStorageAdapter {
   path: PathBuf,
@@ -100,8 +103,8 @@ impl StorageAdapter for FSStorageAdapter {
 
             // Parse chunk type
             let chunk_type = match type_str {
-              "incremental" => crate::core::storage::storage_key::ChunkType::Incremental,
-              "snapshot" => crate::core::storage::storage_key::ChunkType::Snapshot,
+              "incremental" => ChunkType::Incremental,
+              "snapshot" => ChunkType::Snapshot,
               _ => continue,
             };
 
