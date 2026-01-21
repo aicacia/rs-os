@@ -102,13 +102,13 @@ where
     &self,
     document_id: Uuid,
     document: &Automerge,
-    chunk_info: &mut HashMap<StorageKey, usize>,
-    stored_heads: &mut Vec<ChangeHash>,
+    document_chunk_info: &mut HashMap<StorageKey, usize>,
+    document_stored_heads: &mut Vec<ChangeHash>,
   ) -> io::Result<()> {
     let bytes = document.save();
     let new_heads = document.get_heads();
     let snapshot_hash = hash_changes(&new_heads);
-    let old_keys: HashSet<_> = chunk_info
+    let old_keys: HashSet<_> = document_chunk_info
       .keys()
       .filter_map(|storage_key| {
         if &storage_key.id != &snapshot_hash {
@@ -127,11 +127,11 @@ where
     }
 
     for old_key in old_keys {
-      chunk_info.remove(&old_key);
+      document_chunk_info.remove(&old_key);
     }
-    chunk_info.insert(storage_key, bytes.len());
+    document_chunk_info.insert(storage_key, bytes.len());
 
-    *stored_heads = new_heads;
+    *document_stored_heads = new_heads;
 
     Ok(())
   }
@@ -140,10 +140,10 @@ where
     &self,
     document_id: Uuid,
     document: &Automerge,
-    chunk_info: &mut HashMap<StorageKey, usize>,
-    stored_heads: &mut Vec<ChangeHash>,
+    document_chunk_info: &mut HashMap<StorageKey, usize>,
+    document_stored_heads: &mut Vec<ChangeHash>,
   ) -> io::Result<()> {
-    let bytes = document.save_after(&stored_heads);
+    let bytes = document.save_after(&document_stored_heads);
 
     if bytes.is_empty() {
       return Ok(());
@@ -154,9 +154,9 @@ where
 
     self.storage_adapter.set(&storage_key, &bytes)?;
 
-    chunk_info.insert(storage_key.clone(), bytes.len());
+    document_chunk_info.insert(storage_key.clone(), bytes.len());
 
-    *stored_heads = document.get_heads();
+    *document_stored_heads = document.get_heads();
 
     Ok(())
   }
@@ -166,24 +166,24 @@ where
       return Ok(());
     }
 
-    let mut chunk_info = self.chunk_infos.entry(document_id).or_default();
-    let mut stored_heads = self.stored_heads.entry(document_id).or_default();
+    let mut document_chunk_info = self.chunk_infos.entry(document_id).or_default();
+    let mut document_stored_heads = self.stored_heads.entry(document_id).or_default();
 
-    if self.should_compact(chunk_info.value()) {
+    if self.should_compact(document_chunk_info.value()) {
       log::debug!("saving compact: {}", document_id);
       self.save_compact(
         document_id,
         document,
-        chunk_info.value_mut(),
-        stored_heads.value_mut(),
+        document_chunk_info.value_mut(),
+        document_stored_heads.value_mut(),
       )
     } else {
       log::debug!("saving incremental: {}", document_id);
       self.save_incremental(
         document_id,
         document,
-        chunk_info.value_mut(),
-        stored_heads.value_mut(),
+        document_chunk_info.value_mut(),
+        document_stored_heads.value_mut(),
       )
     }
   }

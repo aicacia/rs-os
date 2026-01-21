@@ -22,7 +22,6 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 	#ws: KeepAliveWebSocket;
 
 	#ready = false;
-	#joinSent = false;
 	// @ts-expect-error private field initialization
 	#readyResolve: () => void;
 	#readyPromise: Promise<void> = new Promise((resolve) => {
@@ -35,10 +34,10 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 		this.#ws = ws;
 
 		this.#ws.on('open', () => {
-			this.#join();
+			this.#onOpen();
 		});
 		this.#ws.on('close', () => {
-			this.#close();
+			this.#onClose();
 		});
 		this.#ws.on('message', async (data) => {
 			let uint8Array: Uint8Array;
@@ -55,11 +54,6 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 		});
 	}
 
-	async reconnect() {
-		await this.#ws.close().connect();
-		return this;
-	}
-
 	isReady(): boolean {
 		return this.#ready;
 	}
@@ -68,39 +62,62 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 		return this.#readyPromise;
 	}
 
-	#setReady(ready: boolean) {
-		this.#ready = ready;
-		if (ready) {
-			this.#readyResolve();
-		} else {
-			this.#readyPromise = new Promise((resolve) => {
-				this.#readyResolve = resolve;
-			});
-		}
+	async reconnect() {
+		await this.#ws.close().connect();
+		return this;
 	}
 
 	connect(peerId: PeerId, peerMetadata?: PeerMetadata) {
 		this.#peerId = peerId;
 		this.#peerMetadata = peerMetadata || {};
-		void this.#join();
+		// Mark this adapter as ready if we haven't received an ack in 1 second.
+		// We might hear back from the other end at some point but we shouldn't
+		// hold up marking things as unavailable for any longer
+		setTimeout(() => this.#forceReady(), 1000);
+		this.#join();
 	}
 
 	send(message: Message) {
 		if ('data' in message && message.data?.byteLength === 0) {
 			throw new Error('Tried to send a zero-length message');
 		}
+		if (this.#peerId === null) {
+			throw new Error('Not connected');
+		}
 		if (this.#ws.isClosed()) {
-			throw new Error('WebSocket is closed');
+			console.debug('Tried to send on a disconnected socket.');
+			return;
 		}
 
-		console.debug('Sending message', message);
-
-		void this.#ws.send(toArrayBuffer(encode(message)));
+		const encoded = encode(message);
+		void this.#ws.send(toArrayBuffer(encoded));
 	}
 
 	disconnect(): void {
-		this.#close();
+		if (!this.#ws.isClosed()) {
+			this.#ws.close();
+		}
+		if (this.#remotePeerId) {
+			this.emit('peer-disconnected', { peerId: this.#remotePeerId });
+		}
 	}
+
+	#forceReady() {
+		if (!this.#ready) {
+			this.#ready = true;
+			this.#readyResolve();
+		}
+	}
+
+	#onOpen = () => {
+		this.#join();
+	};
+
+	#onClose = () => {
+		if (this.#remotePeerId) {
+			this.emit('peer-disconnected', { peerId: this.#remotePeerId });
+		}
+	};
 
 	#onMessage(messageBytes: Uint8Array) {
 		if (messageBytes.byteLength === 0) {
@@ -108,51 +125,32 @@ export class WebSocketClientAdapter extends NetworkAdapter {
 		}
 		const message: FromServerMessage = decode(messageBytes);
 
-		console.debug('Received message', message);
-
 		if (isPeerMessage(message)) {
 			this.#peerCandidate(message.senderId, message.peerMetadata);
 		} else if (isErrorMessage(message)) {
-			console.error(`Received error message from server`, message);
+			// Error messages are just logged, not thrown
 		} else {
 			this.emit('message', message);
 		}
 	}
 
 	#peerCandidate(remotePeerId: PeerId, peerMetadata: PeerMetadata) {
+		this.#forceReady();
 		this.#remotePeerId = remotePeerId;
-		this.#joinSent = false;
-		this.#setReady(true);
 		this.emit('peer-candidate', {
 			peerId: remotePeerId,
 			peerMetadata
 		});
 	}
 
-	#close() {
-		this.#setReady(false);
-		this.#joinSent = false;
-		if (this.#remotePeerId) {
-			this.emit('peer-disconnected', { peerId: this.#remotePeerId });
-			this.#remotePeerId = undefined;
-		}
-		if (!this.#ws.isClosed()) {
-			this.#ws.close();
-		}
-	}
-
 	#join() {
-		if (this.isReady()) {
-			return;
-		}
-		if (this.#joinSent) {
-			return;
-		}
 		if (this.#peerId === null || this.#peerMetadata === null) {
 			return;
 		}
-		this.#joinSent = true;
-		this.send(joinMessage(this.#peerId, this.#peerMetadata) as never as Message);
+		if (this.#ws.isReady()) {
+			this.send(joinMessage(this.#peerId, this.#peerMetadata) as never as Message);
+		}
+		// If socket is not ready, we'll try again in the onOpen handler
 	}
 }
 
