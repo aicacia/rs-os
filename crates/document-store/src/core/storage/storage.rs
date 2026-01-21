@@ -91,7 +91,7 @@ where
       log::debug!("snapshot less than 1K should compact");
       return true;
     }
-    if incremental_size >= snapshot_size {
+    if incremental_size > snapshot_size {
       log::debug!("incremental is greater than snapshot should compact");
       return true;
     }
@@ -213,6 +213,9 @@ where
     document
       .load_incremental(&bytes)
       .map_err(io::Error::other)?;
+
+    // Update stored_heads cache to prevent unnecessary re-saves
+    self.stored_heads.insert(document_id, document.get_heads());
 
     Ok(Some(document))
   }

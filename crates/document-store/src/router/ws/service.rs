@@ -118,41 +118,6 @@ impl StorageSystem {
     self.inner.sync_states.remove(peer_id);
   }
 
-  fn broadcast_to_peers(&self, sender_id: PeerId, mut from_server_message: FromServerMessage) {
-    from_server_message.set_sender_id(self.peer_id());
-
-    let peers_to_send: Vec<(PeerId, PeerSender)> = self
-      .inner
-      .peer_senders
-      .iter()
-      .filter_map(|entry| {
-        if entry.key() == &sender_id {
-          None
-        } else {
-          Some((entry.key().clone(), entry.value().clone()))
-        }
-      })
-      .collect();
-
-    let mut peers_to_drop = Vec::new();
-
-    for (peer_id, sender) in peers_to_send {
-      let mut message = from_server_message.clone();
-      message.set_target_id(peer_id.clone());
-
-      if let Some(bytes) = encode_to_bytes(&message) {
-        if let Err(err) = sender.send(Message::Binary(bytes.into())) {
-          log::error!("Failed to broadcast to peer {}: {}", peer_id, err);
-          peers_to_drop.push(peer_id);
-        }
-      }
-    }
-
-    for peer_id in peers_to_drop {
-      self.drop_peer(&peer_id);
-    }
-  }
-
   fn send_to_peer(&self, peer_id: PeerId, mut from_server_message: FromServerMessage) {
     from_server_message.set_sender_id(self.peer_id());
     from_server_message.set_target_id(peer_id.clone());
@@ -293,7 +258,8 @@ impl StorageSystem {
       }
     };
 
-    self.broadcast_to_peers(
+    // Send sync response only back to the originating peer
+    self.send_to_peer(
       sync_message.sender_id,
       FromServerMessage::Sync(SyncMessage {
         document_id: sync_message.document_id,
@@ -305,6 +271,23 @@ impl StorageSystem {
 
   fn handle_ephemeral(&self, ephemeral_message: crate::router::ws::entity::EphemeralMessage) {
     log::debug!("Received Ephemeral message: {:?}", ephemeral_message);
+    // Forward ephemeral message to target peer if connected
+    if let Some(sender) = self.inner.peer_senders.get(&ephemeral_message.target_id) {
+      let mut message = ephemeral_message.clone();
+      message.sender_id = self.peer_id();
+
+      if let Some(bytes) = encode_to_bytes(&FromServerMessage::Ephemeral(message)) {
+        if let Err(err) = sender.send(Message::Binary(bytes.into())) {
+          log::error!("Failed to forward ephemeral message: {}", err);
+          self.drop_peer(&ephemeral_message.target_id);
+        }
+      }
+    } else {
+      log::debug!(
+        "Target peer {} not connected for ephemeral message",
+        ephemeral_message.target_id
+      );
+    }
   }
 
   fn handle_request(&self, request_message: RequestMessage) {
@@ -384,6 +367,22 @@ impl StorageSystem {
     if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
       peer_states.insert(request_message.document_id.clone(), sync_state);
     }
+
+    // Save the document to storage after processing request
+    match self.storage().save_document(document_id, &document) {
+      Ok(_) => {}
+      Err(err) => {
+        log::error!("Failed to save document {}: {}", document_id, err);
+        self.send_to_peer(
+          request_message.sender_id.clone(),
+          FromServerMessage::Error(ErrorMessage {
+            message: format!("Failed to save document"),
+            ..Default::default()
+          }),
+        );
+        return;
+      }
+    };
 
     let response = FromServerMessage::Sync(SyncMessage {
       document_id: request_message.document_id,
@@ -471,21 +470,97 @@ impl StorageSystem {
               }
             }
             FromClientMessage::Sync(sync_message) => {
+              // Validate sender_id matches registered peer
+              if let Some(ref peer_id) = registered_peer_id {
+                if &sync_message.sender_id != peer_id {
+                  log::warn!(
+                    "Message sender_id mismatch: expected {}, got {}",
+                    peer_id,
+                    sync_message.sender_id
+                  );
+                  continue;
+                }
+              } else {
+                log::warn!("Received sync message before join");
+                continue;
+              }
               self.handle_sync(sync_message);
             }
             FromClientMessage::Ephemeral(ephemeral_message) => {
+              if let Some(ref peer_id) = registered_peer_id {
+                if &ephemeral_message.sender_id != peer_id {
+                  log::warn!(
+                    "Message sender_id mismatch: expected {}, got {}",
+                    peer_id,
+                    ephemeral_message.sender_id
+                  );
+                  continue;
+                }
+              } else {
+                log::warn!("Received ephemeral message before join");
+                continue;
+              }
               self.handle_ephemeral(ephemeral_message);
             }
             FromClientMessage::Request(request_message) => {
+              if let Some(ref peer_id) = registered_peer_id {
+                if &request_message.sender_id != peer_id {
+                  log::warn!(
+                    "Message sender_id mismatch: expected {}, got {}",
+                    peer_id,
+                    request_message.sender_id
+                  );
+                  continue;
+                }
+              } else {
+                log::warn!("Received request message before join");
+                continue;
+              }
               self.handle_request(request_message);
             }
             FromClientMessage::DocumentUnavailable(document_unavailable_message) => {
+              if let Some(ref peer_id) = registered_peer_id {
+                if &document_unavailable_message.sender_id != peer_id {
+                  log::warn!(
+                    "Message sender_id mismatch: expected {}, got {}",
+                    peer_id,
+                    document_unavailable_message.sender_id
+                  );
+                  continue;
+                }
+              } else {
+                continue;
+              }
               self.handle_document_unavailable(document_unavailable_message);
             }
             FromClientMessage::RemoteSubscriptionControl(remote_subscription_control_message) => {
+              if let Some(ref peer_id) = registered_peer_id {
+                if &remote_subscription_control_message.sender_id != peer_id {
+                  log::warn!(
+                    "Message sender_id mismatch: expected {}, got {}",
+                    peer_id,
+                    remote_subscription_control_message.sender_id
+                  );
+                  continue;
+                }
+              } else {
+                continue;
+              }
               self.handle_remote_subscription_control(remote_subscription_control_message);
             }
             FromClientMessage::RemoteHeadsChanged(remote_heads_changed) => {
+              if let Some(ref peer_id) = registered_peer_id {
+                if &remote_heads_changed.sender_id != peer_id {
+                  log::warn!(
+                    "Message sender_id mismatch: expected {}, got {}",
+                    peer_id,
+                    remote_heads_changed.sender_id
+                  );
+                  continue;
+                }
+              } else {
+                continue;
+              }
               self.handle_remote_heads_changed(remote_heads_changed);
             }
           }
