@@ -12,6 +12,8 @@
 
 	let { data } = $props();
 
+	let userInfo = $derived(data.userInfo);
+
 	let urlClientId = $derived(page.url.searchParams.get('client_id'));
 	let urlResponseType = $derived(page.url.searchParams.get('response_type'));
 	let urlResponseMode = $derived(page.url.searchParams.get('response_mode'));
@@ -23,12 +25,12 @@
 	let urlCodeChallenge = $derived(page.url.searchParams.get('code_challenge'));
 	let urlCodeChallengeMethod = $derived(page.url.searchParams.get('code_challenge_method'));
 
-	let clientIdInfo = $state<ClientInfo | null>(null);
+	let clientInfo = $state<ClientInfo | null>(null);
 
 	$effect(() => {
 		if (urlRegistration) {
 			try {
-				clientIdInfo = ClientInfoFromJSON(JSON.parse(urlRegistration));
+				clientInfo = ClientInfoFromJSON(JSON.parse(urlRegistration));
 			} catch (_e) {}
 		}
 	});
@@ -115,7 +117,7 @@
 	<div class="m-8 flex grow flex-col items-center justify-center">
 		<div class="card w-md">
 			{#if authorizeRequest}
-				<Authorize userInfo={data.userInfo} {clientIdInfo} {authorizeRequest} />
+				<Authorize {userInfo} {clientInfo} {authorizeRequest} />
 			{:else}
 				<section>
 					<h5>{m.authorize_invalid_request()}</h5>

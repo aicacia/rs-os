@@ -2,6 +2,8 @@ import { Configuration, type ConfigurationParameters, ClientApi, UserApi } from 
 import { env } from '$env/dynamic/public';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
+import { setAfterSigninRedirectPathFromURL } from '../state/afterSignInRedirectPath';
+import { page } from '$app/state';
 
 let authToken: string | undefined;
 
@@ -19,6 +21,7 @@ export const defaultConfigurationParameters: ConfigurationParameters = {
 		{
 			post: async (context) => {
 				if (context.response.status === 401) {
+					setAfterSigninRedirectPathFromURL(page.url);
 					setAuthToken(undefined);
 					await goto(resolve('/signin'));
 				}

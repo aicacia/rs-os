@@ -122,8 +122,6 @@ impl StorageSystem {
     from_server_message.set_sender_id(self.peer_id());
     from_server_message.set_target_id(peer_id.clone());
 
-    log::debug!("Sending message to peer: {:?}", from_server_message);
-
     if let Some(bytes) = encode_to_bytes(&from_server_message) {
       if let Some(sender) = self
         .inner
@@ -462,7 +460,6 @@ impl StorageSystem {
               continue;
             }
           };
-          log::debug!("Received binary message: {:?}", client_msg);
           match client_msg {
             FromClientMessage::Join(join_message) => {
               if let Some(peer_id) = self.handle_join(join_message, &peer_sender) {

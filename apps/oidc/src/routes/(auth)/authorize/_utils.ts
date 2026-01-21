@@ -8,6 +8,42 @@ import {
 export type ClientInfo = ClientRegisterRequest;
 export const ClientInfoFromJSON = ClientRegisterRequestFromJSON;
 
+function deepEqual(a: unknown, b: unknown): boolean {
+	if (a === b) {
+		return true;
+	}
+	if (Array.isArray(a) && Array.isArray(b)) {
+		if (a.length !== b.length) {
+			return false;
+		}
+		for (let i = 0; i < a.length; i++) {
+			if (!deepEqual(a[i], b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
+		const aObj = a as Record<string, unknown>;
+		const bObj = b as Record<string, unknown>;
+		const aKeys = Object.keys(aObj);
+		const bKeys = Object.keys(bObj);
+		if (aKeys.length !== bKeys.length) {
+			return false;
+		}
+		for (const key of aKeys) {
+			if (!bKeys.includes(key)) {
+				return false;
+			}
+			if (!deepEqual(aObj[key], bObj[key])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
 export function getClientDiff(client: Client, clientInfo: ClientInfo): Partial<ClientInfo> | false {
 	const diff: Partial<ClientInfo> = {};
 	let changed = false;
@@ -16,32 +52,9 @@ export function getClientDiff(client: Client, clientInfo: ClientInfo): Partial<C
 		const a = client[key];
 		const b = clientInfo[key];
 
-		const aIsArray = Array.isArray(a);
-		const bIsArray = Array.isArray(b);
-
-		if (aIsArray !== bIsArray) {
+		if (!deepEqual(a, b)) {
 			changed = true;
-			diff[key] = a as never;
-			continue;
-		}
-
-		if (aIsArray && bIsArray) {
-			const arrA = a as unknown as string[];
-			const arrB = b as unknown as string[];
-
-			const arrChanged = arrA.length !== arrB.length || arrA.some((v, i) => v !== arrB[i]);
-
-			if (arrChanged) {
-				changed = true;
-				diff[key] = a as never;
-			}
-
-			continue;
-		}
-
-		if (a !== b) {
-			changed = true;
-			diff[key] = a as never;
+			diff[key] = b as never;
 		}
 	}
 

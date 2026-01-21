@@ -8,7 +8,7 @@ const userSettings = async () =>
 	browser
 		? ({
 				authority: await getOIDCAPIURL(),
-				client_id: `${env.PUBLIC_URL}`,
+				client_id: 'urn:os:oidc:client:019be247-23ca-74af-a664-042b063573fe',
 				redirect_uri: `${env.PUBLIC_URL}/callback`,
 				post_logout_redirect_uri: `${env.PUBLIC_URL}/logout`,
 				response_type: 'code',
@@ -23,7 +23,7 @@ const userSettings = async () =>
 				extraQueryParams: {
 					registration: JSON.stringify({
 						name: 'Simple Example',
-						client_id: `${env.PUBLIC_URL}`,
+						client_id: 'urn:os:oidc:client:019be247-23ca-74af-a664-042b063573fe',
 						redirect_uris: [
 							`${env.PUBLIC_URL}/callback`,
 							`${env.PUBLIC_URL}/popup-callback`,

@@ -36,7 +36,7 @@
 		}
 	},
 	"dependencies": {
-		"eventemitter3": "^5.0.1"
+		"eventemitter3": "^5.0.4"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.1",
@@ -53,8 +53,8 @@
 		"globals": "^17.0.0",
 		"husky": "^9.1.7",
 		"nyc": "^17.1.0",
-		"prettier": "^3.7.4",
-		"rollup": "^4.55.1",
+		"prettier": "^3.8.1",
+		"rollup": "^4.55.3",
 		"rollup-plugin-esm-import-to-url": "^2.1.0",
 		"shx": "^0.4.0",
 		"tap-nyc": "^1.0.3",
@@ -62,9 +62,9 @@
 		"tape": "^5.9.0",
 		"ts-node": "^10.9.2",
 		"tslib": "^2.8.1",
-		"typedoc": "^0.28.15",
+		"typedoc": "^0.28.16",
 		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.52.0"
+		"typescript-eslint": "^8.53.1"
 	},
 	"peerDependencies": {
 		"tslib": "2"

@@ -1,9 +1,9 @@
 <script lang="ts" module>
-	import type { AuthorizeRequest, OpenIdClaims } from '$lib/common/openapi/oidc';
+	import type { AuthorizeRequest, UserInfo } from '$lib/common/openapi/oidc';
 
 	export interface AuthorizeProps {
-		userInfo: OpenIdClaims;
-		clientIdInfo: ClientInfo | null;
+		userInfo: UserInfo;
+		clientInfo: ClientInfo | null;
 		authorizeRequest: AuthorizeRequest;
 	}
 </script>
@@ -23,7 +23,7 @@
 	import AuthorizeClient from './_AuthorizeClient.svelte';
 	import { handleError } from '$lib/common/errors';
 
-	let { userInfo, clientIdInfo, authorizeRequest }: AuthorizeProps = $props();
+	let { userInfo, clientInfo, authorizeRequest }: AuthorizeProps = $props();
 
 	let clientDiff = $state<Partial<ClientInfo> | false>(false);
 	let client = $state<Client | null>(null);
@@ -45,9 +45,9 @@
 	});
 
 	$effect(() => {
-		if (clientIdInfo) {
+		if (clientInfo) {
 			if (client) {
-				clientDiff = getClientDiff(client, clientIdInfo);
+				clientDiff = getClientDiff(client, clientInfo);
 			}
 		} else {
 			clientDiff = false;
@@ -56,7 +56,11 @@
 
 	let loadingUserAllowed = $state(true);
 	$effect(() => {
-		if (clientDiff) {
+		if (loadingClient) {
+			return;
+		}
+		if (!client || clientDiff) {
+			loadingUserAllowed = false;
 			return;
 		}
 		loadingUserAllowed = true;
@@ -114,6 +118,7 @@
 		);
 	}
 
+	$inspect({loadingClient ,loadingUserAllowed , loadingAuthorizeRequest})
 	let loading = $derived(loadingClient || loadingUserAllowed || loadingAuthorizeRequest);
 	let disabled = $derived(loading);
 </script>
@@ -139,10 +144,10 @@
 	{:else}
 		<AuthorizeClient {userInfo} {client} {disabled} {onAllow} {onDeny} />
 	{/if}
-{:else if clientIdInfo}
+{:else if clientInfo}
 	<AddClient
 		{userInfo}
-		client={clientIdInfo}
+		client={clientInfo}
 		{disabled}
 		isNew={true}
 		onAccept={onAcceptClientUpdates}
