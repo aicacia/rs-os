@@ -47,9 +47,9 @@ where
 
   fn should_save_document(&self, document_id: Uuid, document: &Automerge) -> bool {
     let old_heads = match self.stored_heads.get(&document_id) {
-      Some(old_heads) => old_heads,
+      Some(old_heads) => old_heads.clone(),
       None => {
-        log::debug!("no cached heads should save");
+        log::debug!("no cached heads, should save");
         return true;
       }
     };
@@ -57,18 +57,22 @@ where
     let new_heads = document.get_heads();
 
     if new_heads.len() != old_heads.len() {
-      log::debug!("head count mismatch should save");
+      log::debug!(
+        "head count mismatch: {} vs {}, should save",
+        new_heads.len(),
+        old_heads.len()
+      );
       return true;
     }
 
     for i in 0..new_heads.len() {
-      if &new_heads[i] != &old_heads[i] {
-        log::debug!("heads do not match should save");
+      if new_heads[i] != old_heads[i] {
+        log::debug!("heads do not match at index {}, should save", i);
         return true;
       }
     }
 
-    log::debug!("cache matches document should not save");
+    log::debug!("cache matches document, should not save");
     false
   }
 
@@ -209,8 +213,6 @@ where
     document
       .load_incremental(&bytes)
       .map_err(io::Error::other)?;
-
-    self.stored_heads.insert(document_id, document.get_heads());
 
     Ok(Some(document))
   }

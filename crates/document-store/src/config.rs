@@ -6,20 +6,21 @@ use serde::Deserialize;
 #[derive(Debug, Default, Deserialize, Clone)]
 pub enum StorageAdapterKind {
   #[default]
-  Sled,
+  #[serde(rename = "fs")]
+  FS,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct StorageConfig {
-  pub storage_adapter: StorageAdapterKind,
+  pub r#type: StorageAdapterKind,
   pub data_path: String,
 }
 
 impl Default for StorageConfig {
   fn default() -> Self {
     Self {
-      storage_adapter: StorageAdapterKind::default(),
+      r#type: StorageAdapterKind::default(),
       data_path: "./storage/data".to_owned(),
     }
   }

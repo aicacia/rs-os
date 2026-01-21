@@ -157,17 +157,21 @@ impl StorageSystem {
     from_server_message.set_sender_id(self.peer_id());
     from_server_message.set_target_id(peer_id.clone());
 
+    log::debug!("Sending message to peer: {:?}", from_server_message);
+
     if let Some(bytes) = encode_to_bytes(&from_server_message) {
-      let sender_opt = self
+      if let Some(sender) = self
         .inner
         .peer_senders
         .get(&peer_id)
-        .map(|e| e.value().clone());
-      if let Some(sender) = sender_opt {
+        .map(|e| e.value().clone())
+      {
         if let Err(err) = sender.send(Message::Binary(bytes.into())) {
           log::error!("Failed to send to peer {}: {}", peer_id, err);
           self.drop_peer(&peer_id);
         }
+      } else {
+        log::warn!("No sender found for peer {}", peer_id);
       }
     }
   }
@@ -329,6 +333,7 @@ impl StorageSystem {
     let mut document: Automerge = match self.storage().load_document(document_id) {
       Ok(Some(document)) => document,
       Ok(None) => {
+        log::debug!("Document not found: {}", request_message.document_id);
         self.send_to_peer(
           request_message.sender_id.clone(),
           FromServerMessage::DocumentUnavailable(DocumentUnavailableMessage {
@@ -351,16 +356,14 @@ impl StorageSystem {
       }
     };
 
-    let mut sync_state = {
-      self
-        .inner
-        .sync_states
-        .entry(request_message.sender_id.clone())
-        .or_insert_with(DashMap::new)
-        .entry(request_message.document_id.clone())
-        .or_insert_with(automerge::sync::State::new)
-        .clone()
-    };
+    let mut sync_state = self
+      .inner
+      .sync_states
+      .entry(request_message.sender_id.clone())
+      .or_insert_with(DashMap::new)
+      .entry(request_message.document_id.clone())
+      .or_insert_with(automerge::sync::State::new)
+      .clone();
 
     if let Err(err) = document.receive_sync_message(&mut sync_state, message) {
       log::error!("Failed to receive sync message: {}", err);
@@ -371,19 +374,15 @@ impl StorageSystem {
       Some(outgoing) => outgoing,
       None => {
         log::debug!("No sync message to send in response");
-        {
-          if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
-            peer_states.insert(request_message.document_id.clone(), sync_state);
-          }
+        if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
+          peer_states.insert(request_message.document_id.clone(), sync_state);
         }
         return;
       }
     };
 
-    {
-      if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
-        peer_states.insert(request_message.document_id.clone(), sync_state);
-      }
+    if let Some(peer_states) = self.inner.sync_states.get(&request_message.sender_id) {
+      peer_states.insert(request_message.document_id.clone(), sync_state);
     }
 
     let response = FromServerMessage::Sync(SyncMessage {
@@ -464,6 +463,7 @@ impl StorageSystem {
               continue;
             }
           };
+          log::debug!("Received binary message: {:?}", client_msg);
           match client_msg {
             FromClientMessage::Join(join_message) => {
               if let Some(peer_id) = self.handle_join(join_message, &peer_sender) {
@@ -503,7 +503,7 @@ impl StorageSystem {
       }
     }
 
-    if let Some(peer_id) = registered_peer_id.clone() {
+    if let Some(peer_id) = registered_peer_id {
       self.unregister_peer(&peer_id);
     }
   }

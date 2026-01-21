@@ -11,5 +11,6 @@
 **/os-*.db*
 **/Dockerfile*
 **/values.yaml
-**/storage/
+# Ignore only the root storage/ directory (holds runtime data), not source modules
+storage/
 **/.sea-orm-cli.json

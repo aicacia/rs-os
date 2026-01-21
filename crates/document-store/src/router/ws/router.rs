@@ -116,7 +116,6 @@ async fn handle_ws(socket: WebSocket, shared_sync: StorageSystem) -> Result<(), 
   let (peer_sender, mut peer_receiver) = mpsc::unbounded_channel();
 
   let sender_task_handle = tokio::spawn(async move {
-    // Forward messages produced by the storage system to the WebSocket with a timeout
     while let Some(msg) = peer_receiver.recv().await {
       match tokio::time::timeout(Duration::from_secs(SEND_TIMEOUT_SECS), ws_sender.send(msg)).await
       {
@@ -137,7 +136,6 @@ async fn handle_ws(socket: WebSocket, shared_sync: StorageSystem) -> Result<(), 
     .handle_ws_messages(peer_sender.clone(), ws_receiver)
     .await;
 
-  // Close the sender side so the forwarding task exits cleanly and wait for it to finish
   drop(peer_sender);
   if let Err(join_err) = sender_task_handle.await {
     log::warn!("WebSocket sender task join error: {}", join_err);
