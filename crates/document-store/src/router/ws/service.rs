@@ -216,7 +216,7 @@ impl StorageSystem {
       }
     };
 
-    let mut document = match self.storage().load_document(document_id) {
+    let mut document: Automerge = match self.storage().load_document(document_id) {
       Ok(Some(document)) => document,
       Ok(None) => Automerge::new().with_actor(ActorId::from(document_id.as_bytes())),
       Err(err) => {
@@ -255,7 +255,7 @@ impl StorageSystem {
       return;
     }
 
-    let outgoing = match document.generate_sync_message(&mut sync_state) {
+    let outgoing: automerge::sync::Message = match document.generate_sync_message(&mut sync_state) {
       Some(outgoing) => outgoing,
       None => {
         log::debug!("No sync message to send in response");
@@ -326,7 +326,7 @@ impl StorageSystem {
       }
     };
 
-    let mut document = match self.storage().load_document(document_id) {
+    let mut document: Automerge = match self.storage().load_document(document_id) {
       Ok(Some(document)) => document,
       Ok(None) => {
         self.send_to_peer(
@@ -367,7 +367,7 @@ impl StorageSystem {
       return;
     }
 
-    let outgoing = match document.generate_sync_message(&mut sync_state) {
+    let outgoing: automerge::sync::Message = match document.generate_sync_message(&mut sync_state) {
       Some(outgoing) => outgoing,
       None => {
         log::debug!("No sync message to send in response");
