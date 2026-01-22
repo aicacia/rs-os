@@ -2,8 +2,9 @@ import { EventEmitter } from 'eventemitter3';
 
 export interface ServicesJSONResponse {
 	oidc: string;
-	fs: string;
-	signaling: string;
+	fs_api: string;
+	document_store_api: string;
+	signaling_api: string;
 }
 
 type ServicesEvents = {
@@ -15,6 +16,7 @@ export class ServiceDiscovery extends EventEmitter<ServicesEvents> {
 	private baseUrl: string;
 	private current: ServicesJSONResponse | null = null;
 	private currentPromise: Promise<ServicesJSONResponse>;
+	private abortController: AbortController | null = null;
 
 	constructor(baseUrl: string) {
 		super();
@@ -22,9 +24,27 @@ export class ServiceDiscovery extends EventEmitter<ServicesEvents> {
 		this.currentPromise = this.discoverServices();
 	}
 
+	private cancelOngoingRequest() {
+		if (this.abortController) {
+			this.abortController.abort();
+			this.abortController = null;
+		}
+	}
+
+	private isAbortError(error: unknown): boolean {
+		return error instanceof Error && error.name === 'AbortError';
+	}
+
 	private async discoverServices(): Promise<ServicesJSONResponse> {
+		this.cancelOngoingRequest();
+		const abortController = new AbortController();
+		this.abortController = abortController;
+
 		try {
-			const response = await fetch(`${this.baseUrl}/.well-known/services`, { method: 'GET' });
+			const response = await fetch(`${this.baseUrl}/.well-known/services`, {
+				method: 'GET',
+				signal: abortController.signal
+			});
 			if (!response.ok) {
 				throw new Error(
 					`Failed to fetch services from ${this.baseUrl}/.well-known/services: ${response.statusText}`
@@ -35,8 +55,14 @@ export class ServiceDiscovery extends EventEmitter<ServicesEvents> {
 			this.emit('discovered-services', services);
 			return services;
 		} catch (error) {
-			this.emit('error', error);
+			if (!this.isAbortError(error)) {
+				this.emit('error', error);
+			}
 			throw error;
+		} finally {
+			if (this.abortController === abortController) {
+				this.abortController = null;
+			}
 		}
 	}
 

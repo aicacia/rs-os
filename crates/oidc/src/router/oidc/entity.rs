@@ -2,7 +2,10 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::core::helper::{json_to_string_vec, string_vec_to_json};
+use crate::{
+  core::helper::{json_to_string_vec, string_vec_to_json},
+  router::common::entity::Permission,
+};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Serialize, ToSchema)]
@@ -115,6 +118,13 @@ pub struct OpenIdConfiguration {
   pub claims_supported: Vec<String>,
   pub code_challenge_methods_supported: Vec<String>,
   pub grant_types_supported: Vec<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct ApplicationMetadata {
+  pub name: String,
+  pub urn: String,
+  pub permissions: Vec<Permission>,
 }
 
 #[derive(Deserialize, ToSchema)]

@@ -7,16 +7,15 @@ use axum::extract::{FromRef, FromRequestParts};
 use http::request::Parts;
 use os_api::{
   Claims,
+  constants::{
+    AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE, SCOPE_PROFILE, TOKEN_TYPE_BEARER,
+  },
   error::{HttpError, INTERNAL_ERROR, INVALID_ERROR, REQUIRED_ERROR},
   util::permission_grants,
 };
 
 use crate::router::{
   common::{
-    constants::{
-      AUTHORIZATION_HEADER, SCOPE_ADDRESS, SCOPE_EMAIL, SCOPE_PHONE, SCOPE_PROFILE,
-      TOKEN_TYPE_BEARER,
-    },
     entity::{BasicClaims, Permission, UserInfo},
     helper::parse_user_sub,
   },

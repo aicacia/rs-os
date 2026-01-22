@@ -30,7 +30,10 @@ export function getIsServicesReady() {
 	return isReady;
 }
 
+export async function getServices() {
+	return await serviceDiscovery.waitForServices();
+}
+
 export async function getOIDCAPIURL() {
-	const services = await serviceDiscovery.waitForServices();
-	return services.oidc;
+	return (await getServices()).oidc;
 }

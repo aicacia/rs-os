@@ -6,25 +6,25 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct ServicesConfig {
-  pub fs_api: Option<String>,
+  pub fs_api: String,
   pub oidc_api: String,
   pub oidc_ui: String,
-  pub oidc_admin_api: Option<String>,
-  pub oidc_admin_ui: Option<String>,
-  pub document_store_api: Option<String>,
-  pub signaling_api: Option<String>,
+  pub oidc_admin_api: String,
+  pub oidc_admin_ui: String,
+  pub document_store_api: String,
+  pub signaling_api: String,
 }
 
 impl Default for ServicesConfig {
   fn default() -> Self {
     Self {
-      fs_api: None,
+      fs_api: "http://localhost:3000/fs/api".to_owned(),
       oidc_api: "http://localhost:3000/oidc/api".to_owned(),
       oidc_ui: "http://localhost:3000/oidc".to_owned(),
-      oidc_admin_api: None,
-      oidc_admin_ui: None,
-      document_store_api: None,
-      signaling_api: None,
+      oidc_admin_api: "http://localhost:3000/oidc/admin/api".to_owned(),
+      oidc_admin_ui: "http://localhost:3000/oidc/admin".to_owned(),
+      document_store_api: "http://localhost:3000/document-store/api".to_owned(),
+      signaling_api: "http://localhost:3000/signaling/api".to_owned(),
     }
   }
 }

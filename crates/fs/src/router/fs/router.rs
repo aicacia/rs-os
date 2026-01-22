@@ -11,11 +11,13 @@ use tokio::fs;
 use tokio::io::AsyncReadExt;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::router::entity::{Permission, RouterState};
-use crate::router::fs::{
-  constants::TAG,
-  entity::{DeleteResponse, ListQuery, ListResponse, ObjectMetadata, UploadResponse},
-  helper::has_permission,
+use crate::router::{
+  common::entity::Permission,
+  entity::RouterState,
+  fs::{
+    constants::TAG,
+    entity::{DeleteResponse, ListQuery, ListResponse, ObjectMetadata, UploadResponse},
+  },
 };
 
 #[utoipa::path(
@@ -31,7 +33,7 @@ use crate::router::fs::{
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["fs:read"])
+    ("Authorization" = ["fs:user:read"])
   )
 )]
 pub async fn list(
@@ -43,10 +45,9 @@ pub async fn list(
     continuation_token: _continuation_token,
   }): Query<ListQuery>,
 ) -> Result<impl IntoResponse, HttpError> {
-  has_permission(
-    &user_authorization,
+  user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::FsRead,
+    Permission::FSUserRead.as_str(),
   )?;
 
   let max_keys = max_keys.unwrap_or(1000).min(1000);
@@ -135,7 +136,7 @@ pub async fn list(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["fs:read"])
+    ("Authorization" = ["fs:user:read"])
   )
 )]
 pub async fn get_object(
@@ -143,10 +144,9 @@ pub async fn get_object(
   user_authorization: UserAuthorization<BasicClaims>,
   Path(key): Path<String>,
 ) -> Result<impl IntoResponse, HttpError> {
-  has_permission(
-    &user_authorization,
+  user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::FsRead,
+    Permission::FSUserRead.as_str(),
   )?;
 
   let base_dir = PathBuf::from(&state.config.data_dir);
@@ -222,7 +222,7 @@ pub async fn get_object(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["fs:read"])
+    ("Authorization" = ["fs:user:read"])
   )
 )]
 pub async fn head_object(
@@ -230,10 +230,9 @@ pub async fn head_object(
   user_authorization: UserAuthorization<BasicClaims>,
   Path(key): Path<String>,
 ) -> Result<impl IntoResponse, HttpError> {
-  has_permission(
-    &user_authorization,
+  user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::FsRead,
+    Permission::FSUserRead.as_str(),
   )?;
 
   let base_dir = PathBuf::from(&state.config.data_dir);
@@ -305,7 +304,7 @@ pub async fn head_object(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["fs:write"])
+    ("Authorization" = ["fs:user:write"])
   )
 )]
 pub async fn upload_object(
@@ -313,10 +312,9 @@ pub async fn upload_object(
   user_authorization: UserAuthorization<BasicClaims>,
   mut multipart: Multipart,
 ) -> Result<impl IntoResponse, HttpError> {
-  has_permission(
-    &user_authorization,
+  user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::FsWrite,
+    Permission::FSUserWrite.as_str(),
   )?;
 
   let mut key: Option<String> = None;
@@ -409,7 +407,7 @@ pub async fn upload_object(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["fs:write"])
+    ("Authorization" = ["fs:user:write"])
   )
 )]
 pub async fn put_object(
@@ -418,10 +416,9 @@ pub async fn put_object(
   Path(key): Path<String>,
   body: Bytes,
 ) -> Result<impl IntoResponse, HttpError> {
-  has_permission(
-    &user_authorization,
+  user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::FsWrite,
+    Permission::FSUserWrite.as_str(),
   )?;
 
   let base_dir = PathBuf::from(&state.config.data_dir);
@@ -482,7 +479,7 @@ pub async fn put_object(
     (status = 500, content_type = "application/json", body = HttpError),
   ),
   security(
-    ("Authorization" = ["fs:write"])
+    ("Authorization" = ["fs:user:write"])
   )
 )]
 pub async fn delete_object(
@@ -490,10 +487,9 @@ pub async fn delete_object(
   user_authorization: UserAuthorization<BasicClaims>,
   Path(key): Path<String>,
 ) -> Result<impl IntoResponse, HttpError> {
-  has_permission(
-    &user_authorization,
+  user_authorization.has_permission(
     &state.config.oidc_application_urn,
-    Permission::FsWrite,
+    Permission::FSUserWrite.as_str(),
   )?;
 
   let base_dir = PathBuf::from(&state.config.data_dir);

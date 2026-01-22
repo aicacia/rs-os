@@ -10,6 +10,7 @@ use crate::router::{common::entity::Permission, entity::RouterState, oidc};
   components(
     schemas(
       Permission,
+      crate::router::oidc::entity::ApplicationMetadata,
     )
   ),
   modifiers(&SecurityAddon)

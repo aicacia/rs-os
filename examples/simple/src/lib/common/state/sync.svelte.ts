@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
 import { getUserManager } from './user.svelte';
-import { env } from '$env/dynamic/public';
 import { KeepAliveWebSocket } from '@aicacia/keepalivewebsocket';
 import { WebRTCClientAdapter } from '@aicacia/automerge-repo-network-webrtc';
 import { WebSocketClientAdapter } from '@aicacia/automerge-repo-network-websocket';
 import { SignalingRoom } from '@aicacia/signaling-room';
+import { getServices } from './services.svelte';
 
 export const signalingRoomWebsocket = new KeepAliveWebSocket({
 	autoconnect: false,
@@ -32,13 +32,15 @@ if (browser) {
 					console.warn('No user found, cannot connect to document store WebSocket');
 					return;
 				}
+				const services = await getServices();
+
 				await Promise.all([
 					documentStoreWebsocket.setUrl(
-						`${env.PUBLIC_OS_DOCUMENT_STORE_WS_URL}/private?token=${user.access_token}`
+						`${services.document_store_api}/private?token=${user.access_token}`
+					),
+					signalingRoomWebsocket.setUrl(
+						`${services.signaling_api}/private?token=${user.access_token}&room=signaling`
 					)
-					// signalingRoomWebsocket.setUrl(
-					// 	`${env.PUBLIC_OS_SIGNALING_WS_URL}/private?token=${user.access_token}&room=signaling`
-					// )
 				]);
 			});
 		});

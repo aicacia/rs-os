@@ -124,13 +124,13 @@ impl AppConfig {
       self.signaling_api.url = Some(format!("{}{}", self.url, SIGNALING_API_URL_PREFIX));
     }
 
-    self.service_discovery_api.services.fs_api = self.fs_api.url.clone();
+    self.service_discovery_api.services.fs_api = self.fs_api.url();
     self.service_discovery_api.services.oidc_api = self.oidc_api.url();
     self.service_discovery_api.services.oidc_ui = self.oidc_ui.url();
-    self.service_discovery_api.services.oidc_admin_api = Some(self.oidc_admin_api.url());
-    self.service_discovery_api.services.oidc_admin_ui = Some(self.oidc_admin_ui.url());
-    self.service_discovery_api.services.document_store_api = Some(self.document_store_api.url());
-    self.service_discovery_api.services.signaling_api = Some(self.signaling_api.url());
+    self.service_discovery_api.services.oidc_admin_api = self.oidc_admin_api.url();
+    self.service_discovery_api.services.oidc_admin_ui = self.oidc_admin_ui.url();
+    self.service_discovery_api.services.document_store_api = self.document_store_api.url();
+    self.service_discovery_api.services.signaling_api = self.signaling_api.url();
   }
 }
 

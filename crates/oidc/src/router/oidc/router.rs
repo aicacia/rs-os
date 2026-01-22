@@ -9,6 +9,10 @@ use base64::Engine;
 use http::{StatusCode, header};
 use os_api::{
   Form, Json,
+  constants::{
+    TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD, TOKEN_ISSUE_TYPE_REFRESH_TOKEN,
+    TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
+  },
   error::{
     CREDENTIALS, HttpError, INTERNAL_ERROR, INVALID_ERROR, NOT_ALLOWED_ERROR, NOT_FOUND_ERROR,
     NOT_SUPPORTED_ERROR, REQUIRED_ERROR,
@@ -29,10 +33,6 @@ use crate::{
   core::{encryption::verify_password, helper::json_to_string_vec},
   router::{
     common::{
-      constants::{
-        TOKEN_ISSUE_TYPE_AUTHORIZATION_CODE, TOKEN_ISSUE_TYPE_PASSWORD,
-        TOKEN_ISSUE_TYPE_REFRESH_TOKEN, TOKEN_TYPE_AUTHORIZATION_CODE, TOKEN_TYPE_REFRESH,
-      },
       entity::{AuthorizationCodeClaims, BasicClaims, Permission, Token, UserInfo},
       helper::{create_user_authorization_code_token, create_user_token},
     },
@@ -47,10 +47,10 @@ use crate::{
         GRANT_TYPE_REFRESH_TOKEN, GRANT_TYPE_REVOKE, TAG,
       },
       entity::{
-        ApproveClientQuery, AuthorizeRequest, Client, ClientAllowed, ClientAllowedQuery,
-        ClientAuthentication, ClientAuthorization, ClientAuthorizeRequest, ClientByClientIdQuery,
-        ClientRegisterRequest, EndSessionRequest, JWK, JWKs, OpenIdConfiguration,
-        PasswordResetRequest, RevokeRequest, TokenRequest,
+        ApplicationMetadata, ApproveClientQuery, AuthorizeRequest, Client, ClientAllowed,
+        ClientAllowedQuery, ClientAuthentication, ClientAuthorization, ClientAuthorizeRequest,
+        ClientByClientIdQuery, ClientRegisterRequest, EndSessionRequest, JWK, JWKs,
+        OpenIdConfiguration, PasswordResetRequest, RevokeRequest, TokenRequest,
       },
     },
   },
@@ -231,6 +231,25 @@ pub async fn openid_configuration(State(state): State<RouterState>) -> impl Into
     issuer: api_url,
   })
   .into_response()
+}
+
+#[utoipa::path(
+  get,
+  path = "/.well-known/application-metadata.json",
+  tags = [TAG],
+  responses(
+    (status = 200, description = "Application Metadata", body = ApplicationMetadata),
+    (status = 500, description = "Application Error", body = HttpError),
+  )
+)]
+pub async fn application_metadata(State(state): State<RouterState>) -> impl IntoResponse {
+  let metadata = ApplicationMetadata {
+    name: "OIDC".to_owned(),
+    urn: state.config.application_urn.clone(),
+    permissions: Permission::all(),
+  };
+
+  axum::Json(metadata).into_response()
 }
 
 #[utoipa::path(
@@ -1429,6 +1448,7 @@ pub fn create_router(state: RouterState) -> OpenApiRouter {
   OpenApiRouter::new()
     .routes(routes!(jwks))
     .routes(routes!(openid_configuration))
+    .routes(routes!(application_metadata))
     .routes(routes!(end_session))
     .routes(routes!(token))
     .routes(routes!(user_info))

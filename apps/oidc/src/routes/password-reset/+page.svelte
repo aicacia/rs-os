@@ -57,7 +57,7 @@
 
 <div class="flex grow flex-col items-center justify-center">
 	<div class="card w-sm">
-		<h1>{m.profile_change_password_title()}</h1>
+		<h3>{m.profile_change_password_title()}</h3>
 		<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{m.profile_change_password_description?.() ?? ''}</p>
 
 		<form onsubmit={onSubmit} class="mt-4 flex flex-col gap-3">

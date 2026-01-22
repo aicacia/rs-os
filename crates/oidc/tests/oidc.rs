@@ -70,6 +70,34 @@ async fn test_openid_configuration_endpoint() -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn test_application_metadata_endpoint() -> Result<(), Box<dyn Error>> {
+  let (teardown, router, _config, _database_connection) = common::util::setup().await?;
+  defer! { teardown() }
+
+  let response = router
+    .oneshot(
+      Request::builder()
+        .uri("/.well-known/application-metadata.json")
+        .body(Body::empty())?,
+    )
+    .await
+    .expect("failed to send request");
+
+  let (parts, body) = response.into_parts();
+
+  assert_eq!(parts.status, StatusCode::OK);
+
+  let body = axum::body::to_bytes(body, usize::MAX).await?;
+  let meta: serde_json::Value = serde_json::from_slice(&body)?;
+
+  assert!(meta.get("urn").is_some());
+  assert!(meta.get("client_id").is_some());
+  assert!(meta.get("permissions").is_some());
+
+  Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test_authorize_get_endpoint() -> Result<(), Box<dyn Error>> {
   let (teardown, router, _config, database_connection) = common::util::setup().await?;
   defer! { teardown() }
